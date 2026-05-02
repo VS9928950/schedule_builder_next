@@ -15,3 +15,6 @@ data/
 # logs / OS
 npm-debug.log*
 .DS_Store
+
+# Cursor IDE (скиллы/правила — не часть приложения)
+.cursor/
