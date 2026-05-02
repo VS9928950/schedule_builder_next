@@ -7,8 +7,11 @@ name: schedule-builder
 
 services:
   app:
-    build: .
-    # Сборка и рантайм без зависаний на AAAA, когда у bridge нет рабочего IPv6 (см. комментарий в Dockerfile).
+    build:
+      context: .
+      # Вся сборка в сети хоста: иначе apk/npm на bridge + AAAA; RUN --network=host на этом демоне может быть запрещён.
+      network: host
+    # Рантайм: без зависаний на AAAA, когда у bridge нет рабочего IPv6.
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
     ports:

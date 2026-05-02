@@ -1,20 +1,19 @@
-# syntax=docker/dockerfile:1
-# Сборка образа Next.js (режим standalone). См. docs/install.md
-# Сетевые RUN через host: на bridge часто нет рабочего IPv6 при AAAA у CDN; sysctl в build часто read-only (BuildKit).
+# Сборка Next.js (standalone). Сеть стадии сборки: в docker-compose задано build.network: host
+# (на docker bridge часто нет IPv6 при AAAA у CDN; RUN --network=host на части хостов запрещён BuildKit).
 FROM node:20-alpine AS base
 
 FROM base AS deps
-RUN --network=host apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN --network=host npm ci
+RUN npm ci
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN --network=host npm run build
+RUN npm run build
 
 FROM base AS runner
 WORKDIR /app
