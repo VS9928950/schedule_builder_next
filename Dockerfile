@@ -1,25 +1,20 @@
+# syntax=docker/dockerfile:1
 # Сборка образа Next.js (режим standalone). См. docs/install.md
+# Сетевые RUN через host: на bridge часто нет рабочего IPv6 при AAAA у CDN; sysctl в build часто read-only (BuildKit).
 FROM node:20-alpine AS base
 
 FROM base AS deps
-# Без маршрута IPv6 из docker bridge (часто в облаке): dualstack CDN отдаёт AAAA — apk/npm иначе долго ждут.
-RUN echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null || true \
-  && echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6 2>/dev/null || true \
-  && apk add --no-cache libc6-compat
+RUN --network=host apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null || true \
-  && echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6 2>/dev/null || true \
-  && npm ci
+RUN --network=host npm ci
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null || true \
-  && echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6 2>/dev/null || true \
-  && npm run build
+RUN --network=host npm run build
 
 FROM base AS runner
 WORKDIR /app
