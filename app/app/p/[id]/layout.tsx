@@ -24,17 +24,6 @@ export default async function ProjectLayout({
   // Active state will be handled on each page for now.
   return (
     <div className="grid" style={{ gap: 12 }}>
-      <div className="topbar no-print-chrome">
-        <div className="row" style={{ gap: 12 }}>
-          <div className="brand">Schedule Builder</div>
-          <div className="chip">{user.email}</div>
-        </div>
-        <form action="/api/auth/logout" method="post">
-          <button className="secondary" type="submit">
-            Выйти
-          </button>
-        </form>
-      </div>
       <div className="card no-print-chrome">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
           <div>
