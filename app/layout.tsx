@@ -9,6 +9,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
+      {/* Root layout should only mount global css and page content.
+          Topbar/logout belong to protected branch layout: app/app/layout.tsx */}
       <body>{children}</body>
     </html>
   );
