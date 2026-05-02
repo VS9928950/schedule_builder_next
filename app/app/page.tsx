@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 export default async function Dashboard() {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
   const projects = listProjects(user.id);
 
   return (

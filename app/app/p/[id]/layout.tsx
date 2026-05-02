@@ -11,7 +11,7 @@ export default async function ProjectLayout({
   params: Promise<{ id: string }>;
 }) {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const { id } = await params;
   const projectId = Number(id);

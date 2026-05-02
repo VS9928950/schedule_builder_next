@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 export default async function ExcelTab({ params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const { id } = await params;
   const projectId = Number(id);

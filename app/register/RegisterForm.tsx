@@ -61,7 +61,7 @@ export default function RegisterForm() {
           </div>
           <div className="row">
             <button type="submit">Создать аккаунт</button>
-            <a className="muted" href="/login">
+            <a className="muted" href="/sign-in">
               Уже есть аккаунт? Войти
             </a>
           </div>

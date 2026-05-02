@@ -25,7 +25,7 @@
 | `…/export/print` | Страница печати (в т.ч. режим «все дни», query `pdfMode`, `pdfDay`, `printDialog`) |
 | `…/export/tilda` | Экспорт HTML+CSS для T123, вариант по дням — выпадающий список |
 
-Авторизация: `/login`, API под `/api/auth/*`.
+Авторизация: страница входа **`/sign-in`** (старый путь **`/login`** редиректится в `next.config.js`), API под `/api/auth/*`.
 
 ## HTTP API (route handlers)
 

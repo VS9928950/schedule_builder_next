@@ -6,7 +6,7 @@ import { rowsFromProjectExcelJson } from "@/lib/excel";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
-  if (!user) return NextResponse.redirect(new URL("/login", req.url), 303);
+  if (!user) return NextResponse.redirect(new URL("/sign-in", req.url), 303);
 
   const { id } = await ctx.params;
   const projectId = Number(id);

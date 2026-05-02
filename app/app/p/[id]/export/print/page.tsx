@@ -8,7 +8,7 @@ import { PrintWorkspaceClient } from "./PrintWorkspaceClient";
 
 export default async function ExportPrintTab({ params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const { id } = await params;
   const projectId = Number(id);
