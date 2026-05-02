@@ -26,10 +26,14 @@ export function TildaSnippetClient({
     if (day.trim()) params.set("day", day.trim());
     if (tildaSansProbe) params.set("font", "tildaSans");
     const qs = params.toString() ? `?${params.toString()}` : "";
-    fetch(`/app/p/${projectId}/export/tilda/data${qs}`)
+    fetch(`./data${qs}`)
       .then(async (r) => {
         const j = await r.json().catch(() => null);
-        if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+        if (!r.ok) {
+          const apiError =
+            j && typeof j === "object" && "error" in j && typeof j.error === "string" ? j.error : null;
+          throw new Error(apiError || `HTTP ${r.status}`);
+        }
         return j;
       })
       .then((j) => {
@@ -49,7 +53,7 @@ export function TildaSnippetClient({
     return () => {
       cancelled = true;
     };
-  }, [projectId, scope, day, tildaSansProbe]);
+  }, [scope, day, tildaSansProbe]);
 
   useEffect(() => {
     if (day && !visibleDayKeys.includes(day)) setDay("");
@@ -104,7 +108,7 @@ export function TildaSnippetClient({
               if (day.trim()) p.set("day", day.trim());
               if (tildaSansProbe) p.set("font", "tildaSans");
               const q = p.toString();
-              return `/app/p/${projectId}/export/tilda/snippet${q ? `?${q}` : ""}`;
+              return `./snippet${q ? `?${q}` : ""}`;
             })()}
             target="_blank"
             rel="noreferrer"
