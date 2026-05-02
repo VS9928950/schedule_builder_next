@@ -8,8 +8,20 @@ export default async function Dashboard() {
   const projects = listProjects(user.id);
 
   return (
-    <div className="grid2">
-      <div className="card">
+    <div className="grid" style={{ gap: 14 }}>
+      <div className="topbar no-print-chrome">
+        <div className="row" style={{ gap: 12 }}>
+          <div className="brand">Schedule Builder</div>
+          <div className="chip">{user.email}</div>
+        </div>
+        <form action="/api/auth/logout" method="post">
+          <button className="secondary" type="submit">
+            Выйти
+          </button>
+        </form>
+      </div>
+      <div className="grid2">
+        <div className="card">
         <h2 style={{ margin: "0 0 10px" }}>Проекты</h2>
         <p className="muted" style={{ marginBottom: 14 }}>
           В проекте хранятся документы Excel (лист <b>«Перечень»</b>), версии сборки и настройки сетки/экспорта.
@@ -38,24 +50,25 @@ export default async function Dashboard() {
             <div className="muted">Пока нет проектов — создайте первый.</div>
           )}
         </div>
-      </div>
+        </div>
 
-      <div className="card">
-        <h2 style={{ margin: "0 0 10px" }}>Как это работает</h2>
-        <div className="grid">
-          <div className="card" style={{ padding: 12 }}>
-            <div>
-              <b>1) Документы</b> — загрузка <code>.xlsx</code>, шаблон «Перечень», выбор активного файла.
+        <div className="card">
+          <h2 style={{ margin: "0 0 10px" }}>Как это работает</h2>
+          <div className="grid">
+            <div className="card" style={{ padding: 12 }}>
+              <div>
+                <b>1) Документы</b> — загрузка <code>.xlsx</code>, шаблон «Перечень», выбор активного файла.
+              </div>
             </div>
-          </div>
-          <div className="card" style={{ padding: 12 }}>
-            <div>
-              <b>2) События и архитектура</b> — версия сборки, правки, сетка по дням, стили.
+            <div className="card" style={{ padding: 12 }}>
+              <div>
+                <b>2) События и архитектура</b> — версия сборки, правки, сетка по дням, стили.
+              </div>
             </div>
-          </div>
-          <div className="card" style={{ padding: 12 }}>
-            <div>
-              <b>3) Экспорт</b> — печать и PDF через браузер, сниппет для Тильды.
+            <div className="card" style={{ padding: 12 }}>
+              <div>
+                <b>3) Экспорт</b> — печать и PDF через браузер, сниппет для Тильды.
+              </div>
             </div>
           </div>
         </div>

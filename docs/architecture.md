@@ -104,7 +104,8 @@
 ### Финальное состояние (зафиксировано)
 
 - Root layout (`app/layout.tsx`) содержит только `<html>`, `<body>` и глобальные стили; бизнес-редиректы и auth-UI туда не помещаются.
-- Protected layout (`app/app/layout.tsx`) отвечает за единый `topbar` для `/app/*` и не выполняет redirect.
+- Protected layout (`app/app/layout.tsx`) отвечает только за общий контейнер защищённой зоны и не выполняет redirect.
+- `topbar` рендерится ровно один раз в точках входа защищённого UI: `app/app/page.tsx` и `app/app/p/[id]/layout.tsx`.
 - Проверки доступа выполняются в страницах и route handlers (`/app/*`, `/app/p/[id]/*`, `/app/projects`, `/api/...`).
 - `/login` редиректится в `/sign-in` через `next.config.js` (одна точка правды для legacy URL).
 - `app/sign-in/page.tsx` и `app/register/page.tsx` не используют `headers()`, чтобы избежать повторного 307/redirect-цикла в Next 15.

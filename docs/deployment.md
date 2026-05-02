@@ -54,8 +54,16 @@ PORT=3000 NODE_ENV=production npm start
 Финально зафиксировано:
 
 - `/login` всегда редиректится на `/sign-in` через `next.config.js`.
-- Root/protected layout разведены по ролям (детали в `architecture.md`): root без auth-логики, protected с единым `topbar`.
+- Root/protected layout разведены по ролям (детали в `architecture.md`): root без auth-логики, protected без route-специфичной шапки.
+- `Topbar` рендерится ровно один раз в `app/app/page.tsx` и `app/app/p/[id]/layout.tsx`.
 - Для Docker в runtime-слое создаётся `/app/data` и выставляется владелец `nextjs:nodejs`, чтобы запись в `store.json` была доступна приложению.
+
+## Deployment discipline (mandatory)
+
+- Рабочая версия определяется только состоянием репозитория и GitHub-историей изменений.
+- Процесс выпуска: изменить файлы в репозитории -> commit/push -> пересборка -> перезапуск контейнера.
+- В браузере не выполняются "ремонты" приложения: браузер используется только для проверки результата уже задеплоенного кода.
+- При любом споре "код vs наблюдение" первично проверяется корректность собственной диагностики относительно текущего кода и зафиксированных контрактов (`architecture.md`, `development.md`).
 
 ## Docker data permissions
 
