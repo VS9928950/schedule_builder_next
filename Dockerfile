@@ -2,17 +2,24 @@
 FROM node:20-alpine AS base
 
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Без маршрута IPv6 из docker bridge (часто в облаке): dualstack CDN отдаёт AAAA — apk/npm иначе долго ждут.
+RUN echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null || true \
+  && echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6 2>/dev/null || true \
+  && apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null || true \
+  && echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6 2>/dev/null || true \
+  && npm ci
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null || true \
+  && echo 1 > /proc/sys/net/ipv6/conf/default/disable_ipv6 2>/dev/null || true \
+  && npm run build
 
 FROM base AS runner
 WORKDIR /app

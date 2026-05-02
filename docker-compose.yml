@@ -8,6 +8,9 @@ name: schedule-builder
 services:
   app:
     build: .
+    # Сборка и рантайм без зависаний на AAAA, когда у bridge нет рабочего IPv6 (см. комментарий в Dockerfile).
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
     ports:
       - "3000:3000"
     environment:
