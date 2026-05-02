@@ -1,9 +1,11 @@
 import { getSessionUser } from "@/lib/session";
-import { redirect } from "next/navigation";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
-  if (!user) redirect("/sign-in");
+  // Important: do not redirect from layout.
+  // In some Next.js 15 runtime/build states this can affect public routes and create a redirect loop.
+  // Access control remains in pages/routes that require auth.
+  if (!user) return <>{children}</>;
 
   return (
     <div className="wrap">
