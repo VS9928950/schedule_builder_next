@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
 import { formatDayFull, localDateFromDayKey } from "@/lib/schedule";
 
 export function TildaSnippetClient({
@@ -11,7 +10,6 @@ export function TildaSnippetClient({
   projectId: number;
   visibleDayKeys: string[];
 }) {
-  const pathname = usePathname() || "";
   const [data, setData] = useState<{ html: string; css: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,20 +20,13 @@ export function TildaSnippetClient({
 
   useEffect(() => {
     let cancelled = false;
-    const basePath = pathname.replace(/\/+$/, "");
-    if (!basePath) {
-      setError("Не удалось определить путь страницы");
-      setData(null);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     const params = new URLSearchParams();
+    params.set("projectId", String(projectId));
     if (scope.trim()) params.set("scope", scope.trim());
     if (day.trim()) params.set("day", day.trim());
     if (tildaSansProbe) params.set("font", "tildaSans");
-    const qs = params.toString() ? `?${params.toString()}` : "";
-    fetch(`${basePath}/data${qs}`)
+    fetch(`/api/export/tilda/data?${params.toString()}`)
       .then(async (r) => {
         const j = await r.json().catch(() => null);
         if (!r.ok) {
@@ -62,7 +53,7 @@ export function TildaSnippetClient({
     return () => {
       cancelled = true;
     };
-  }, [pathname, scope, day, tildaSansProbe]);
+  }, [projectId, scope, day, tildaSansProbe]);
 
   useEffect(() => {
     if (day && !visibleDayKeys.includes(day)) setDay("");
@@ -112,14 +103,12 @@ export function TildaSnippetClient({
           <a
             className="chip"
             href={(() => {
-              const basePath = pathname.replace(/\/+$/, "");
-              if (!basePath) return "#";
               const p = new URLSearchParams();
+              p.set("projectId", String(projectId));
               if (scope.trim()) p.set("scope", scope.trim());
               if (day.trim()) p.set("day", day.trim());
               if (tildaSansProbe) p.set("font", "tildaSans");
-              const q = p.toString();
-              return `${basePath}/snippet${q ? `?${q}` : ""}`;
+              return `/api/export/tilda/snippet?${p.toString()}`;
             })()}
             target="_blank"
             rel="noreferrer"
