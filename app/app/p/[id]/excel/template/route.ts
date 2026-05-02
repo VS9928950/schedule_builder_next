@@ -43,8 +43,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Перечень");
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
-  const bytes = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-  const blob = new Blob([bytes], {
+  const ab = new ArrayBuffer(buf.length);
+  new Uint8Array(ab).set(buf);
+  const blob = new Blob([ab], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   });
 
