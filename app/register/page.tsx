@@ -1,7 +1,6 @@
-import { headers } from "next/headers";
 import RegisterForm from "./RegisterForm";
 
-export default async function RegisterPage() {
-  await headers();
+/** Без `headers()` — см. комментарий в `app/sign-in/page.tsx`. */
+export default function RegisterPage() {
   return <RegisterForm />;
 }
