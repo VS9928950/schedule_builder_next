@@ -27,6 +27,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const timelineStyle = ((activeBuild as any).timeline_style ?? null) as any;
 
   const u = new URL(req.url);
+  const scope = u.searchParams.get("scope");
   const font = u.searchParams.get("font");
   const fontMode = font === "tildaSans" || font === "tilda-sans" ? "tilda-sans" : "inherit";
 
@@ -36,7 +37,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     marksByDay,
     timelineLayout,
     timelineStyle,
-    scopeSelector: null,
+    scopeSelector: scope,
     onlyDayKey: u.searchParams.get("day"),
     fontMode
   });

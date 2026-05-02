@@ -16,6 +16,7 @@ export function TildaSnippetClient({
   const [scope, setScope] = useState<string>(""); // optional; can be left empty
   const [day, setDay] = useState<string>(""); // YYYY-MM-DD or empty for all
   const [tildaSansProbe, setTildaSansProbe] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +63,32 @@ export function TildaSnippetClient({
   }, [data]);
 
   async function copy(text: string) {
-    await navigator.clipboard.writeText(text);
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        throw new Error("Clipboard API unavailable");
+      }
+      setCopyStatus("Скопировано");
+      return;
+    } catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "true");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (!ok) throw new Error("execCommand failed");
+        setCopyStatus("Скопировано");
+        return;
+      } catch {
+        setCopyStatus("Не удалось скопировать автоматически. Скопируйте текст вручную из поля ниже.");
+      }
+    }
   }
 
   return (
@@ -74,6 +100,7 @@ export function TildaSnippetClient({
             className="chip"
             href={(() => {
               const p = new URLSearchParams();
+              if (scope.trim()) p.set("scope", scope.trim());
               if (day.trim()) p.set("day", day.trim());
               if (tildaSansProbe) p.set("font", "tildaSans");
               const q = p.toString();
@@ -140,6 +167,7 @@ export function TildaSnippetClient({
         <div style={{ height: 8 }} />
         <input value={scope} onChange={(e) => setScope(e.target.value)} placeholder="(пусто) или #rec123456" style={{ width: 260 }} />
       </div>
+      {copyStatus ? <div className="muted" style={{ fontSize: 12 }}>{copyStatus}</div> : null}
       {loading ? <div className="muted">Генерация…</div> : null}
       {error ? <div className="error">{error}</div> : null}
       {data ? (
