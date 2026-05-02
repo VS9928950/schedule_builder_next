@@ -1,0 +1,470 @@
+type IsoEvent = {
+  id: string;
+  title: string;
+  description?: string;
+  description_md?: string;
+  style_override?: {
+    eventBgColor?: string;
+    eventBgAlpha?: number;
+    eventBorderColor?: string;
+    eventBorderAlpha?: number;
+  };
+  building?: string;
+  room?: string;
+  format?: string;
+  orderNo?: number;
+  visible?: boolean;
+  kind?: "timed" | "untimed";
+  day?: string; // ISO date
+  start?: string; // ISO
+  end?: string; // ISO
+  url?: string;
+};
+
+type TimelineLayout = {
+  row_heights?: Record<string, Record<string, number>>;
+  col_width_px?: Record<string, number>;
+  col_count?: Record<string, number>;
+  event_overrides?: Record<
+    string,
+    Record<string, { anchor?: string; col?: number; colSpan?: number; rowSpan?: number; heightPx?: number; hidden?: boolean }>
+  >;
+  hidden_day_keys?: string[];
+};
+
+import { layoutDayLanes, normalizeHttpUrl } from "@/lib/schedule";
+
+function esc(s: unknown) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function hexToRgb(hex: string) {
+  const m = /^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/.exec(String(hex ?? "").trim());
+  if (!m) return null;
+  return { r: parseInt(m[1]!, 16), g: parseInt(m[2]!, 16), b: parseInt(m[3]!, 16) };
+}
+
+function rgbaFrom(hex: string, a: number) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const aa = Math.max(0, Math.min(1, Number.isFinite(a) ? a : 1));
+  return `rgba(${rgb.r},${rgb.g},${rgb.b},${aa})`;
+}
+
+function safeScopeId(s: string) {
+  const cleaned = String(s ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return cleaned || "sb";
+}
+
+function hashShort(s: string) {
+  // stable small hash for CSS attribute scoping (not security-relevant)
+  let h = 5381;
+  const str = String(s ?? "");
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+  return (h >>> 0).toString(36).slice(0, 6);
+}
+
+function normTimeLabelFromDate(d: Date) {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function dayKeyFromDate(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+function formatTime(d: Date) {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function shouldShowFormat(fmt: unknown) {
+  const s = fmt == null ? "" : String(fmt).trim();
+  if (!s) return false;
+  return s !== "Питание";
+}
+
+function estimateMinHeightNoDescPx(e: { title?: unknown; format?: unknown; building?: unknown; room?: unknown }, widthPx: number) {
+  const innerW = Math.max(80, widthPx - 20);
+  const charsPerLine = Math.max(10, Math.floor(innerW / 6));
+  const linesFor = (s: string) => Math.max(1, Math.ceil((s || "").length / charsPerLine));
+
+  const titleLines = linesFor(String(e.title ?? ""));
+  const formatLines = shouldShowFormat(e.format) ? linesFor(String(e.format)) : 0;
+  const timeLines = 1;
+  const placeLines = e.building || e.room ? 1 : 0;
+
+  const totalLines = titleLines + formatLines + timeLines + placeLines;
+  const lineH = 16;
+  const padding = 28;
+  const borders = 6;
+  return padding + totalLines * lineH + borders + 12;
+}
+
+function yForAnchor(idx: number, heights: number[]) {
+  let y = 0;
+  for (let i = 0; i < idx; i++) y += heights[i] ?? 0;
+  return y;
+}
+
+export function buildTildaSnippet(args: {
+  projectName: string;
+  events: IsoEvent[];
+  marksByDay: Record<string, string[]>;
+  timelineLayout: TimelineLayout | null;
+  timelineStyle?: {
+    eventBgColor?: string;
+    eventBgAlpha?: number;
+    eventBorderColor?: string;
+    eventBorderAlpha?: number;
+    // back-compat (raw strings)
+    eventBg?: string;
+    eventBorder?: string;
+    eventLinkTarget?: "_blank" | "_self";
+  } | null;
+  scopeSelector?: string | null; // e.g. "#rec123456"
+  onlyDayKey?: string | null; // YYYY-MM-DD (optional)
+  /** Default: inherit site fonts. `tilda-sans` forces Tilda Sans for layout checks. */
+  fontMode?: "inherit" | "tilda-sans";
+}) {
+  const { projectName, events, marksByDay, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode } = args;
+  const layout = timelineLayout ?? {};
+  const eventOverrides = layout.event_overrides ?? {};
+
+  const timed = events
+    .filter((e) => (e.visible ?? true) && (e.kind ?? "timed") === "timed" && e.start && e.end)
+    .map((e) => ({ ...e, startD: new Date(e.start!), endD: new Date(e.end!) }))
+    .filter((e) => Number.isFinite(e.startD.getTime()) && Number.isFinite(e.endD.getTime()) && e.endD > e.startD);
+
+  const hiddenDay = new Set(
+    (timelineLayout?.hidden_day_keys ?? [])
+      .map((k) => String(k).slice(0, 10))
+      .filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k))
+  );
+  const days = Array.from(new Set(timed.map((e) => dayKeyFromDate(e.startD))))
+    .sort()
+    .filter((d) => !hiddenDay.has(d));
+  const daysToExport = onlyDayKey ? days.filter((d) => d === onlyDayKey) : days;
+
+  const scope = (scopeSelector ?? "").trim();
+  const sc = scope ? `${scope} ` : "";
+
+  // Internal scoping to avoid CSS collisions when multiple snippets are placed on one Tilda page.
+  // (e.g. 4 T123 blocks for 4 different days)
+  const internalScopeId = safeScopeId(
+    `sb-${onlyDayKey ? onlyDayKey : "all"}-${hashShort(projectName)}`
+  );
+  const rootSel = `${sc}.sb-wrap[data-sb-scope="${internalScopeId}"]`;
+
+  const defaultTileBg =
+    (timelineStyle?.eventBgColor ? rgbaFrom(timelineStyle.eventBgColor, timelineStyle.eventBgAlpha ?? 1) : null) ??
+    (typeof timelineStyle?.eventBg === "string" && timelineStyle.eventBg.trim() ? timelineStyle.eventBg.trim() : null) ??
+    "rgba(37,99,235,.08)";
+  const defaultTileBorder =
+    (timelineStyle?.eventBorderColor
+      ? rgbaFrom(timelineStyle.eventBorderColor, timelineStyle.eventBorderAlpha ?? 1)
+      : null) ??
+    (typeof timelineStyle?.eventBorder === "string" && timelineStyle.eventBorder.trim()
+      ? timelineStyle.eventBorder.trim()
+      : null) ??
+    "rgba(37,99,235,.18)";
+
+  const fontStack =
+    fontMode === "tilda-sans"
+      ? `font-family:"Tilda Sans",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;`
+      : `/* font: inherit from Tilda page */`;
+
+  const css = `
+/* Tilda snippet: ${esc(projectName)} */
+${rootSel}{
+  --sb-text:#0f172a;
+  --sb-muted:rgba(15,23,42,.58);
+  --sb-border:rgba(15,23,42,.12);
+  --sb-gridBg:rgba(15,23,42,.02);
+  --sb-tileBorder:${esc(defaultTileBorder)};
+  --sb-tileBg:${esc(defaultTileBg)};
+  --sb-shadow:0 10px 26px rgba(15,23,42,.10);
+  ${fontStack}
+  color:var(--sb-text);
+}
+${rootSel} .sb-day{margin:18px 0 26px}
+${rootSel} .sb-grid{position:relative;border:1px solid var(--sb-border);border-radius:14px;background:var(--sb-gridBg);overflow:hidden;max-width:100%}
+${rootSel} .sb-timeCol{position:absolute;left:0;top:0;bottom:0;width:56px;background:linear-gradient(to right,rgba(255,255,255,.65),rgba(255,255,255,0))}
+${rootSel} .sb-time{position:absolute;left:0;transform:translateY(-50%);font-size:12px;color:var(--sb-muted);width:52px;text-align:right;padding-right:6px;box-sizing:border-box;white-space:nowrap}
+${rootSel} .sb-scroll{position:relative;margin-left:56px;height:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+${rootSel} .sb-inner{position:relative;display:inline-block;min-height:100%}
+${rootSel} .sb-line{position:absolute;left:0;right:0;border-top:1px dashed var(--sb-border);pointer-events:none}
+${rootSel} .sb-tile{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;padding:9px 10px;border-radius:12px;border:1px solid var(--sb-tileBorder);background:var(--sb-tileBg);box-shadow:var(--sb-shadow);overflow:hidden}
+${rootSel} .sb-title{font-weight:850;font-size:13px;line-height:1.22;letter-spacing:.1px}
+${rootSel} a.sb-title{color:inherit;text-decoration:none}
+${rootSel} a.sb-title:hover{text-decoration:underline}
+${rootSel} .sb-format,${rootSel} .sb-timeRange,${rootSel} .sb-place{margin-top:6px;font-size:11px;color:var(--sb-muted)}
+${rootSel} .sb-desc{margin-top:6px;font-size:12px;line-height:1.3;opacity:.92;white-space:pre-line}
+@media (max-width: 768px){
+  ${rootSel} .sb-grid{height:auto !important}
+  ${rootSel} .sb-timeCol{display:none}
+  ${rootSel} .sb-scroll{margin-left:0;overflow:visible;height:auto !important}
+  ${rootSel} .sb-inner{height:auto !important;min-width:0 !important;width:100% !important;display:block !important;padding:10px 12px 12px;box-sizing:border-box}
+  ${rootSel} .sb-line{display:none !important}
+  ${rootSel} .sb-tile{position:relative !important;top:auto !important;left:auto !important;width:auto !important;height:auto !important;min-height:52px;margin:0 0 10px}
+  ${rootSel} .sb-title{font-size:12.5px}
+}
+@media print{
+  ${rootSel}{color:#000}
+  ${rootSel} .sb-day{break-inside:avoid-page;page-break-inside:avoid}
+  ${rootSel} .sb-grid{box-shadow:none;border-color:#cbd5e1;background:#fff}
+  ${rootSel} .sb-timeCol{background:none}
+  ${rootSel} .sb-scroll{overflow:visible}
+  ${rootSel} .sb-tile{box-shadow:none}
+}
+`.trim();
+
+  let html = `<div class="sb-wrap" data-sb-scope="${esc(internalScopeId)}">\n`;
+  // Intentionally no top-level "Export"/project header in the snippet:
+  // Tilda pages usually provide their own headings; we export only the layout block.
+
+  const linkTarget = timelineStyle?.eventLinkTarget === "_self" ? "_self" : "_blank";
+
+  for (const dayKey of daysToExport) {
+    const dayEvents = timed.filter((e) => dayKeyFromDate(e.startD) === dayKey);
+    const manualMarks = marksByDay[dayKey] ?? [];
+
+    // Build layout like Timeline does (so columns are distributed, not all col=0).
+    const scheduleEvents = dayEvents.map((e) => ({
+      id: String(e.id),
+      title: String(e.title ?? ""),
+      description: e.description != null ? String(e.description) : undefined,
+      description_md: e.description_md != null ? String(e.description_md) : undefined,
+      building: e.building != null ? String(e.building) : undefined,
+      room: e.room != null ? String(e.room) : undefined,
+      format: e.format != null ? String(e.format) : undefined,
+      orderNo: (e as any).orderNo,
+      visible: e.visible ?? true,
+      start: e.startD,
+      end: e.endD
+    }));
+    const dayDate = new Date(dayKey + "T00:00:00.000Z");
+    const dayLayout = layoutDayLanes(dayDate, scheduleEvents as any);
+
+    const labelForAbsMin = (absMin: number) => {
+      const hh = String(Math.floor(absMin / 60)).padStart(2, "0");
+      const mm = String(absMin % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    };
+
+    const anchorsSet = new Set<string>();
+    for (const it of dayLayout.items) anchorsSet.add(labelForAbsMin(dayLayout.dayStartMin + it.topMin));
+    for (const m of manualMarks) if (typeof m === "string" && /^\d{1,2}:\d{2}$/.test(m.trim())) anchorsSet.add(m.trim().padStart(5, "0"));
+    const anchors = Array.from(anchorsSet).sort();
+    if (!anchors.length) continue;
+
+    const colPx = Math.floor((layout.col_width_px?.[dayKey] ?? 240) as number);
+    const colsAuto = Math.max(1, Math.min(64, Math.floor((dayLayout.maxCols ?? 1) as number)));
+    const cols = Math.max(1, Math.min(64, Math.floor((layout.col_count?.[dayKey] ?? colsAuto) as number)));
+
+    const MIN_ANCHOR_PX = 18;
+    const ANCHOR_PAD_PX = 18;
+
+    // Build boxes with the same semantics as TimelineViewer (defaults + overrides).
+    const boxesRaw = (dayLayout.items as any[]).map((it) => {
+      const ev = it.event as any;
+      const evId = String(ev.id ?? "");
+      const ov = eventOverrides?.[dayKey]?.[evId] ?? {};
+      const startD = new Date(ev.start);
+      const endD = new Date(ev.end);
+      const defaultAnchor = labelForAbsMin(dayLayout.dayStartMin + Number(it.topMin ?? 0));
+      const anchorWanted = (ov.anchor ?? defaultAnchor).trim();
+      const anchorIdxWanted = anchors.indexOf(anchorWanted);
+      const defaultIdx = Math.max(0, anchors.indexOf(defaultAnchor));
+      const anchorIdx = anchorIdxWanted >= 0 ? anchorIdxWanted : defaultIdx;
+
+      const colDefault = Number.isFinite(it.clusterIndex)
+        ? Math.max(0, Math.min(cols - 1, Math.floor(it.clusterIndex)))
+        : 0;
+      const desiredCol = Math.max(0, Math.min(cols - 1, Math.floor(ov.col ?? colDefault)));
+      const desiredColSpan = Math.max(1, Math.min(cols, Math.floor(ov.colSpan ?? 1)));
+      const desiredRowSpan = Math.max(1, Math.min(anchors.length - anchorIdx, Math.floor(ov.rowSpan ?? 1)));
+
+      const hidden = !!ov.hidden;
+      const minNoDesc = estimateMinHeightNoDescPx(ev, colPx);
+      const heightPx = typeof ov.heightPx === "number" && Number.isFinite(ov.heightPx) ? Math.max(30, ov.heightPx) : null;
+
+      return {
+        it,
+        ev,
+        evId,
+        ov,
+        hidden,
+        startD,
+        endD,
+        defaultAnchor,
+        anchorWanted,
+        anchorIdx,
+        desiredCol,
+        col: desiredCol,
+        colSpan: desiredColSpan,
+        rowSpan: desiredRowSpan,
+        minNoDesc,
+        heightPx
+      };
+    });
+
+    // Packing (kanban behavior): within a row (same anchorIdx), if multiple tiles want the same column,
+    // shift later tiles right to the nearest free column, considering colSpan.
+    const boxesPacked = (() => {
+      const byAnchor = new Map<number, typeof boxesRaw>();
+      for (const b of boxesRaw) {
+        if (b.hidden) continue;
+        const arr = byAnchor.get(b.anchorIdx) ?? [];
+        arr.push(b);
+        byAnchor.set(b.anchorIdx, arr as any);
+      }
+      const out = boxesRaw.map((b) => ({ ...b }));
+      for (const [aIdx, arr] of byAnchor.entries()) {
+        const used = new Set<number>();
+        const sorted = arr
+          .slice()
+          .sort(
+            (x, y) =>
+              (Number(x.desiredCol ?? 0) - Number(y.desiredCol ?? 0)) ||
+              String(x.evId ?? "").localeCompare(String(y.evId ?? ""))
+          );
+        for (const b of sorted) {
+          const colsN = Math.max(1, cols);
+          const span = Math.max(1, Math.min(colsN, Number.isFinite(b.colSpan) ? b.colSpan : 1));
+          let c = Math.max(0, Math.min(colsN - 1, Number.isFinite(b.desiredCol) ? b.desiredCol : 0));
+          const fitsAt = (col: number) => {
+            if (col < 0) return false;
+            if (col + span > colsN) return false;
+            for (let k = 0; k < span; k++) if (used.has(col + k)) return false;
+            return true;
+          };
+          while (c < colsN && !fitsAt(c)) c++;
+          if (c >= colsN || !fitsAt(c)) c = Math.max(0, colsN - span);
+          for (let k = 0; k < span; k++) used.add(c + k);
+          const idx = out.findIndex((z) => z.evId === b.evId && z.anchorIdx === aIdx);
+          if (idx >= 0) out[idx] = { ...out[idx], col: c, colSpan: span };
+        }
+      }
+      return out;
+    })();
+
+    // Row heights: baseline + ensure mandatory content fits, then apply manual overrides.
+    let anchorHeights = anchors.map(() => MIN_ANCHOR_PX);
+    for (let i = 0; i < anchorHeights.length; i++) {
+      const row = boxesPacked.filter((b) => !b.hidden && b.anchorIdx === i);
+      if (!row.length) continue;
+      const maxNeed = Math.max(...row.map((b) => Number(b.minNoDesc) || 0));
+      anchorHeights[i] = Math.max(anchorHeights[i] ?? 0, maxNeed + ANCHOR_PAD_PX);
+    }
+    const rh = layout.row_heights?.[dayKey];
+    if (rh) {
+      anchorHeights = anchorHeights.map((h, i) => {
+        const ov = rh[anchors[i]!]!;
+        return typeof ov === "number" && Number.isFinite(ov) ? Math.max(MIN_ANCHOR_PX, ov) : h;
+      });
+    }
+
+    // Ensure manual tile height (heightPx) is not clipped: if a tile asks to be taller than its
+    // allocated rowSpan height, expand the involved rows so the bottom fits inside the grid.
+    // This matches the "detached architecture" expectation that resizing height affects export.
+    for (const b of boxesPacked) {
+      if (b.hidden) continue;
+      if (typeof b.heightPx !== "number" || !Number.isFinite(b.heightPx)) continue;
+      const aIdx = Math.max(0, Math.min(anchors.length - 1, Math.floor(b.anchorIdx ?? 0)));
+      const span = Math.max(1, Math.min(anchors.length - aIdx, Math.floor(b.rowSpan ?? 1)));
+      const want = Math.max(30, b.heightPx) + 4;
+      const have = anchorHeights.slice(aIdx, aIdx + span).reduce((sum, x) => sum + (x ?? 0), 0);
+      if (want > have) {
+        const add = want - have;
+        const last = aIdx + span - 1;
+        anchorHeights[last] = Math.max(MIN_ANCHOR_PX, (anchorHeights[last] ?? MIN_ANCHOR_PX) + add);
+      }
+    }
+
+    const gridH = anchorHeights.reduce((a, x) => a + (x ?? 0), 0) + 16;
+    const gridW = cols * colPx;
+
+    html += `<div class="sb-day">\n`;
+    html += `<div class="sb-grid" style="height:${gridH}px">\n`;
+    html += `<div class="sb-timeCol">\n`;
+    for (let i = 0; i < anchors.length; i++) {
+      const y = yForAnchor(i, anchorHeights) + 8;
+      html += `<div class="sb-time" style="top:${y}px">${esc(anchors[i]!)}</div>\n`;
+    }
+    html += `</div>\n`; // time col
+    html += `<div class="sb-scroll">\n`;
+    html += `<div class="sb-inner" style="height:${gridH}px;min-width:${gridW}px">\n`;
+    for (let i = 0; i < anchors.length; i++) {
+      const y = yForAnchor(i, anchorHeights) + 8;
+      html += `<div class="sb-line" style="top:${y}px"></div>\n`;
+    }
+
+    // place tiles (no React, static absolute). Use packed boxes for consistent columns.
+    for (const b of boxesPacked) {
+      if (b.hidden) continue;
+      const ev = b.ev;
+      const startD = b.startD;
+      const endD = b.endD;
+      const aIdx = Math.max(0, Math.min(anchors.length - 1, Math.floor(b.anchorIdx ?? 0)));
+      const col = Math.max(0, Math.min(cols - 1, Math.floor(b.col ?? 0)));
+      const colSpan = Math.max(1, Math.min(cols - col, Math.floor(b.colSpan ?? 1)));
+      const rowSpan = Math.max(1, Math.min(anchors.length - aIdx, Math.floor(b.rowSpan ?? 1)));
+
+      const y = yForAnchor(aIdx, anchorHeights) + 8;
+      const hSpan = anchorHeights.slice(aIdx, aIdx + rowSpan).reduce((a, x) => a + (x ?? 0), 0);
+      const baseH = Math.max(30, hSpan - 4);
+      const h = typeof b.heightPx === "number" && Number.isFinite(b.heightPx) ? Math.max(30, b.heightPx) : baseH;
+      const x = col * colPx + 8;
+      const w = colSpan * colPx - 10;
+
+      const place = [ev.building ? String(ev.building).trim() : null, ev.room ? String(ev.room).trim() : null].filter(Boolean).join(" · ");
+      const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";
+      const timeRange = `${formatTime(startD)}–${formatTime(endD)}`;
+      const desc = String(ev.description_md ?? ev.description ?? "");
+
+      const so = (ev.style_override ?? {}) as any;
+      const bg =
+        (so.eventBgColor ? rgbaFrom(String(so.eventBgColor), Number(so.eventBgAlpha ?? 1)) : null) ?? null;
+      const border =
+        (so.eventBorderColor ? rgbaFrom(String(so.eventBorderColor), Number(so.eventBorderAlpha ?? 1)) : null) ?? null;
+      const extraStyle = `${bg ? `background:${esc(bg)};` : ""}${border ? `border-color:${esc(border)};` : ""}`;
+
+      html += `<div class="sb-tile" style="top:${y}px;left:${x}px;width:${w}px;height:${h}px;${extraStyle}">\n`;
+      const evUrl = normalizeHttpUrl((ev as any).url);
+      if (evUrl) {
+        const tAttr = linkTarget === "_blank" ? ` target="_blank" rel="noopener noreferrer"` : "";
+        html += `<a class="sb-title" href="${esc(evUrl)}"${tAttr}>${esc(ev.title)}</a>\n`;
+      } else {
+        html += `<div class="sb-title">${esc(ev.title)}</div>\n`;
+      }
+      if (fmt) html += `<div class="sb-format">${esc(fmt)}</div>\n`;
+      html += `<div class="sb-timeRange">${esc(timeRange)}</div>\n`;
+      if (desc) html += `<div class="sb-desc">${esc(desc)}</div>\n`;
+      if (place) html += `<div class="sb-place">${esc(place)}</div>\n`;
+      html += `</div>\n`;
+    }
+
+    html += `</div>\n</div>\n</div>\n</div>\n`; // inner, scroll, grid, day
+  }
+
+  html += `</div>`;
+
+  return { html, css };
+}
+

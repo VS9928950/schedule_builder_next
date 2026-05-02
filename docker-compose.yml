@@ -1,0 +1,17 @@
+# Запуск: скопируйте .env.example → .env, задайте SB_SECRET, затем:
+#   docker compose up -d --build
+# Данные приложения (проекты, пользователи) в именованном томе `app_data`.
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # Задайте в файле `.env` рядом с compose (см. .env.example). Без значения контейнер поднимется с запасным секретом из кода — только для пробы.
+      SB_SECRET: ${SB_SECRET:-}
+    volumes:
+      - app_data:/app/data
+
+volumes:
+  app_data:
