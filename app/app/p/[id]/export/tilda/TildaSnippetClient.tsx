@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatDayFull, localDateFromDayKey } from "@/lib/schedule";
 
+function parseSnippetText(snippet: string): { html: string; css: string } {
+  const text = String(snippet ?? "");
+  const m = text.match(/<style>\s*([\s\S]*?)\s*<\/style>\s*([\s\S]*)$/i);
+  if (!m) return { css: "", html: text.trim() };
+  return { css: String(m[1] ?? "").trim(), html: String(m[2] ?? "").trim() };
+}
+
 export function TildaSnippetClient({
   projectId,
   visibleDayKeys
@@ -26,20 +33,60 @@ export function TildaSnippetClient({
     if (scope.trim()) params.set("scope", scope.trim());
     if (day.trim()) params.set("day", day.trim());
     if (tildaSansProbe) params.set("font", "tildaSans");
-    fetch(`/api/export/tilda/data?${params.toString()}`)
-      .then(async (r) => {
-        const j = await r.json().catch(() => null);
-        if (!r.ok) {
-          const apiError =
-            j && typeof j === "object" && "error" in j && typeof j.error === "string" ? j.error : null;
-          throw new Error(apiError || `HTTP ${r.status}`);
+    const qs = params.toString();
+    const dataEndpoints = [`/api/export/tilda/data?${qs}`, `/app/p/${projectId}/export/tilda/data?${qs}`];
+    const snippetEndpoints = [`/api/export/tilda/snippet?${qs}`, `/app/p/${projectId}/export/tilda/snippet?${qs}`];
+    (async () => {
+      let lastError: Error | null = null;
+      for (const url of dataEndpoints) {
+        try {
+          const r = await fetch(url);
+          const j = await r.json().catch(() => null);
+          if (!r.ok) {
+            const apiError =
+              j && typeof j === "object" && "error" in j && typeof j.error === "string" ? j.error : null;
+            if (r.status === 404) {
+              lastError = new Error(`HTTP 404 (${url})`);
+              continue;
+            }
+            throw new Error(apiError || `HTTP ${r.status}`);
+          }
+          if (!cancelled) {
+            setData({ html: String((j as any).html ?? ""), css: String((j as any).css ?? "") });
+            setError(null);
+          }
+          return;
+        } catch (e) {
+          lastError = e instanceof Error ? e : new Error("Ошибка");
         }
-        return j;
-      })
+      }
+
+      for (const url of snippetEndpoints) {
+        try {
+          const r = await fetch(url);
+          const text = await r.text().catch(() => "");
+          if (!r.ok) {
+            if (r.status === 404) {
+              lastError = new Error(`HTTP 404 (${url})`);
+              continue;
+            }
+            throw new Error(text || `HTTP ${r.status}`);
+          }
+          const parsed = parseSnippetText(text);
+          if (!cancelled) {
+            setData(parsed);
+            setError(null);
+          }
+          return;
+        } catch (e) {
+          lastError = e instanceof Error ? e : new Error("Ошибка");
+        }
+      }
+
+      throw lastError ?? new Error("HTTP 404");
+    })()
       .then((j) => {
-        if (cancelled) return;
-        setData({ html: String(j.html ?? ""), css: String(j.css ?? "") });
-        setError(null);
+        return j;
       })
       .catch((e) => {
         if (cancelled) return;
@@ -100,21 +147,38 @@ export function TildaSnippetClient({
       <div className="card" style={{ padding: 12 }}>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
           <div style={{ fontWeight: 800 }}>Подсказка</div>
-          <a
-            className="chip"
-            href={(() => {
-              const p = new URLSearchParams();
-              p.set("projectId", String(projectId));
-              if (scope.trim()) p.set("scope", scope.trim());
-              if (day.trim()) p.set("day", day.trim());
-              if (tildaSansProbe) p.set("font", "tildaSans");
-              return `/api/export/tilda/snippet?${p.toString()}`;
-            })()}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Открыть сырой сниппет (text/plain)
-          </a>
+          <div className="row" style={{ gap: 8 }}>
+            <a
+              className="chip"
+              href={(() => {
+                const p = new URLSearchParams();
+                p.set("projectId", String(projectId));
+                if (scope.trim()) p.set("scope", scope.trim());
+                if (day.trim()) p.set("day", day.trim());
+                if (tildaSansProbe) p.set("font", "tildaSans");
+                return `/api/export/tilda/snippet?${p.toString()}`;
+              })()}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Сырой сниппет (api)
+            </a>
+            <a
+              className="chip"
+              href={(() => {
+                const p = new URLSearchParams();
+                if (scope.trim()) p.set("scope", scope.trim());
+                if (day.trim()) p.set("day", day.trim());
+                if (tildaSansProbe) p.set("font", "tildaSans");
+                const q = p.toString();
+                return `/app/p/${projectId}/export/tilda/snippet${q ? `?${q}` : ""}`;
+              })()}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Сырой сниппет (app)
+            </a>
+          </div>
         </div>
         <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
           Ссылка открывает <b>только текст сниппета</b> (сначала <code>&lt;style&gt;</code>, затем HTML) — удобно копировать в
