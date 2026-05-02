@@ -7,6 +7,11 @@
 - **Node.js 20+** (LTS), если ставите без Docker.
 - **Docker** и **Docker Compose** (v2), если ставите в контейнере.
 
+## Через Portainer (только Git)
+
+Пошаговый чеклист и типовые ошибки: **[`portainer-git.md`](portainer-git.md)**.  
+Обязательно: **Basic** для GitHub + PAT, Portainer **≥ 2.27.1**, таймауты прокси **900 s** (файл **[`contrib/nginx-portainer-timeouts.conf`](../contrib/nginx-portainer-timeouts.conf)**).
+
 ## С Docker
 
 1. Клонируйте репозиторий:

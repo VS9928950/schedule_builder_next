@@ -3,7 +3,8 @@
 Веб-приложение для разбора Excel-расписания, правки событий, визуализации таймлайна (пакеты дней, параллельные слоты) и экспорта: **печать / PDF в браузере** и **HTML+CSS для Тильды**.
 
 Подробнее: **[документация в каталоге `docs/`](docs/README.md)**.  
-Установка после клонирования с GitHub (**Docker** или **Node**): **[`docs/install.md`](docs/install.md)**.
+Установка после клонирования с GitHub (**Docker** или **Node**): **[`docs/install.md`](docs/install.md)**.  
+**Portainer + Git:** **[`docs/portainer-git.md`](docs/portainer-git.md)** · готовые таймауты Nginx: **[`contrib/nginx-portainer-timeouts.conf`](contrib/nginx-portainer-timeouts.conf)**.
 
 ## Возможности (кратко)
 

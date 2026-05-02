@@ -1,6 +1,9 @@
 # Запуск: скопируйте .env.example → .env, задайте SB_SECRET, затем:
 #   docker compose up -d --build
 # Данные приложения (проекты, пользователи) в именованном томе `app_data`.
+# Portainer (Git → GitHub): см. docs/portainer-git.md — Basic auth для PAT, таймауты прокси.
+
+name: schedule-builder
 
 services:
   app:
