@@ -1,8 +1,10 @@
+import { headers } from "next/headers";
 import LoginForm from "./LoginForm";
 
-/** Статическая страница: убирает RSC-редирект 307 на тот же URL (см. curl -I /login). */
-export const dynamic = "force-static";
-
-export default function LoginPage() {
+/**
+ * Динамический рендер: иначе при force-static / prerender Next отдаёт 307 Location: /login (петля в браузере).
+ */
+export default async function LoginPage() {
+  await headers();
   return <LoginForm />;
 }

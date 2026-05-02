@@ -1,7 +1,7 @@
+import { headers } from "next/headers";
 import RegisterForm from "./RegisterForm";
 
-export const dynamic = "force-static";
-
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  await headers();
   return <RegisterForm />;
 }
