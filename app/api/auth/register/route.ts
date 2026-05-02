@@ -9,22 +9,27 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  const parsed = Schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  try {
+    const body = await req.json().catch(() => null);
+    const parsed = Schema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+    const email = parsed.data.email.trim().toLowerCase();
+    const password = parsed.data.password;
+
+    if (findUserByEmail(email)) return NextResponse.json({ error: "Email already exists" }, { status: 400 });
+    const user = createUser(email, password);
+
+    const session = await getSession();
+    session.userId = user.id;
+    session.email = email;
+    await session.save();
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Registration failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-  const email = parsed.data.email.trim().toLowerCase();
-  const password = parsed.data.password;
-
-  if (findUserByEmail(email)) return NextResponse.json({ error: "Email already exists" }, { status: 400 });
-  const user = createUser(email, password);
-
-  const session = await getSession();
-  session.userId = user.id;
-  session.email = email;
-  await session.save();
-
-  return NextResponse.json({ ok: true });
 }
 

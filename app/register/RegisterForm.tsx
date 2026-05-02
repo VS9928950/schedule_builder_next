@@ -17,9 +17,11 @@ export default function RegisterForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
-    const data = await resp.json().catch(() => ({}));
+    const data = await resp.json().catch(() => null);
     if (!resp.ok) {
-      setError(data.error || "Ошибка регистрации");
+      const apiError =
+        data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : null;
+      setError(apiError || "Ошибка регистрации");
       return;
     }
     router.push("/app");
