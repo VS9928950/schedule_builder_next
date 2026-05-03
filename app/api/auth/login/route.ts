@@ -10,6 +10,7 @@ const Schema = z.object({
 });
 
 export async function POST(req: Request) {
+  const emailVerificationRequired = process.env.AUTH_EMAIL_REQUIRED === "true";
   const ip = extractClientIp(req);
   const ipRate = consumeRateLimit({ scope: "login:ip", key: ip, limit: 30, windowMs: 15 * 60 * 1000 });
   if (!ipRate.ok) {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 400 });
   }
-  if (user.email_verified === false) {
+  if (emailVerificationRequired && user.email_verified === false) {
     return NextResponse.json({ error: "Email is not verified. Please confirm your email first." }, { status: 403 });
   }
 

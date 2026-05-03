@@ -24,7 +24,15 @@ export default function RegisterForm() {
       setError(apiError || "Ошибка регистрации");
       return;
     }
-    setMessage("Аккаунт создан. Проверьте email и подтвердите регистрацию по ссылке из письма.");
+    const requiresVerification =
+      data && typeof data === "object" && "requires_email_verification" in data
+        ? Boolean((data as any).requires_email_verification)
+        : false;
+    setMessage(
+      requiresVerification
+        ? "Аккаунт создан. Проверьте email и подтвердите регистрацию по ссылке из письма."
+        : "Аккаунт создан. Можно входить в систему."
+    );
   }
 
   return (
