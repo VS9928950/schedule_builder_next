@@ -2,7 +2,32 @@ import { getSessionUser } from "@/lib/session";
 import { getProject } from "@/lib/store";
 import { redirect } from "next/navigation";
 
-export default async function ExcelTab({ params }: { params: Promise<{ id: string }> }) {
+function uploadErrorText(code: string | undefined) {
+  if (!code) return null;
+  switch (code) {
+    case "no_file":
+      return "Файл не выбран.";
+    case "bad_type":
+    case "bad_mime":
+      return "Разрешены только файлы Excel формата .xlsx.";
+    case "too_large":
+      return "Файл слишком большой. Проверьте лимит MAX_EXCEL_UPLOAD_BYTES.";
+    case "too_many_uploads":
+      return "Достигнут лимит количества загруженных Excel для проекта.";
+    case "bad_excel":
+      return "Файл не удалось разобрать как корректный Excel.";
+    default:
+      return "Ошибка загрузки файла.";
+  }
+}
+
+export default async function ExcelTab({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ err?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/sign-in");
 
@@ -15,11 +40,18 @@ export default async function ExcelTab({ params }: { params: Promise<{ id: strin
 
   const uploads = project.uploads ?? [];
   const activeId = project.active_upload_id ?? null;
+  const sp = await searchParams;
+  const uploadError = uploadErrorText(typeof sp?.err === "string" ? sp.err : undefined);
 
   return (
     <div className="grid2">
       <div className="card">
         <h2 style={{ margin: "0 0 10px" }}>Документы</h2>
+        {uploadError ? (
+          <div className="error" style={{ marginBottom: 12 }}>
+            {uploadError}
+          </div>
+        ) : null}
         <p className="muted" style={{ marginBottom: 14 }}>
           Импорт идёт <b>только с листа «Перечень»</b> (остальные листы в файле игнорируются). Лишние колонки и пустые строки
           не мешают: используются знакомые поля (дата, время, название и т.д.).

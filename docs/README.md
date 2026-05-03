@@ -8,6 +8,7 @@
 4. **[Архитектура и данные](architecture.md)** — стек, маршруты, модель проекта и сборок, где лежат файлы.
 5. **[Развёртывание](deployment.md)** — продакшен, переменные окружения, бэкапы, обновления, post-deploy smoke checks.
 6. **[Разработка](development.md)** — соглашения, проверка типов, layout/auth contracts, полезные точки входа в код.
+7. **Auth hardening** — в `architecture.md` и `deployment.md`: подтверждение email, восстановление пароля, rate-limit auth и лимиты Excel загрузок.
 
 Короткий обзор продукта и запуск с нуля — в корневом **[README.md](../README.md)**.
 

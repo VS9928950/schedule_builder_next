@@ -23,6 +23,16 @@ PORT=3000 NODE_ENV=production npm start
 | Переменная | Обязательность | Назначение |
 |------------|----------------|------------|
 | `SB_SECRET` | **Обязательно в продакшене** | Секрет для шифрования cookie сессии (`iron-session`). Должен быть **длинным и случайным** (ориентир — не короче 32 байт в виде строки-секрета; см. требования iron-session к длине). |
+| `APP_BASE_URL` | Рекомендуется | Базовый URL приложения (например, `https://example.com`) для ссылок подтверждения email и сброса пароля |
+| `NEXT_PUBLIC_YANDEX_SMARTCAPTCHA_SITEKEY` | **Обязательно для регистрации** | Client key Yandex SmartCaptcha (виджет на странице регистрации) |
+| `YANDEX_SMARTCAPTCHA_SERVER_KEY` | **Обязательно для регистрации** | Server key Yandex SmartCaptcha (проверка токена в API) |
+| `YANDEX_SMARTCAPTCHA_VALIDATE_URL` | По желанию | URL проверки токена (по умолчанию `https://smartcaptcha.yandexcloud.net/validate`) |
+| `RESEND_API_KEY` | Рекомендуется для auth email | API ключ Resend (вариант по умолчанию для писем подтверждения и сброса) |
+| `MAIL_FROM` | Рекомендуется для auth email | Адрес отправителя для email-сервисов |
+| `MAIL_WEBHOOK_URL` | Альтернатива | Внешний webhook отправки писем (если не используете Resend) |
+| `MAIL_WEBHOOK_TOKEN` | По необходимости | Bearer token для `MAIL_WEBHOOK_URL` |
+| `MAX_EXCEL_UPLOAD_BYTES` | По желанию | Лимит размера `.xlsx` (по умолчанию 10485760) |
+| `MAX_EXCEL_UPLOADS_PER_PROJECT` | По желанию | Лимит количества `.xlsx` в одном проекте (по умолчанию 30) |
 | `NODE_ENV` | Рекомендуется `production` | Режим Next.js |
 | `PORT` | По желанию | Порт HTTP-сервера `next start` |
 
@@ -34,6 +44,16 @@ PORT=3000 NODE_ENV=production npm start
 
 - `data/store.json` — все пользователи и проекты;
 - `data/users/**` — загруженные Excel и прочие файлы проектов.
+- `data/auth_tokens.json` — служебные токены email-верификации/сброса пароля.
+- `data/rate_limits.json` — служебные counters rate-limit.
+
+### Что можно удалять без поломки кода
+
+- `data/users/**/projects/**/uploads/*` — загруженные пользователями Excel (потеряются сами файлы).
+- `data/auth_tokens.json` — сервис восстановит файл автоматически (сбросятся активные ссылки подтверждения/сброса).
+- `data/rate_limits.json` — сервис восстановит файл автоматически (сбросятся временные лимиты попыток).
+
+Не удаляйте `data/store.json`, если нужно сохранить пользователей/проекты/метаданные.
 
 При обновлении версии приложения **не удаляйте** `data/`, если не переносите данные осознанно.
 
@@ -120,6 +140,12 @@ curl -I http://localhost:3000/register
 - Невалидная регистрация показывает текст ошибки (не немой fail).
 - Вход существующим пользователем ведёт в `/app`.
 - Создание проекта на `/app` переводит в `/app/p/{id}/excel`.
+
+Дополнительно для SmartCaptcha:
+
+- На `/register` отображается виджет Yandex SmartCaptcha.
+- Без прохождения captcha регистрация отклоняется с ошибкой.
+- После успешной captcha регистрация разрешена, затем требуется подтверждение email.
 
 ## Мощность сервера (ориентир)
 

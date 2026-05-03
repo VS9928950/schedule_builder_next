@@ -3,6 +3,7 @@ import path from "path";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
 export type User = { id: number; email: string; password_hash: string; created_at: string };
+export type StoredUser = User & { email_verified?: boolean };
 
 export type ProjectUpload = {
   id: number;
@@ -106,7 +107,7 @@ type StoreData = {
   nextProjectId: number;
   nextUploadId?: number;
   nextBuildId?: number;
-  users: User[];
+  users: StoredUser[];
   projects: Project[];
 };
 
@@ -126,6 +127,11 @@ function ensureStore(): StoreData {
   }
   const raw = fs.readFileSync(STORE_PATH, "utf8");
   const st = JSON.parse(raw) as StoreData;
+  st.users = (st.users ?? []).map((u: any) => ({
+    ...u,
+    // Backward compatibility: legacy users become verified to avoid forced lockout.
+    email_verified: typeof u?.email_verified === "boolean" ? u.email_verified : true
+  }));
   if (!st.nextUploadId) st.nextUploadId = 1;
   if (!st.nextBuildId) st.nextBuildId = 1;
   return st;
@@ -136,19 +142,25 @@ function saveStore(data: StoreData) {
   fs.writeFileSync(STORE_PATH, JSON.stringify(data, null, 2), "utf8");
 }
 
-export function findUserByEmail(email: string): User | null {
+export function findUserByEmail(email: string): StoredUser | null {
   const st = ensureStore();
   return st.users.find((u) => u.email === email) ?? null;
 }
 
-export function createUser(email: string, password: string): User {
+export function findUserById(userId: number): StoredUser | null {
+  const st = ensureStore();
+  return st.users.find((u) => u.id === userId) ?? null;
+}
+
+export function createUser(email: string, password: string): StoredUser {
   const st = ensureStore();
   const exists = st.users.some((u) => u.email === email);
   if (exists) throw new Error("Email already exists");
-  const u: User = {
+  const u: StoredUser = {
     id: st.nextUserId++,
     email,
     password_hash: hashPassword(password),
+    email_verified: false,
     created_at: now()
   };
   st.users.push(u);
@@ -156,11 +168,28 @@ export function createUser(email: string, password: string): User {
   return u;
 }
 
-export function authenticate(email: string, password: string): User | null {
+export function authenticate(email: string, password: string): StoredUser | null {
   const u = findUserByEmail(email);
   if (!u) return null;
   if (!verifyPassword(password, u.password_hash)) return null;
   return u;
+}
+
+export function setUserPassword(userId: number, password: string) {
+  const st = ensureStore();
+  const u = st.users.find((x) => x.id === userId);
+  if (!u) throw new Error("User not found");
+  u.password_hash = hashPassword(password);
+  u.created_at = u.created_at || now();
+  saveStore(st);
+}
+
+export function markUserEmailVerified(userId: number) {
+  const st = ensureStore();
+  const u = st.users.find((x) => x.id === userId);
+  if (!u) throw new Error("User not found");
+  u.email_verified = true;
+  saveStore(st);
 }
 
 export function listProjects(userId: number): Project[] {

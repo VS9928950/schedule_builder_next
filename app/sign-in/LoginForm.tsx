@@ -59,6 +59,9 @@ export default function LoginForm() {
               <a className="muted" href="/register">
                 Нет аккаунта? Регистрация
               </a>
+              <a className="muted" href="/forgot-password">
+                Забыли пароль?
+              </a>
             </div>
           </form>
         </div>
