@@ -14,7 +14,7 @@ export default async function Dashboard() {
           <div className="brand">Schedule Builder</div>
           <div className="chip">{user.email}</div>
         </div>
-        <form action="/api/auth/logout" method="post">
+        <form action="/sign-out" method="post">
           <button className="secondary" type="submit">
             Выйти
           </button>
