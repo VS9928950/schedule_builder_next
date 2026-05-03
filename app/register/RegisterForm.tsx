@@ -1,50 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Script from "next/script";
-
-declare global {
-  interface Window {
-    onSmartCaptchaSuccess?: (token: string) => void;
-  }
-}
+import { useState } from "react";
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string>("");
-  const [captchaToken, setCaptchaToken] = useState("");
-  const [captchaReady, setCaptchaReady] = useState(false);
-
-  const siteKey = useMemo(() => (process.env.NEXT_PUBLIC_YANDEX_SMARTCAPTCHA_SITEKEY || "").trim(), []);
-
-  useEffect(() => {
-    window.onSmartCaptchaSuccess = (token: string) => {
-      setCaptchaToken(String(token || ""));
-      setCaptchaReady(true);
-    };
-    return () => {
-      if (window.onSmartCaptchaSuccess) delete window.onSmartCaptchaSuccess;
-    };
-  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setMessage("");
-    if (!siteKey) {
-      setError("SmartCaptcha не настроена (отсутствует NEXT_PUBLIC_YANDEX_SMARTCAPTCHA_SITEKEY).");
-      return;
-    }
-    if (!captchaToken) {
-      setError("Подтвердите, что вы не робот.");
-      return;
-    }
     const resp = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, captchaToken })
+      body: JSON.stringify({ email, password })
     });
     const data = await resp.json().catch(() => null);
     if (!resp.ok) {
@@ -100,26 +71,6 @@ export default function RegisterForm() {
             <a className="muted" href="/sign-in">
               Уже есть аккаунт? Войти
             </a>
-          </div>
-          <div>
-            {siteKey ? (
-              <>
-                <Script src="https://smartcaptcha.yandexcloud.net/captcha.js" strategy="afterInteractive" />
-                <div
-                  id="captcha-container"
-                  className="smart-captcha"
-                  data-sitekey={siteKey}
-                  data-callback="onSmartCaptchaSuccess"
-                />
-                {!captchaReady ? (
-                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                    Подтвердите SmartCaptcha перед регистрацией.
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <div className="error">SmartCaptcha не настроена на клиенте.</div>
-            )}
           </div>
         </form>
       </div>

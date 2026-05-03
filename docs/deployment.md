@@ -24,9 +24,6 @@ PORT=3000 NODE_ENV=production npm start
 |------------|----------------|------------|
 | `SB_SECRET` | **Обязательно в продакшене** | Секрет для шифрования cookie сессии (`iron-session`). Должен быть **длинным и случайным** (ориентир — не короче 32 байт в виде строки-секрета; см. требования iron-session к длине). |
 | `APP_BASE_URL` | Рекомендуется | Базовый URL приложения (например, `https://example.com`) для ссылок подтверждения email и сброса пароля |
-| `NEXT_PUBLIC_YANDEX_SMARTCAPTCHA_SITEKEY` | **Обязательно для регистрации** | Client key Yandex SmartCaptcha (виджет на странице регистрации) |
-| `YANDEX_SMARTCAPTCHA_SERVER_KEY` | **Обязательно для регистрации** | Server key Yandex SmartCaptcha (проверка токена в API) |
-| `YANDEX_SMARTCAPTCHA_VALIDATE_URL` | По желанию | URL проверки токена (по умолчанию `https://smartcaptcha.yandexcloud.net/validate`) |
 | `RESEND_API_KEY` | Рекомендуется для auth email | API ключ Resend (вариант по умолчанию для писем подтверждения и сброса) |
 | `MAIL_FROM` | Рекомендуется для auth email | Адрес отправителя для email-сервисов |
 | `MAIL_WEBHOOK_URL` | Альтернатива | Внешний webhook отправки писем (если не используете Resend) |
@@ -140,12 +137,6 @@ curl -I http://localhost:3000/register
 - Невалидная регистрация показывает текст ошибки (не немой fail).
 - Вход существующим пользователем ведёт в `/app`.
 - Создание проекта на `/app` переводит в `/app/p/{id}/excel`.
-
-Дополнительно для SmartCaptcha:
-
-- На `/register` отображается виджет Yandex SmartCaptcha.
-- Без прохождения captcha регистрация отклоняется с ошибкой.
-- После успешной captcha регистрация разрешена, затем требуется подтверждение email.
 
 ## Мощность сервера (ориентир)
 

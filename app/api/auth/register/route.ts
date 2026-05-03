@@ -4,12 +4,10 @@ import { createUser, findUserByEmail } from "@/lib/store";
 import { issueAuthToken } from "@/lib/auth-tokens";
 import { isMailerConfigured, sendEmail } from "@/lib/mailer";
 import { consumeRateLimit, extractClientIp } from "@/lib/rate-limit";
-import { isSmartCaptchaConfigured, verifySmartCaptchaToken } from "@/lib/smartcaptcha";
 
 const Schema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
-  captchaToken: z.string().min(10)
+  password: z.string().min(6)
 });
 
 export async function POST(req: Request) {
@@ -30,13 +28,6 @@ export async function POST(req: Request) {
     }
     const email = parsed.data.email.trim().toLowerCase();
     const password = parsed.data.password;
-    if (!isSmartCaptchaConfigured()) {
-      return NextResponse.json({ error: "SmartCaptcha is not configured" }, { status: 500 });
-    }
-    const captcha = await verifySmartCaptchaToken(req, parsed.data.captchaToken);
-    if (!captcha.ok) {
-      return NextResponse.json({ error: captcha.message || "Captcha validation failed" }, { status: 400 });
-    }
 
     if (findUserByEmail(email)) return NextResponse.json({ error: "Email already exists" }, { status: 400 });
     if (!isMailerConfigured()) {

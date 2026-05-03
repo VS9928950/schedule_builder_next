@@ -59,7 +59,6 @@ npx tsc --noEmit
 - Дополнительно публичные auth-маршруты: `/verify-email`, `/forgot-password`, `/reset-password`.
 - Защищённые маршруты: весь префикс `/app/*`.
 - Legacy-маршрут `/login` не имеет собственной страницы и редиректит на `/sign-in` в `next.config.js`.
-- Регистрация требует успешной проверки Yandex SmartCaptcha (`captchaToken` в `POST /api/auth/register`).
 - После успешной регистрации требуется подтверждение email; вход разрешён только для `email_verified`.
 - После успешного логина клиент переводится в `/app`.
 - После `POST /app/projects` сервер редиректит на `/app/p/{id}`, затем `/app/p/{id}/page.tsx` направляет на `/app/p/{id}/excel`.
