@@ -30,49 +30,39 @@ export default function LoginForm() {
       <div className="topbar">
         <div className="brand">Schedule Builder</div>
       </div>
-      <div className="grid2">
-        <div className="card">
-          <h2 style={{ margin: "0 0 10px" }}>Вход</h2>
-          <div className="muted" style={{ marginBottom: 14 }}>
-            Войдите, чтобы загружать Excel и собирать результат.
-          </div>
-          {error && (
-            <div className="error" style={{ marginBottom: 10 }}>
-              {error}
-            </div>
-          )}
-          <form onSubmit={onSubmit} className="grid">
-            <div>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Email
-              </div>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
-            </div>
-            <div>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Пароль
-              </div>
-              <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
-            </div>
-            <div className="row">
-              <button type="submit">Войти</button>
-              <a className="muted" href="/register">
-                Нет аккаунта? Регистрация
-              </a>
-              <a className="muted" href="/forgot-password">
-                Забыли пароль?
-              </a>
-            </div>
-          </form>
+      <div className="card" style={{ maxWidth: 640, margin: "0 auto" }}>
+        <h2 style={{ margin: "0 0 10px" }}>Вход</h2>
+        <div className="muted" style={{ marginBottom: 14 }}>
+          Войдите, чтобы загружать Excel и собирать результат.
         </div>
-
-        <div className="card">
-          <h2 style={{ margin: "0 0 10px" }}>Next.js версия</h2>
-          <div className="muted">
-            Это перенос MVP на Next.js. Если у вас ещё не установлен Node.js, сначала установите Node.js LTS, затем
-            запустите <code>npm install</code> и <code>npm run dev</code>.
+        {error && (
+          <div className="error" style={{ marginBottom: 10 }}>
+            {error}
           </div>
-        </div>
+        )}
+        <form onSubmit={onSubmit} className="grid">
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+              Email
+            </div>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
+          </div>
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+              Пароль
+            </div>
+            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
+          </div>
+          <div className="row">
+            <button type="submit">Войти</button>
+            <a className="muted" href="/register">
+              Нет аккаунта? Регистрация
+            </a>
+            <a className="muted" href="/forgot-password">
+              Забыли пароль?
+            </a>
+          </div>
+        </form>
       </div>
     </div>
   );
