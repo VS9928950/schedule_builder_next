@@ -147,38 +147,21 @@ export function TildaSnippetClient({
       <div className="card" style={{ padding: 12 }}>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
           <div style={{ fontWeight: 800 }}>Подсказка</div>
-          <div className="row" style={{ gap: 8 }}>
-            <a
-              className="chip"
-              href={(() => {
-                const p = new URLSearchParams();
-                p.set("projectId", String(projectId));
-                if (scope.trim()) p.set("scope", scope.trim());
-                if (day.trim()) p.set("day", day.trim());
-                if (tildaSansProbe) p.set("font", "tildaSans");
-                return `/api/export/tilda/snippet?${p.toString()}`;
-              })()}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Сырой сниппет (api)
-            </a>
-            <a
-              className="chip"
-              href={(() => {
-                const p = new URLSearchParams();
-                if (scope.trim()) p.set("scope", scope.trim());
-                if (day.trim()) p.set("day", day.trim());
-                if (tildaSansProbe) p.set("font", "tildaSans");
-                const q = p.toString();
-                return `/app/p/${projectId}/export/tilda/snippet${q ? `?${q}` : ""}`;
-              })()}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Сырой сниппет (app)
-            </a>
-          </div>
+          <a
+            className="chip"
+            href={(() => {
+              const p = new URLSearchParams();
+              p.set("projectId", String(projectId));
+              if (scope.trim()) p.set("scope", scope.trim());
+              if (day.trim()) p.set("day", day.trim());
+              if (tildaSansProbe) p.set("font", "tildaSans");
+              return `/api/export/tilda/snippet?${p.toString()}`;
+            })()}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Открыть сниппет
+          </a>
         </div>
         <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
           Ссылка открывает <b>только текст сниппета</b> (сначала <code>&lt;style&gt;</code>, затем HTML) — удобно копировать в

@@ -50,7 +50,7 @@ export default async function ExportTildaTab({ params }: { params: Promise<{ id:
   return (
     <div className="card" style={{ padding: 12 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-        <h2 style={{ margin: 0 }}>Экспорт: Тильда (HTML + CSS)</h2>
+        <h2 style={{ margin: 0 }}>Экспорт: Tilda</h2>
         <a className="chip" href={`/app/p/${project.id}/export`}>
           ← Назад
         </a>

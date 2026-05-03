@@ -31,10 +31,6 @@ export default function LoginForm() {
         <div className="brand">Schedule Builder</div>
       </div>
       <div className="card" style={{ maxWidth: 640, margin: "0 auto" }}>
-        <h2 style={{ margin: "0 0 10px" }}>Вход</h2>
-        <div className="muted" style={{ marginBottom: 14 }}>
-          Войдите, чтобы загружать Excel и собирать результат.
-        </div>
         {error && (
           <div className="error" style={{ marginBottom: 10 }}>
             {error}
