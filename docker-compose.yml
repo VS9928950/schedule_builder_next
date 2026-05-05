@@ -19,6 +19,7 @@ services:
     environment:
       # Задайте в файле `.env` рядом с compose (см. .env.example). Без значения контейнер поднимется с запасным секретом из кода — только для пробы.
       SB_SECRET: ${SB_SECRET:-}
+      APP_BASE_URL: ${APP_BASE_URL:-}
     volumes:
       - app_data:/app/data
 
