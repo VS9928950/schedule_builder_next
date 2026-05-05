@@ -46,10 +46,11 @@ export default async function ExportTildaTab({
         })();
   const programDayKeys =
     eventsIsoForExport.length > 0 ? collectSortedProgramDayKeysFromIso(eventsIsoForExport as any[]) : [];
+  const hiddenDayKeysRaw = isTechView
+    ? (activeBuild as any)?.tech_timeline_layout?.hidden_day_keys
+    : (activeBuild as any)?.timeline_layout?.hidden_day_keys;
   const hiddenDayKeys = new Set(
-    (Array.isArray((isTechView ? (activeBuild as any)?.tech_timeline_layout?.hidden_day_keys : (activeBuild as any)?.timeline_layout?.hidden_day_keys)
-      ? ((isTechView ? (activeBuild as any).tech_timeline_layout.hidden_day_keys : (activeBuild as any).timeline_layout.hidden_day_keys) as unknown[])
-      : []
+    (Array.isArray(hiddenDayKeysRaw) ? (hiddenDayKeysRaw as unknown[]) : []
     )
       .map((k) => String(k).slice(0, 10))
       .filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k))
