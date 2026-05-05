@@ -48,6 +48,7 @@ export default async function ExportTab({ params }: { params: Promise<{ id: stri
   );
   const pdfVisibleDayKeys = pdfProgramDayKeys.filter((k) => !hiddenForPdf.has(k));
   const exportViews: Array<{ key: string; label: string }> = [
+    { key: "timeline", label: "Архитектура" },
     { key: "tech-schedule", label: "Техрасписание" },
     { key: "rooms", label: "Аудитории" },
     { key: "responsibles", label: "Ответственные" },
@@ -62,7 +63,7 @@ export default async function ExportTab({ params }: { params: Promise<{ id: stri
       <h2 style={{ margin: "0 0 10px" }}>Экспорт</h2>
       <p className="muted" style={{ marginBottom: 14, maxWidth: 820 }}>
         Печать и PDF через браузер (без установки ПО у пользователя) и экспорт в Тильду доступны по отдельным областям:
-        Техрасписание, Аудитории, Ответственные, ВКС, Трансляции, Перевод, Волонтеры.
+        Архитектура, Техрасписание, Аудитории, Ответственные, ВКС, Трансляции, Перевод, Волонтеры.
       </p>
       <div className="grid" style={{ gap: 10 }}>
         {exportViews.map((v) => (
