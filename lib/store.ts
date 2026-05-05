@@ -224,6 +224,24 @@ export function getProject(projectId: number, userId: number): Project | null {
   return st.projects.find((p) => p.id === projectId && p.user_id === userId) ?? null;
 }
 
+export function renameProject(projectId: number, userId: number, name: string) {
+  const st = ensureStore();
+  const p = st.projects.find((x) => x.id === projectId && x.user_id === userId);
+  if (!p) throw new Error("Not found");
+  p.name = name.trim().slice(0, 80) || "Без названия";
+  p.updated_at = now();
+  saveStore(st);
+  return p;
+}
+
+export function deleteProject(projectId: number, userId: number) {
+  const st = ensureStore();
+  const before = st.projects.length;
+  st.projects = st.projects.filter((p) => !(p.id === projectId && p.user_id === userId));
+  if (st.projects.length === before) throw new Error("Not found");
+  saveStore(st);
+}
+
 export function updateProjectExcel(projectId: number, userId: number, excel: unknown) {
   const st = ensureStore();
   const p = st.projects.find((x) => x.id === projectId && x.user_id === userId);

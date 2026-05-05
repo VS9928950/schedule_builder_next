@@ -2,6 +2,7 @@ import { getSessionUser } from "@/lib/session";
 import { getProject } from "@/lib/store";
 import { redirect } from "next/navigation";
 import { ProjectTabs } from "./ProjectTabs";
+import { RenameToast } from "./RenameToast";
 
 export default async function ProjectLayout({
   children,
@@ -24,6 +25,7 @@ export default async function ProjectLayout({
   // Active state will be handled on each page for now.
   return (
     <div className="grid" style={{ gap: 12 }}>
+      <RenameToast />
       <div className="topbar no-print-chrome">
         <div className="row" style={{ gap: 12 }}>
           <div className="brand">Schedule Builder</div>
@@ -47,6 +49,31 @@ export default async function ProjectLayout({
             ← К проектам
           </a>
         </div>
+        <div style={{ height: 10 }} />
+        <form className="row" action={`/app/p/${project.id}/rename`} method="post" style={{ gap: 8, flexWrap: "wrap" }}>
+          <input
+            name="name"
+            type="text"
+            defaultValue={project.name}
+            maxLength={80}
+            required
+            style={{ maxWidth: 420 }}
+            aria-label="Новое название проекта"
+          />
+          <button className="secondary" type="submit">
+            Переименовать
+          </button>
+        </form>
+        <div style={{ height: 8 }} />
+        <form action={`/app/p/${project.id}/delete`} method="post">
+          <button
+            className="secondary"
+            type="submit"
+            style={{ borderColor: "rgba(239,68,68,.6)", color: "rgb(239,68,68)" }}
+          >
+            Удалить проект
+          </button>
+        </form>
         <div style={{ height: 10 }} />
         <ProjectTabs projectId={project.id} />
       </div>
