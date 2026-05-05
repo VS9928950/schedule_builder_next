@@ -4,6 +4,7 @@ import { findUserByEmail } from "@/lib/store";
 import { issueAuthToken } from "@/lib/auth-tokens";
 import { isMailerConfigured, sendEmail } from "@/lib/mailer";
 import { consumeRateLimit, extractClientIp } from "@/lib/rate-limit";
+import { resolvePublicOrigin } from "@/lib/public-origin";
 
 const Schema = z.object({
   email: z.string().email()
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ ok: true });
 
   const token = issueAuthToken(user.id, "reset_password", 60);
-  const baseUrl = process.env.APP_BASE_URL || new URL(req.url).origin;
+  const baseUrl = resolvePublicOrigin(req);
   const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
   await sendEmail({
     to: email,

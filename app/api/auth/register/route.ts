@@ -5,6 +5,7 @@ import { issueAuthToken } from "@/lib/auth-tokens";
 import { isMailerConfigured, sendEmail } from "@/lib/mailer";
 import { consumeRateLimit, extractClientIp } from "@/lib/rate-limit";
 import { getSession } from "@/lib/session";
+import { resolvePublicOrigin } from "@/lib/public-origin";
 
 const Schema = z.object({
   email: z.string().email(),
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email service is not configured" }, { status: 500 });
     }
     const token = issueAuthToken(user.id, "verify_email", 24 * 60);
-    const baseUrl = process.env.APP_BASE_URL || new URL(req.url).origin;
+    const baseUrl = resolvePublicOrigin(req);
     const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
     await sendEmail({
       to: email,

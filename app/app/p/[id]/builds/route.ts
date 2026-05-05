@@ -3,17 +3,18 @@ import { getSessionUser } from "@/lib/session";
 import { createProjectBuild, deleteProjectBuild, getProject, setActiveProjectBuild } from "@/lib/store";
 import { parseScheduleAllFromExcelRows } from "@/lib/schedule";
 import { rowsFromProjectExcelJson } from "@/lib/excel";
+import { toPublicUrl } from "@/lib/public-origin";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
-  if (!user) return NextResponse.redirect(new URL("/sign-in", req.url), 303);
+  if (!user) return NextResponse.redirect(toPublicUrl(req, "/sign-in"), 303);
 
   const { id } = await ctx.params;
   const projectId = Number(id);
-  if (!Number.isFinite(projectId)) return NextResponse.redirect(new URL("/app", req.url), 303);
+  if (!Number.isFinite(projectId)) return NextResponse.redirect(toPublicUrl(req, "/app"), 303);
 
   const project = getProject(projectId, user.id);
-  if (!project) return NextResponse.redirect(new URL("/app", req.url), 303);
+  if (!project) return NextResponse.redirect(toPublicUrl(req, "/app"), 303);
 
   const form = await req.formData();
   const action = String(form.get("action") || "");
@@ -34,21 +35,21 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       project.active_upload_id ?? null,
       events
     );
-    return NextResponse.redirect(new URL(`/app/p/${projectId}/events`, req.url), 303);
+    return NextResponse.redirect(toPublicUrl(req, `/app/p/${projectId}/events`), 303);
   }
 
   if (action === "setActive") {
     const buildId = Number(form.get("buildId"));
     if (Number.isFinite(buildId)) setActiveProjectBuild(projectId, user.id, buildId);
-    return NextResponse.redirect(new URL(`/app/p/${projectId}/events`, req.url), 303);
+    return NextResponse.redirect(toPublicUrl(req, `/app/p/${projectId}/events`), 303);
   }
 
   if (action === "delete") {
     const buildId = Number(form.get("buildId"));
     if (Number.isFinite(buildId)) deleteProjectBuild(projectId, user.id, buildId);
-    return NextResponse.redirect(new URL(`/app/p/${projectId}/events`, req.url), 303);
+    return NextResponse.redirect(toPublicUrl(req, `/app/p/${projectId}/events`), 303);
   }
 
-  return NextResponse.redirect(new URL(`/app/p/${projectId}/events`, req.url), 303);
+  return NextResponse.redirect(toPublicUrl(req, `/app/p/${projectId}/events`), 303);
 }
 

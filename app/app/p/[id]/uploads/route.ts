@@ -4,17 +4,18 @@ import { deleteProjectUpload, getProject } from "@/lib/store";
 import fs from "fs";
 import path from "path";
 import { getProjectUploadsDir } from "@/lib/user-files";
+import { toPublicUrl } from "@/lib/public-origin";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
-  if (!user) return NextResponse.redirect(new URL("/sign-in", req.url), 303);
+  if (!user) return NextResponse.redirect(toPublicUrl(req, "/sign-in"), 303);
 
   const { id } = await ctx.params;
   const projectId = Number(id);
-  if (!Number.isFinite(projectId)) return NextResponse.redirect(new URL("/app", req.url), 303);
+  if (!Number.isFinite(projectId)) return NextResponse.redirect(toPublicUrl(req, "/app"), 303);
 
   const project = getProject(projectId, user.id);
-  if (!project) return NextResponse.redirect(new URL("/app", req.url), 303);
+  if (!project) return NextResponse.redirect(toPublicUrl(req, "/app"), 303);
 
   const form = await req.formData();
   const action = String(form.get("action") || "");
@@ -36,6 +37,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
   }
 
-  return NextResponse.redirect(new URL(`/app/p/${projectId}/excel`, req.url), 303);
+  return NextResponse.redirect(toPublicUrl(req, `/app/p/${projectId}/excel`), 303);
 }
 
