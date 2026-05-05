@@ -26,6 +26,8 @@ const Schema = z.object({
     eventBgAlpha: z.number().min(0).max(1).optional(),
     eventBorderColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     eventBorderAlpha: z.number().min(0).max(1).optional(),
+    fieldBgColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    fieldBgAlpha: z.number().min(0).max(1).optional(),
 
     // Back-compat
     eventBg: z.string().min(1).max(64).optional(),

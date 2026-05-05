@@ -78,6 +78,8 @@ export type ProjectBuild = {
     eventBgAlpha?: number; // 0..1
     eventBorderColor?: string; // #rrggbb
     eventBorderAlpha?: number; // 0..1
+    fieldBgColor?: string; // #rrggbb
+    fieldBgAlpha?: number; // 0..1
 
     // Back-compat: old free-form CSS strings
     eventBg?: string;

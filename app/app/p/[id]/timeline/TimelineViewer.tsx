@@ -79,6 +79,8 @@ export function TimelineViewer({
     eventBgAlpha?: number;
     eventBorderColor?: string;
     eventBorderAlpha?: number;
+    fieldBgColor?: string;
+    fieldBgAlpha?: number;
 
     // back-compat
     eventBg?: string;
@@ -133,10 +135,8 @@ export function TimelineViewer({
     eventBgAlpha: number;
     eventBorderColor: string;
     eventBorderAlpha: number;
-
-    // advanced fallback
-    eventBgRaw: string;
-    eventBorderRaw: string;
+    fieldBgColor: string;
+    fieldBgAlpha: number;
 
     eventLinkTarget: "_blank" | "_self";
   }>({
@@ -159,9 +159,8 @@ export function TimelineViewer({
     eventBgAlpha: 0.1,
     eventBorderColor: "#ffffff",
     eventBorderAlpha: 0.14,
-
-    eventBgRaw: "rgba(96,165,250,.10)",
-    eventBorderRaw: "rgba(255,255,255,.14)",
+    fieldBgColor: "#0f172a",
+    fieldBgAlpha: 0.02,
 
     eventLinkTarget: "_blank"
   });
@@ -353,9 +352,8 @@ export function TimelineViewer({
       eventBgAlpha: typeof initialStyle.eventBgAlpha === "number" ? initialStyle.eventBgAlpha : prev.eventBgAlpha,
       eventBorderColor: typeof initialStyle.eventBorderColor === "string" ? initialStyle.eventBorderColor : prev.eventBorderColor,
       eventBorderAlpha: typeof initialStyle.eventBorderAlpha === "number" ? initialStyle.eventBorderAlpha : prev.eventBorderAlpha,
-
-      eventBgRaw: typeof initialStyle.eventBg === "string" ? initialStyle.eventBg : prev.eventBgRaw,
-      eventBorderRaw: typeof initialStyle.eventBorder === "string" ? initialStyle.eventBorder : prev.eventBorderRaw,
+      fieldBgColor: typeof initialStyle.fieldBgColor === "string" ? initialStyle.fieldBgColor : prev.fieldBgColor,
+      fieldBgAlpha: typeof initialStyle.fieldBgAlpha === "number" ? initialStyle.fieldBgAlpha : prev.fieldBgAlpha,
 
       eventLinkTarget:
         initialStyle.eventLinkTarget === "_self" || initialStyle.eventLinkTarget === "_blank"
@@ -484,10 +482,8 @@ export function TimelineViewer({
             eventBgAlpha: styleDraft.eventBgAlpha,
             eventBorderColor: styleDraft.eventBorderColor,
             eventBorderAlpha: styleDraft.eventBorderAlpha,
-
-            // keep old fields for readability / manual overrides
-            eventBg: styleDraft.eventBgRaw,
-            eventBorder: styleDraft.eventBorderRaw,
+            fieldBgColor: styleDraft.fieldBgColor,
+            fieldBgAlpha: styleDraft.fieldBgAlpha,
 
             eventLinkTarget: styleDraft.eventLinkTarget
           }
@@ -811,10 +807,9 @@ export function TimelineViewer({
         ["--tl-place-font-weight" as any]: String(styleDraft.placeWeight),
         ["--tl-place-font-style" as any]: styleDraft.placeItalic ? "italic" : "normal",
 
-        // prefer picker+alpha; fall back to raw string when rgba can't be built
-        ["--tl-event-bg" as any]: rgbaFrom(styleDraft.eventBgColor, styleDraft.eventBgAlpha) ?? styleDraft.eventBgRaw,
-        ["--tl-event-border" as any]:
-          rgbaFrom(styleDraft.eventBorderColor, styleDraft.eventBorderAlpha) ?? styleDraft.eventBorderRaw
+        ["--tl-event-bg" as any]: rgbaFrom(styleDraft.eventBgColor, styleDraft.eventBgAlpha) ?? "rgba(37,99,235,.08)",
+        ["--tl-event-border" as any]: rgbaFrom(styleDraft.eventBorderColor, styleDraft.eventBorderAlpha) ?? "rgba(37,99,235,.22)",
+        ["--tl-lanes-bg" as any]: rgbaFrom(styleDraft.fieldBgColor, styleDraft.fieldBgAlpha) ?? "rgba(15,23,42,.02)"
       }}
     >
       {!hidePackChrome && currentPack.length ? (
@@ -1652,31 +1647,31 @@ export function TimelineViewer({
                       <span className="chip">{styleDraft.eventBorderAlpha.toFixed(2)}</span>
                     </div>
                   </label>
-
                   <label className="muted" style={{ fontSize: 12 }}>
-                    Подложка (ручн.)
-                    <input
-                      type="text"
-                      value={styleDraft.eventBgRaw}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, eventBgRaw: e.target.value }))}
-                      placeholder="rgba(...) или #..."
-                      style={{ width: 240 }}
-                    />
-                  </label>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Обводка (ручн.)
-                    <input
-                      type="text"
-                      value={styleDraft.eventBorderRaw}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, eventBorderRaw: e.target.value }))}
-                      placeholder="rgba(...) или #..."
-                      style={{ width: 220 }}
-                    />
+                    Фон поля (где лежат события)
+                    <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                      <input
+                        type="color"
+                        value={styleDraft.fieldBgColor}
+                        onChange={(e) => setStyleDraft((p) => ({ ...p, fieldBgColor: e.target.value }))}
+                        style={{ width: 44, padding: 0, height: 36 }}
+                      />
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.02}
+                        value={styleDraft.fieldBgAlpha}
+                        onChange={(e) => setStyleDraft((p) => ({ ...p, fieldBgAlpha: Number(e.target.value) }))}
+                        style={{ width: 140 }}
+                      />
+                      <span className="chip">{styleDraft.fieldBgAlpha.toFixed(2)}</span>
+                    </div>
                   </label>
                 </div>
 
                 <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                  Цвета можно задавать через picker+прозрачность (удобно) или вручную через CSS (`rgba(...)`, `#...`).
+                  Цвета настраиваются через picker и прозрачность: отдельно для карточек мероприятий, их обводки и фона всей рабочей области.
                 </div>
                 </div>
               ) : null}
