@@ -31,6 +31,16 @@ type IsoEvent = {
   building?: string;
   room?: string;
   format?: string;
+  responsible1?: string;
+  responsible2?: string;
+  responsible3?: string;
+  responsible4?: string;
+  responsible5?: string;
+  responsible6?: string;
+  volunteersCount?: number;
+  vks?: "Да" | "Нет" | "Не указано";
+  translation?: "Да" | "Нет" | "Не указано";
+  simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
   orderNo?: number;
   visible?: boolean;
   kind?: "timed" | "untimed";
@@ -52,7 +62,9 @@ export function TimelineViewer({
   pinnedDayKey = null,
   hidePackChrome = false,
   onActiveDayKeyChange,
-  omitDayBanner = false
+  omitDayBanner = false,
+  apiBase = "timeline",
+  showExtraFields = false
 }: {
   events: IsoEvent[];
   pxPerMin?: number;
@@ -81,6 +93,8 @@ export function TimelineViewer({
     eventBorderAlpha?: number;
     fieldBgColor?: string;
     fieldBgAlpha?: number;
+    fieldBgColor?: string;
+    fieldBgAlpha?: number;
 
     // back-compat
     eventBg?: string;
@@ -106,6 +120,10 @@ export function TimelineViewer({
   onActiveDayKeyChange?: (dayKey: string) => void;
   /** Скрыть строку с датой и счётчиком (для PDF: заголовок задаётся снаружи). */
   omitDayBanner?: boolean;
+  /** Base route for marks/style/layout persistence (e.g. "timeline", "tech-timeline"). */
+  apiBase?: string;
+  /** Show extra event fields for technical schedule view. */
+  showExtraFields?: boolean;
 }) {
   const MIN_COL_PX = 180;
   const MAX_COL_PX = 340;
@@ -395,7 +413,7 @@ export function TimelineViewer({
     setSavingLayout(true);
     setLayoutError(null);
     try {
-      const resp = await fetch(`/app/p/${projectId}/builds/timeline-layout`, {
+      const resp = await fetch(`/app/p/${projectId}/builds/${apiBase}-layout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ buildId: activeBuildId, layout: layoutDraft })
@@ -457,7 +475,7 @@ export function TimelineViewer({
     setSavingStyle(true);
     setStyleError(null);
     try {
-      const resp = await fetch(`/app/p/${projectId}/builds/timeline-style`, {
+      const resp = await fetch(`/app/p/${projectId}/builds/${apiBase}-style`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -524,6 +542,19 @@ export function TimelineViewer({
     const s = fmt == null ? "" : String(fmt).trim();
     if (!s) return false;
     return s !== "Питание";
+  }
+
+  function extraFieldLines(ev: IsoEvent): string[] {
+    const responsibles = [ev.responsible1, ev.responsible2, ev.responsible3, ev.responsible4, ev.responsible5, ev.responsible6]
+      .map((x) => (x ?? "").trim())
+      .filter(Boolean);
+    const lines: string[] = [];
+    if (responsibles.length) lines.push(`Ответственные: ${responsibles.join(", ")}`);
+    if (typeof ev.volunteersCount === "number" && Number.isFinite(ev.volunteersCount)) lines.push(`Волонтеры: ${ev.volunteersCount}`);
+    if (ev.vks) lines.push(`ВКС: ${ev.vks}`);
+    if (ev.translation) lines.push(`Трансляция: ${ev.translation}`);
+    if (ev.simultaneousInterpretation) lines.push(`Перевод: ${ev.simultaneousInterpretation}`);
+    return lines;
   }
 
   function estimateMinHeightPx(e: any, widthPx: number) {
@@ -756,7 +787,7 @@ export function TimelineViewer({
     setSavingMarks(true);
     setMarksError(null);
     try {
-      const resp = await fetch(`/app/p/${projectId}/builds/timeline`, {
+      const resp = await fetch(`/app/p/${projectId}/builds/${apiBase}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ buildId: activeBuildId, marks: marksByDay })
@@ -1760,6 +1791,11 @@ export function TimelineViewer({
                               .filter(Boolean)
                               .join(" · ")}
                           </div>
+                          {showExtraFields && extraFieldLines(e).length ? (
+                            <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                              {extraFieldLines(e).join(" · ")}
+                            </div>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -1871,6 +1907,7 @@ export function TimelineViewer({
                         const descMd = (it.event as any).description_md ? String((it.event as any).description_md) : "";
                         const descPlain = it.event.description ? String(it.event.description) : "";
                         const descToShow = descMd || descPlain;
+                        const extraLines = showExtraFields ? extraFieldLines(it.event as any) : [];
                         const evUrl = normalizeHttpUrl((it.event as any).url);
                         const linkT = styleDraft.eventLinkTarget === "_self" ? "_self" : "_blank";
 
@@ -1965,6 +2002,7 @@ export function TimelineViewer({
                                   )
                                 ) : null}
                                 {place ? <div className="eventPlace">{place}</div> : null}
+                                {extraLines.length ? <div className="eventDesc">{extraLines.join(" · ")}</div> : null}
                               </>
                             )}
                             {layoutEdit ? (
@@ -2072,6 +2110,11 @@ export function TimelineViewer({
                           <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
                             {[e.building ? String(e.building).trim() : null, e.room ? String(e.room).trim() : null].filter(Boolean).join(" · ")}
                           </div>
+                          {showExtraFields && extraFieldLines(e).length ? (
+                            <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                              {extraFieldLines(e).join(" · ")}
+                            </div>
+                          ) : null}
                           {(() => {
                             const md = (e as any).description_md ? String((e as any).description_md) : "";
                             const plain = e.description ? String(e.description) : "";

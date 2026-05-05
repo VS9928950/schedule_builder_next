@@ -22,6 +22,7 @@ export type ProjectBuild = {
   source_upload_id: number | null;
   events_json: unknown; // snapshot of resulting events for this version
   timeline_marks?: Record<string, string[]>; // YYYY-MM-DD -> ["HH:MM", ...]
+  tech_timeline_marks?: Record<string, string[]>; // YYYY-MM-DD -> ["HH:MM", ...]
   timeline_layout?: {
     // Manual row height overrides for timeline anchors (presentation layer).
     // dayKey (YYYY-MM-DD) -> anchorLabel (HH:MM) -> heightPx
@@ -51,6 +52,27 @@ export type ProjectBuild = {
     /** Days per pack in Архитектура (1–10, default 5). */
     days_per_pack?: number;
     /** Local calendar days YYYY-MM-DD hidden in grid (events unchanged). */
+    hidden_day_keys?: string[];
+  };
+  tech_timeline_layout?: {
+    row_heights?: Record<string, Record<string, number>>;
+    col_width_px?: Record<string, number>;
+    col_count?: Record<string, number>;
+    event_overrides?: Record<
+      string,
+      Record<
+        string,
+        {
+          anchor?: string;
+          col?: number;
+          colSpan?: number;
+          rowSpan?: number;
+          heightPx?: number;
+          hidden?: boolean;
+        }
+      >
+    >;
+    days_per_pack?: number;
     hidden_day_keys?: string[];
   };
   timeline_style?: {
@@ -86,6 +108,30 @@ export type ProjectBuild = {
     eventBorder?: string;
 
     /** How event title links open when `url` is set. */
+    eventLinkTarget?: "_blank" | "_self";
+  };
+  tech_timeline_style?: {
+    eveningProgramTitle?: string;
+    titleFontPx?: number;
+    timeFontPx?: number;
+    formatFontPx?: number;
+    placeFontPx?: number;
+    titleWeight?: number;
+    titleItalic?: boolean;
+    timeWeight?: number;
+    timeItalic?: boolean;
+    formatWeight?: number;
+    formatItalic?: boolean;
+    placeWeight?: number;
+    placeItalic?: boolean;
+    eventBgColor?: string;
+    eventBgAlpha?: number;
+    eventBorderColor?: string;
+    eventBorderAlpha?: number;
+    fieldBgColor?: string;
+    fieldBgAlpha?: number;
+    eventBg?: string;
+    eventBorder?: string;
     eventLinkTarget?: "_blank" | "_self";
   };
 };
@@ -390,6 +436,22 @@ export function updateProjectBuildTimelineMarks(
   saveStore(st);
 }
 
+export function updateProjectBuildTechTimelineMarks(
+  projectId: number,
+  userId: number,
+  buildId: number,
+  marks: Record<string, string[]>
+) {
+  const st = ensureStore();
+  const p = st.projects.find((x) => x.id === projectId && x.user_id === userId);
+  if (!p) throw new Error("Not found");
+  const b = p.builds?.find((x) => x.id === buildId);
+  if (!b) throw new Error("Build not found");
+  (b as any).tech_timeline_marks = marks ?? {};
+  p.updated_at = now();
+  saveStore(st);
+}
+
 export function updateProjectBuildTimelineStyle(
   projectId: number,
   userId: number,
@@ -406,6 +468,22 @@ export function updateProjectBuildTimelineStyle(
   saveStore(st);
 }
 
+export function updateProjectBuildTechTimelineStyle(
+  projectId: number,
+  userId: number,
+  buildId: number,
+  style: ProjectBuild["tech_timeline_style"]
+) {
+  const st = ensureStore();
+  const p = st.projects.find((x) => x.id === projectId && x.user_id === userId);
+  if (!p) throw new Error("Not found");
+  const b = p.builds?.find((x) => x.id === buildId);
+  if (!b) throw new Error("Build not found");
+  (b as any).tech_timeline_style = style ?? {};
+  p.updated_at = now();
+  saveStore(st);
+}
+
 export function updateProjectBuildTimelineLayout(
   projectId: number,
   userId: number,
@@ -418,6 +496,22 @@ export function updateProjectBuildTimelineLayout(
   const b = p.builds?.find((x) => x.id === buildId);
   if (!b) throw new Error("Build not found");
   (b as any).timeline_layout = layout ?? {};
+  p.updated_at = now();
+  saveStore(st);
+}
+
+export function updateProjectBuildTechTimelineLayout(
+  projectId: number,
+  userId: number,
+  buildId: number,
+  layout: ProjectBuild["tech_timeline_layout"]
+) {
+  const st = ensureStore();
+  const p = st.projects.find((x) => x.id === projectId && x.user_id === userId);
+  if (!p) throw new Error("Not found");
+  const b = p.builds?.find((x) => x.id === buildId);
+  if (!b) throw new Error("Build not found");
+  (b as any).tech_timeline_layout = layout ?? {};
   p.updated_at = now();
   saveStore(st);
 }
