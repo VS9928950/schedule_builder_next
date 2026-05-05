@@ -93,8 +93,6 @@ export function TimelineViewer({
     eventBorderAlpha?: number;
     fieldBgColor?: string;
     fieldBgAlpha?: number;
-    fieldBgColor?: string;
-    fieldBgAlpha?: number;
 
     // back-compat
     eventBg?: string;
