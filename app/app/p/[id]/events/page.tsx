@@ -36,6 +36,22 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
       building: e.building != null ? String(e.building) : undefined,
       room: e.room != null ? String(e.room) : undefined,
       format: e.format ? String(e.format) : undefined,
+      responsible1: e.responsible1 != null ? String(e.responsible1) : undefined,
+      responsible2: e.responsible2 != null ? String(e.responsible2) : undefined,
+      responsible3: e.responsible3 != null ? String(e.responsible3) : undefined,
+      responsible4: e.responsible4 != null ? String(e.responsible4) : undefined,
+      responsible5: e.responsible5 != null ? String(e.responsible5) : undefined,
+      responsible6: e.responsible6 != null ? String(e.responsible6) : undefined,
+      volunteersCount: typeof e.volunteersCount === "number" ? e.volunteersCount : undefined,
+      vks: e.vks === "Да" || e.vks === "Нет" || e.vks === "Не указано" ? e.vks : undefined,
+      translation:
+        e.translation === "Да" || e.translation === "Нет" || e.translation === "Не указано" ? e.translation : undefined,
+      simultaneousInterpretation:
+        e.simultaneousInterpretation === "Да" ||
+        e.simultaneousInterpretation === "Нет" ||
+        e.simultaneousInterpretation === "Не указано"
+          ? e.simultaneousInterpretation
+          : undefined,
       orderNo: typeof e.orderNo === "number" ? e.orderNo : typeof e["№"] === "number" ? e["№"] : undefined,
       visible: typeof e.visible === "boolean" ? e.visible : true,
       day: typeof e.day === "string" ? e.day : new Date(e.day ?? Date.now()).toISOString(),
@@ -56,6 +72,22 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
       building: e.building != null ? String(e.building) : undefined,
       room: e.room != null ? String(e.room) : undefined,
       format: e.format ? String(e.format) : undefined,
+      responsible1: e.responsible1 != null ? String(e.responsible1) : undefined,
+      responsible2: e.responsible2 != null ? String(e.responsible2) : undefined,
+      responsible3: e.responsible3 != null ? String(e.responsible3) : undefined,
+      responsible4: e.responsible4 != null ? String(e.responsible4) : undefined,
+      responsible5: e.responsible5 != null ? String(e.responsible5) : undefined,
+      responsible6: e.responsible6 != null ? String(e.responsible6) : undefined,
+      volunteersCount: typeof e.volunteersCount === "number" ? e.volunteersCount : undefined,
+      vks: e.vks === "Да" || e.vks === "Нет" || e.vks === "Не указано" ? e.vks : undefined,
+      translation:
+        e.translation === "Да" || e.translation === "Нет" || e.translation === "Не указано" ? e.translation : undefined,
+      simultaneousInterpretation:
+        e.simultaneousInterpretation === "Да" ||
+        e.simultaneousInterpretation === "Нет" ||
+        e.simultaneousInterpretation === "Не указано"
+          ? e.simultaneousInterpretation
+          : undefined,
       visible: typeof e.visible === "boolean" ? e.visible : true,
       start: typeof e.start === "string" ? e.start : e.start instanceof Date ? e.start.toISOString() : new Date(e.start).toISOString(),
       end: typeof e.end === "string" ? e.end : e.end instanceof Date ? e.end.toISOString() : new Date(e.end).toISOString(),

@@ -21,6 +21,16 @@ export type EditableEvent = {
   building?: string;
   room?: string;
   format?: string;
+  responsible1?: string;
+  responsible2?: string;
+  responsible3?: string;
+  responsible4?: string;
+  responsible5?: string;
+  responsible6?: string;
+  volunteersCount?: number;
+  vks?: "Да" | "Нет" | "Не указано";
+  translation?: "Да" | "Нет" | "Не указано";
+  simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
   visible?: boolean;
   start: string; // ISO
   end: string; // ISO
@@ -45,6 +55,16 @@ export type UntimedEditableEvent = {
   building?: string;
   room?: string;
   format?: string;
+  responsible1?: string;
+  responsible2?: string;
+  responsible3?: string;
+  responsible4?: string;
+  responsible5?: string;
+  responsible6?: string;
+  volunteersCount?: number;
+  vks?: "Да" | "Нет" | "Не указано";
+  translation?: "Да" | "Нет" | "Не указано";
+  simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
   orderNo?: number;
   day: string; // ISO date
   visible?: boolean;
@@ -83,6 +103,8 @@ function fromLocalInputValue(v: string) {
   const d = new Date(v);
   return d.toISOString();
 }
+
+const YES_NO_UNKNOWN: Array<"Да" | "Нет" | "Не указано"> = ["Да", "Нет", "Не указано"];
 
 export function EventsEditor({
   projectId,
@@ -371,6 +393,106 @@ export function EventsEditor({
               </div>
               <input value={editing.room ?? ""} onChange={(e) => patchEvent(editing.id, { room: e.target.value })} />
             </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Количество волонтеров
+              </div>
+              <input
+                type="number"
+                min={0}
+                value={editing.volunteersCount ?? ""}
+                onChange={(e) =>
+                  patchEvent(editing.id, {
+                    volunteersCount: e.target.value === "" ? undefined : Number(e.target.value)
+                  })
+                }
+              />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                ВКС
+              </div>
+              <select value={editing.vks ?? ""} onChange={(e) => patchEvent(editing.id, { vks: (e.target.value as any) || undefined })}>
+                <option value="">—</option>
+                {YES_NO_UNKNOWN.map((v) => (
+                  <option key={`vks-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Трансляция
+              </div>
+              <select
+                value={editing.translation ?? ""}
+                onChange={(e) => patchEvent(editing.id, { translation: (e.target.value as any) || undefined })}
+              >
+                <option value="">—</option>
+                {YES_NO_UNKNOWN.map((v) => (
+                  <option key={`translation-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Синхронный перевод
+              </div>
+              <select
+                value={editing.simultaneousInterpretation ?? ""}
+                onChange={(e) =>
+                  patchEvent(editing.id, {
+                    simultaneousInterpretation: (e.target.value as any) || undefined
+                  })
+                }
+              >
+                <option value="">—</option>
+                {YES_NO_UNKNOWN.map((v) => (
+                  <option key={`si-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 1
+              </div>
+              <input value={editing.responsible1 ?? ""} onChange={(e) => patchEvent(editing.id, { responsible1: e.target.value })} />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 2
+              </div>
+              <input value={editing.responsible2 ?? ""} onChange={(e) => patchEvent(editing.id, { responsible2: e.target.value })} />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 3
+              </div>
+              <input value={editing.responsible3 ?? ""} onChange={(e) => patchEvent(editing.id, { responsible3: e.target.value })} />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 4
+              </div>
+              <input value={editing.responsible4 ?? ""} onChange={(e) => patchEvent(editing.id, { responsible4: e.target.value })} />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 5
+              </div>
+              <input value={editing.responsible5 ?? ""} onChange={(e) => patchEvent(editing.id, { responsible5: e.target.value })} />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 6
+              </div>
+              <input value={editing.responsible6 ?? ""} onChange={(e) => patchEvent(editing.id, { responsible6: e.target.value })} />
+            </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Ссылка (http или https, можно пусто)
@@ -599,6 +721,127 @@ export function EventsEditor({
                 Аудитория
               </div>
               <input value={editingUntimed.room ?? ""} onChange={(e) => patchUntimed(editingUntimed.id, { room: e.target.value })} />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Количество волонтеров
+              </div>
+              <input
+                type="number"
+                min={0}
+                value={editingUntimed.volunteersCount ?? ""}
+                onChange={(e) =>
+                  patchUntimed(editingUntimed.id, {
+                    volunteersCount: e.target.value === "" ? undefined : Number(e.target.value)
+                  })
+                }
+              />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                ВКС
+              </div>
+              <select
+                value={editingUntimed.vks ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { vks: (e.target.value as any) || undefined })}
+              >
+                <option value="">—</option>
+                {YES_NO_UNKNOWN.map((v) => (
+                  <option key={`u-vks-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Трансляция
+              </div>
+              <select
+                value={editingUntimed.translation ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { translation: (e.target.value as any) || undefined })}
+              >
+                <option value="">—</option>
+                {YES_NO_UNKNOWN.map((v) => (
+                  <option key={`u-translation-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Синхронный перевод
+              </div>
+              <select
+                value={editingUntimed.simultaneousInterpretation ?? ""}
+                onChange={(e) =>
+                  patchUntimed(editingUntimed.id, {
+                    simultaneousInterpretation: (e.target.value as any) || undefined
+                  })
+                }
+              >
+                <option value="">—</option>
+                {YES_NO_UNKNOWN.map((v) => (
+                  <option key={`u-si-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 1
+              </div>
+              <input
+                value={editingUntimed.responsible1 ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { responsible1: e.target.value })}
+              />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 2
+              </div>
+              <input
+                value={editingUntimed.responsible2 ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { responsible2: e.target.value })}
+              />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 3
+              </div>
+              <input
+                value={editingUntimed.responsible3 ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { responsible3: e.target.value })}
+              />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 4
+              </div>
+              <input
+                value={editingUntimed.responsible4 ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { responsible4: e.target.value })}
+              />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 5
+              </div>
+              <input
+                value={editingUntimed.responsible5 ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { responsible5: e.target.value })}
+              />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Ответственный сотрудник 6
+              </div>
+              <input
+                value={editingUntimed.responsible6 ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { responsible6: e.target.value })}
+              />
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>

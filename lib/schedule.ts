@@ -7,6 +7,16 @@ export type ScheduleEvent = {
   building?: string;
   room?: string;
   format?: string;
+  responsible1?: string;
+  responsible2?: string;
+  responsible3?: string;
+  responsible4?: string;
+  responsible5?: string;
+  responsible6?: string;
+  volunteersCount?: number;
+  vks?: "Да" | "Нет" | "Не указано";
+  translation?: "Да" | "Нет" | "Не указано";
+  simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
   orderNo?: number;
   visible?: boolean;
   start: Date;
@@ -21,6 +31,16 @@ export type UntimedEvent = {
   building?: string;
   room?: string;
   format?: string;
+  responsible1?: string;
+  responsible2?: string;
+  responsible3?: string;
+  responsible4?: string;
+  responsible5?: string;
+  responsible6?: string;
+  volunteersCount?: number;
+  vks?: "Да" | "Нет" | "Не указано";
+  translation?: "Да" | "Нет" | "Не указано";
+  simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
   orderNo?: number;
   visible?: boolean;
   day: Date; // date only (start of day)
@@ -89,6 +109,15 @@ function pickUrlFromRow(row: Record<string, unknown>): string | undefined {
   return normalizeHttpUrl(v);
 }
 
+function parseTernary(value: unknown): "Да" | "Нет" | "Не указано" | undefined {
+  const s = strAny(value)?.toLowerCase();
+  if (!s) return undefined;
+  if (s === "да") return "Да";
+  if (s === "нет") return "Нет";
+  if (s === "не указано") return "Не указано";
+  return undefined;
+}
+
 function normalizeKeys(row: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(row)) {
@@ -152,6 +181,16 @@ export function parseScheduleFromExcelRows(rows: unknown[]): ScheduleEvent[] {
       building: strAny(row["Корпус"]) ?? undefined,
       room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
       format: str(row["Формат"]) ?? undefined,
+      responsible1: strAny(row["Ответственный сотрудник 1"]) ?? undefined,
+      responsible2: strAny(row["Ответственный сотрудник 2"]) ?? undefined,
+      responsible3: strAny(row["Ответственный сотрудник 3"]) ?? undefined,
+      responsible4: strAny(row["Ответственный сотрудник 4"]) ?? undefined,
+      responsible5: strAny(row["Ответственный сотрудник 5"]) ?? undefined,
+      responsible6: strAny(row["Ответственный сотрудник 6"]) ?? undefined,
+      volunteersCount: num(row["Количество волонтеров"]) ?? undefined,
+      vks: parseTernary(row["ВКС"]),
+      translation: parseTernary(row["Трансляция"]),
+      simultaneousInterpretation: parseTernary(row["Синхронный перевод"]),
       orderNo: num(row["№"] ?? row["N"] ?? row["No"] ?? row["Номер"]) ?? undefined,
       visible: true,
       start,
@@ -245,6 +284,16 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
 
     const title = str(row["Наименование"]) ?? "Без названия";
     const orderNo = num(row["№"] ?? row["N"] ?? row["No"] ?? row["Номер"]) ?? undefined;
+    const responsible1 = strAny(row["Ответственный сотрудник 1"]) ?? undefined;
+    const responsible2 = strAny(row["Ответственный сотрудник 2"]) ?? undefined;
+    const responsible3 = strAny(row["Ответственный сотрудник 3"]) ?? undefined;
+    const responsible4 = strAny(row["Ответственный сотрудник 4"]) ?? undefined;
+    const responsible5 = strAny(row["Ответственный сотрудник 5"]) ?? undefined;
+    const responsible6 = strAny(row["Ответственный сотрудник 6"]) ?? undefined;
+    const volunteersCount = num(row["Количество волонтеров"]) ?? undefined;
+    const vks = parseTernary(row["ВКС"]);
+    const translation = parseTernary(row["Трансляция"]);
+    const simultaneousInterpretation = parseTernary(row["Синхронный перевод"]);
 
     const baseDay = startOfDay(excelSerialToDate(dateSerial));
 
@@ -265,6 +314,16 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
         building: strAny(row["Корпус"]) ?? undefined,
         room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
         format: str(row["Формат"]) ?? undefined,
+        responsible1,
+        responsible2,
+        responsible3,
+        responsible4,
+        responsible5,
+        responsible6,
+        volunteersCount,
+        vks,
+        translation,
+        simultaneousInterpretation,
         orderNo,
         visible: true,
         start,
@@ -279,6 +338,16 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
         building: strAny(row["Корпус"]) ?? undefined,
         room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
         format: str(row["Формат"]) ?? undefined,
+        responsible1,
+        responsible2,
+        responsible3,
+        responsible4,
+        responsible5,
+        responsible6,
+        volunteersCount,
+        vks,
+        translation,
+        simultaneousInterpretation,
         orderNo,
         visible: true,
         day: baseDay
