@@ -5,7 +5,13 @@ import { collectSortedProgramDayKeysFromIso, parseScheduleAllFromExcelRows } fro
 import { redirect } from "next/navigation";
 import { TildaSnippetClient } from "./TildaSnippetClient";
 
-export default async function ExportTildaTab({ params }: { params: Promise<{ id: string }> }) {
+export default async function ExportTildaTab({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ view?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/sign-in");
 
@@ -19,6 +25,9 @@ export default async function ExportTildaTab({ params }: { params: Promise<{ id:
   const builds = project.builds ?? [];
   const activeBuildId = project.active_build_id ?? null;
   const activeBuild = activeBuildId ? builds.find((b) => b.id === activeBuildId) ?? null : null;
+  const sp = searchParams ? await searchParams : undefined;
+  const view = String(sp?.view ?? "").trim();
+  const isTechView = view === "tech-schedule";
   const rows = rowsFromProjectExcelJson(project.excel_json);
   const eventsIsoForExport =
     activeBuild && Array.isArray(activeBuild.events_json)
@@ -38,8 +47,8 @@ export default async function ExportTildaTab({ params }: { params: Promise<{ id:
   const programDayKeys =
     eventsIsoForExport.length > 0 ? collectSortedProgramDayKeysFromIso(eventsIsoForExport as any[]) : [];
   const hiddenDayKeys = new Set(
-    (Array.isArray((activeBuild as any)?.timeline_layout?.hidden_day_keys)
-      ? ((activeBuild as any).timeline_layout.hidden_day_keys as unknown[])
+    (Array.isArray((isTechView ? (activeBuild as any)?.tech_timeline_layout?.hidden_day_keys : (activeBuild as any)?.timeline_layout?.hidden_day_keys)
+      ? ((isTechView ? (activeBuild as any).tech_timeline_layout.hidden_day_keys : (activeBuild as any).timeline_layout.hidden_day_keys) as unknown[])
       : []
     )
       .map((k) => String(k).slice(0, 10))
@@ -56,10 +65,25 @@ export default async function ExportTildaTab({ params }: { params: Promise<{ id:
         </a>
       </div>
       <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-        Генерируется из <b>активного build</b> и его <code>timeline_layout</code>, чтобы совпадало с Архитектурой.
+        Генерируется из <b>активного build</b> и раскладки области экспорта:{" "}
+        <b>
+          {isTechView ? "Техрасписание" : view === "rooms"
+            ? "Аудитории"
+            : view === "responsibles"
+              ? "Ответственные"
+              : view === "vks"
+                ? "ВКС"
+                : view === "broadcasts"
+                  ? "Трансляции"
+                  : view === "interpretation"
+                    ? "Перевод"
+                    : view === "volunteers"
+                      ? "Волонтеры"
+                      : "Архитектура"}
+        </b>.
       </div>
       <div style={{ height: 12 }} />
-      <TildaSnippetClient projectId={project.id} visibleDayKeys={visibleDayKeys} />
+      <TildaSnippetClient projectId={project.id} visibleDayKeys={visibleDayKeys} view={view} />
     </div>
   );
 }

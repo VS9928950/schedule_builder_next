@@ -12,10 +12,12 @@ function parseSnippetText(snippet: string): { html: string; css: string } {
 
 export function TildaSnippetClient({
   projectId,
-  visibleDayKeys
+  visibleDayKeys,
+  view
 }: {
   projectId: number;
   visibleDayKeys: string[];
+  view?: string;
 }) {
   const [data, setData] = useState<{ html: string; css: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +32,7 @@ export function TildaSnippetClient({
     setLoading(true);
     const params = new URLSearchParams();
     params.set("projectId", String(projectId));
+    if (view && view.trim()) params.set("view", view.trim());
     if (scope.trim()) params.set("scope", scope.trim());
     if (day.trim()) params.set("day", day.trim());
     if (tildaSansProbe) params.set("font", "tildaSans");
@@ -100,7 +103,7 @@ export function TildaSnippetClient({
     return () => {
       cancelled = true;
     };
-  }, [projectId, scope, day, tildaSansProbe]);
+  }, [projectId, scope, day, tildaSansProbe, view]);
 
   useEffect(() => {
     if (day && !visibleDayKeys.includes(day)) setDay("");
@@ -152,6 +155,7 @@ export function TildaSnippetClient({
             href={(() => {
               const p = new URLSearchParams();
               p.set("projectId", String(projectId));
+              if (view && view.trim()) p.set("view", view.trim());
               if (scope.trim()) p.set("scope", scope.trim());
               if (day.trim()) p.set("day", day.trim());
               if (tildaSansProbe) p.set("font", "tildaSans");

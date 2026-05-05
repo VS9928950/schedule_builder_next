@@ -547,11 +547,19 @@ export function TimelineViewer({
       .map((x) => (x ?? "").trim())
       .filter(Boolean);
     const lines: string[] = [];
+    const pushFlag = (label: string, value?: "Да" | "Нет" | "Не указано") => {
+      if (!value) return;
+      if (value === "Да") {
+        lines.push(label);
+        return;
+      }
+      lines.push(`${label}: ${value}`);
+    };
     if (responsibles.length) lines.push(`Ответственные: ${responsibles.join(", ")}`);
     if (typeof ev.volunteersCount === "number" && Number.isFinite(ev.volunteersCount)) lines.push(`Волонтеры: ${ev.volunteersCount}`);
-    if (ev.vks) lines.push(`ВКС: ${ev.vks}`);
-    if (ev.translation) lines.push(`Трансляция: ${ev.translation}`);
-    if (ev.simultaneousInterpretation) lines.push(`Перевод: ${ev.simultaneousInterpretation}`);
+    pushFlag("ВКС", ev.vks);
+    pushFlag("Трансляция", ev.translation);
+    pushFlag("Перевод", ev.simultaneousInterpretation);
     return lines;
   }
 

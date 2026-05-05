@@ -29,6 +29,23 @@ export function PrintWorkspaceClient({
   const [mode, setMode] = useState<"single" | "all">("single");
   const [activeKey, setActiveKey] = useState(programDayKeys[0] ?? "");
   const searchParams = useSearchParams();
+  const exportView = String(searchParams.get("view") ?? "").trim();
+  const viewLabel =
+    exportView === "tech-schedule"
+      ? "Техрасписание"
+      : exportView === "rooms"
+        ? "Аудитории"
+        : exportView === "responsibles"
+          ? "Ответственные"
+          : exportView === "vks"
+            ? "ВКС"
+            : exportView === "broadcasts"
+              ? "Трансляции"
+              : exportView === "interpretation"
+                ? "Перевод"
+                : exportView === "volunteers"
+                  ? "Волонтеры"
+                  : "Архитектура";
 
   const visibleKeys = useMemo(() => {
     const raw = (layout as { hidden_day_keys?: string[] } | null)?.hidden_day_keys;
@@ -110,7 +127,7 @@ export function PrintWorkspaceClient({
     <>
       <div className="print-workspace-no-print">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10 }}>
-          <h2 style={{ margin: 0 }}>Печать / PDF</h2>
+          <h2 style={{ margin: 0 }}>Печать / PDF · {viewLabel}</h2>
           <div className="row" style={{ gap: 8 }}>
             <PrintButton />
             <a className="chip" href={`/app/p/${projectId}/export`}>

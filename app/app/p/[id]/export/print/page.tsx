@@ -6,7 +6,13 @@ import { parseScheduleAllFromExcelRows, collectSortedProgramDayKeysFromIso } fro
 import { rowsFromProjectExcelJson } from "@/lib/excel";
 import { PrintWorkspaceClient } from "./PrintWorkspaceClient";
 
-export default async function ExportPrintTab({ params }: { params: Promise<{ id: string }> }) {
+export default async function ExportPrintTab({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ view?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/sign-in");
 
@@ -22,6 +28,9 @@ export default async function ExportPrintTab({ params }: { params: Promise<{ id:
   const activeBuild = activeBuildId ? builds.find((b) => b.id === activeBuildId) ?? null : null;
 
   const rows = rowsFromProjectExcelJson(project.excel_json);
+  const sp = searchParams ? await searchParams : undefined;
+  const view = String(sp?.view ?? "").trim();
+  const isTechView = view === "tech-schedule";
 
   const eventsIso =
     activeBuild && Array.isArray(activeBuild.events_json)
@@ -49,9 +58,9 @@ export default async function ExportPrintTab({ params }: { params: Promise<{ id:
             projectId={project.id}
             activeBuildId={activeBuild ? activeBuild.id : null}
             events={eventsIso as any[]}
-            marks={(activeBuild as any)?.timeline_marks ?? null}
-            style={(activeBuild as any)?.timeline_style ?? null}
-            layout={(activeBuild as any)?.timeline_layout ?? null}
+            marks={isTechView ? (activeBuild as any)?.tech_timeline_marks ?? null : (activeBuild as any)?.timeline_marks ?? null}
+            style={isTechView ? (activeBuild as any)?.tech_timeline_style ?? null : (activeBuild as any)?.timeline_style ?? null}
+            layout={isTechView ? (activeBuild as any)?.tech_timeline_layout ?? null : (activeBuild as any)?.timeline_layout ?? null}
             programDayKeys={programDayKeys}
           />
         </Suspense>

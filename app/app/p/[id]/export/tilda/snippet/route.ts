@@ -22,11 +22,15 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     return new NextResponse("no_active_build", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
   const events = Array.isArray(activeBuild.events_json) ? (activeBuild.events_json as any[]) : [];
-  const marksByDay = ((activeBuild as any).timeline_marks ?? {}) as Record<string, string[]>;
-  const timelineLayout = ((activeBuild as any).timeline_layout ?? null) as any;
-  const timelineStyle = ((activeBuild as any).timeline_style ?? null) as any;
-
   const u = new URL(req.url);
+  const view = String(u.searchParams.get("view") ?? "").trim();
+  const isTechView = view === "tech-schedule";
+  const marksByDay = ((isTechView ? (activeBuild as any).tech_timeline_marks : (activeBuild as any).timeline_marks) ?? {}) as Record<
+    string,
+    string[]
+  >;
+  const timelineLayout = ((isTechView ? (activeBuild as any).tech_timeline_layout : (activeBuild as any).timeline_layout) ?? null) as any;
+  const timelineStyle = ((isTechView ? (activeBuild as any).tech_timeline_style : (activeBuild as any).timeline_style) ?? null) as any;
   const scope = u.searchParams.get("scope");
   const font = u.searchParams.get("font");
   const fontMode = font === "tildaSans" || font === "tilda-sans" ? "tilda-sans" : "inherit";
