@@ -42,7 +42,7 @@ export default async function RoomsTab({ params }: { params: Promise<{ id: strin
     <div className="card">
       <h2 style={{ margin: "0 0 10px" }}>Расписание по аудиториям</h2>
       <div className="muted" style={{ marginBottom: 14 }}>
-        Переключайте аудитории (с учётом корпуса). Период: один день из ближайшей четырёхдневки или «Все дни» — вся найденная занятость по календарю.
+        Переключайте аудитории (с учётом корпуса). Период: любой день из найденных в программе или «Все дни» — вся найденная занятость по календарю.
       </div>
       {activeBuild ? (
         <div className="muted" style={{ fontSize: 12, marginBottom: 10 }}>

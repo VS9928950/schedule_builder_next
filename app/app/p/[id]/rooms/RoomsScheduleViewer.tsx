@@ -6,7 +6,6 @@ import {
   dayKeyLocalFromDate,
   formatDayFull,
   formatTime,
-  groupEventsByFourDays,
   localDateFromDayKey
 } from "@/lib/schedule";
 import { renderMarkdownLite } from "@/lib/markdown-lite";
@@ -114,18 +113,24 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
     [timed, untimedByDay]
   );
 
-  const fourDays = useMemo(() => groupEventsByFourDays(timed as any), [timed]);
-  const [dayIdx, setDayIdx] = useState(0);
+  const [activeDayKey, setActiveDayKey] = useState("");
   /** «Все дни» — занятость аудитории за весь найденный период, не только один день из четырёхдневного окна. */
   const [periodScope, setPeriodScope] = useState<"chunk_day" | "all_days">("chunk_day");
   const [activeRoomKey, setActiveRoomKey] = useState<string>("");
 
   useEffect(() => {
-    setDayIdx(0);
-    if (fourDays.length > 0) setPeriodScope("chunk_day");
-    else if (programDayKeysAll.length > 0) setPeriodScope("all_days");
-    else setPeriodScope("chunk_day");
-  }, [events, fourDays.length, programDayKeysAll.length]);
+    if (programDayKeysAll.length > 0) {
+      setActiveDayKey(programDayKeysAll[0]!);
+      setPeriodScope("chunk_day");
+    } else {
+      setActiveDayKey("");
+    }
+  }, [events, programDayKeysAll]);
+
+  useEffect(() => {
+    if (activeDayKey && programDayKeysAll.includes(activeDayKey)) return;
+    if (programDayKeysAll.length > 0) setActiveDayKey(programDayKeysAll[0]!);
+  }, [activeDayKey, programDayKeysAll]);
 
   const allRoomKeys = useMemo(() => {
     const set = new Set<string>();
@@ -158,10 +163,9 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
   }, [events]);
 
   const chunkDayKey = useMemo(() => {
-    if (periodScope !== "chunk_day" || !fourDays.length) return "";
-    const d = fourDays[Math.min(dayIdx, fourDays.length - 1)]!.day;
-    return dayKeyLocalFromDate(d);
-  }, [periodScope, dayIdx, fourDays]);
+    if (periodScope !== "chunk_day") return "";
+    return activeDayKey || "";
+  }, [periodScope, activeDayKey]);
 
   const roomFilteredTimed = useMemo(() => {
     if (!activeRoomKey) return [];
@@ -175,8 +179,8 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
         .sort((a, b) => (a.start as Date).getTime() - (b.start as Date).getTime());
     }
 
-    if (!fourDays.length) return [];
-    const day = fourDays[Math.min(dayIdx, fourDays.length - 1)]!.day;
+    if (!chunkDayKey) return [];
+    const day = localDateFromDayKey(chunkDayKey);
     const dayStart = new Date(day);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(dayStart);
@@ -187,7 +191,7 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
       const s = e.start as Date;
       return s >= dayStart && s < dayEnd;
     });
-  }, [activeRoomKey, timed, periodScope, fourDays, dayIdx]);
+  }, [activeRoomKey, timed, periodScope, chunkDayKey]);
 
   const roomFilteredUntimed = useMemo(() => {
     if (!activeRoomKey) return [];
@@ -245,7 +249,7 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
     return keys.map((k) => ({ dayKey: k, ...(map.get(k) as { timed: any[]; untimed: IsoEvent[] }) }));
   }, [activeRoomKey, timed, untimedByDay, periodScope]);
 
-  const showPeriodBar = allRoomKeys.length > 0 && (fourDays.length > 0 || programDayKeysAll.length > 0);
+  const showPeriodBar = allRoomKeys.length > 0 && programDayKeysAll.length > 0;
 
   const roomTimeConflicts = useMemo(() => {
     const evs = [...(roomFilteredTimed as any[])].sort((a, b) => (a.start as Date).getTime() - (b.start as Date).getTime());
@@ -413,17 +417,17 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
           >
             Все дни
           </button>
-          {fourDays.map((d, i) => (
+          {programDayKeysAll.map((dk) => (
             <button
-              key={d.day.toISOString()}
+              key={dk}
               type="button"
-              className={periodScope === "chunk_day" && i === dayIdx ? "" : "secondary"}
+              className={periodScope === "chunk_day" && dk === chunkDayKey ? "" : "secondary"}
               onClick={() => {
                 setPeriodScope("chunk_day");
-                setDayIdx(i);
+                setActiveDayKey(dk);
               }}
             >
-              {formatDayFull(d.day)}
+              {formatDayFull(localDateFromDayKey(dk))}
             </button>
           ))}
         </div>
