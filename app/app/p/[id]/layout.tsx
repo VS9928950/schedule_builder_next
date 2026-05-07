@@ -50,15 +50,15 @@ export default async function ProjectLayout({
           </a>
         </div>
         <div style={{ height: 10 }} />
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <form className="row" action={`/app/p/${project.id}/rename`} method="post" style={{ gap: 8, flexWrap: "wrap" }}>
+        <div className="row" style={{ gap: 8, flexWrap: "nowrap", alignItems: "center" }}>
+          <form className="row" action={`/app/p/${project.id}/rename`} method="post" style={{ gap: 8, flexWrap: "nowrap", alignItems: "center" }}>
             <input
               name="name"
               type="text"
               defaultValue={project.name}
               maxLength={80}
               required
-              style={{ maxWidth: 420 }}
+              style={{ width: 420, maxWidth: 420 }}
               aria-label="Новое название проекта"
             />
             <button className="secondary" type="submit">

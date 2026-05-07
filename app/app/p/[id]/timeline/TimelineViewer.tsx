@@ -1796,8 +1796,8 @@ export function TimelineViewer({
                               .join(" · ")}
                           </div>
                           {showExtraFields && extraFieldLines(e).length ? (
-                            <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                              {extraFieldLines(e).join(" · ")}
+                            <div className="muted" style={{ fontSize: 12, marginTop: 6, whiteSpace: "pre-line" }}>
+                              {extraFieldLines(e).join("\n")}
                             </div>
                           ) : null}
                         </div>
@@ -2006,7 +2006,11 @@ export function TimelineViewer({
                                   )
                                 ) : null}
                                 {place ? <div className="eventPlace">{place}</div> : null}
-                                {extraLines.length ? <div className="eventDesc">{extraLines.join(" · ")}</div> : null}
+                                {extraLines.length ? (
+                                  <div className="eventDesc" style={{ whiteSpace: "pre-line" }}>
+                                    {extraLines.join("\n")}
+                                  </div>
+                                ) : null}
                               </>
                             )}
                             {layoutEdit ? (
@@ -2115,8 +2119,8 @@ export function TimelineViewer({
                             {[e.building ? String(e.building).trim() : null, e.room ? String(e.room).trim() : null].filter(Boolean).join(" · ")}
                           </div>
                           {showExtraFields && extraFieldLines(e).length ? (
-                            <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                              {extraFieldLines(e).join(" · ")}
+                            <div className="muted" style={{ fontSize: 12, marginTop: 6, whiteSpace: "pre-line" }}>
+                              {extraFieldLines(e).join("\n")}
                             </div>
                           ) : null}
                           {(() => {
