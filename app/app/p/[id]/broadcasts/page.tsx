@@ -16,7 +16,7 @@ export default async function BroadcastsTab({ params }: { params: Promise<{ id: 
   if (!project) redirect("/app");
 
   const events = getProjectEventsIso(project)
-    .filter((e) => (e.visible ?? true) && (e.translation === "Да" || e.translation === "Нет" || e.translation === "Не указано"))
+    .filter((e) => (e.visible ?? true) && e.translation === "Да")
     .sort((a, b) => {
       const da = String((a.kind === "untimed" ? a.day : a.start) ?? "").localeCompare(String((b.kind === "untimed" ? b.day : b.start) ?? ""));
       if (da !== 0) return da;

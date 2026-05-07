@@ -16,7 +16,7 @@ export default async function VksTab({ params }: { params: Promise<{ id: string 
   if (!project) redirect("/app");
 
   const events = getProjectEventsIso(project)
-    .filter((e) => (e.visible ?? true) && (e.vks === "Да" || e.vks === "Нет" || e.vks === "Не указано"))
+    .filter((e) => (e.visible ?? true) && e.vks === "Да")
     .sort((a, b) => {
       const da = String((a.kind === "untimed" ? a.day : a.start) ?? "").localeCompare(String((b.kind === "untimed" ? b.day : b.start) ?? ""));
       if (da !== 0) return da;

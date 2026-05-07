@@ -24,6 +24,7 @@ type IsoEvent = {
   building?: string;
   room?: string;
   format?: string;
+  banner?: "Общий" | "Секционный" | "Не указано";
   orderNo?: number;
   visible?: boolean;
   kind?: "timed" | "untimed";
@@ -64,6 +65,17 @@ function eventMatchesRoom(e: { building?: string; room?: string }, buildingNorm:
   if (normToken(e.room) !== roomNorm) return false;
   if (buildingNorm && normToken(e.building) !== buildingNorm) return false;
   return true;
+}
+
+function bannerForCheck(v: unknown): "Общий" | "Секционный" | null {
+  if (v === "Общий" || v === "Секционный") return v;
+  return null;
+}
+
+function eventDayKeyLocal(e: IsoEvent): string {
+  if ((e.kind ?? "timed") === "untimed" && e.day) return String(e.day).slice(0, 10);
+  if (e.start) return String(e.start).slice(0, 10);
+  return "";
 }
 
 export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
@@ -276,6 +288,56 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
     return { count: overlaps.length, lines: lines.slice(0, 12) };
   }, [roomFilteredTimed]);
 
+  const roomBannerSequenceConflicts = useMemo(() => {
+    if (!activeRoomKey) return [] as Array<{ dayKey: string; prev: IsoEvent; next: IsoEvent; prevBanner: string; nextBanner: string }>;
+    const [b0, r0] = activeRoomKey.split("||");
+    const b = normToken(b0);
+    const r = normToken(r0);
+
+    const inRoom = events
+      .filter((e) => (e.visible ?? true) && eventMatchesRoom(e, b, r))
+      .slice()
+      .sort((a, b) => {
+        const aKind = a.kind ?? "timed";
+        const bKind = b.kind ?? "timed";
+
+        const aTs =
+          aKind === "untimed"
+            ? new Date(String(a.day ?? "")).getTime()
+            : new Date(String(a.start ?? "")).getTime();
+        const bTs =
+          bKind === "untimed"
+            ? new Date(String(b.day ?? "")).getTime()
+            : new Date(String(b.start ?? "")).getTime();
+
+        if (Number.isFinite(aTs) && Number.isFinite(bTs) && aTs !== bTs) return aTs - bTs;
+        if (aKind !== bKind) return aKind === "timed" ? -1 : 1;
+        return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
+      });
+
+    const out: Array<{ dayKey: string; prev: IsoEvent; next: IsoEvent; prevBanner: string; nextBanner: string }> = [];
+    let prevSpecified: { ev: IsoEvent; banner: "Общий" | "Секционный" } | null = null;
+
+    for (const ev of inRoom) {
+      const curBanner = bannerForCheck(ev.banner);
+      if (!curBanner) continue;
+      if (prevSpecified && prevSpecified.banner !== curBanner) {
+        out.push({
+          dayKey: eventDayKeyLocal(prevSpecified.ev),
+          prev: prevSpecified.ev,
+          next: ev,
+          prevBanner: prevSpecified.banner,
+          nextBanner: curBanner
+        });
+      }
+      prevSpecified = { ev, banner: curBanner };
+    }
+
+    if (periodScope === "all_days") return out;
+    if (!chunkDayKey) return [];
+    return out.filter((x) => x.dayKey === chunkDayKey);
+  }, [activeRoomKey, events, periodScope, chunkDayKey]);
+
   if (!events.length) return null;
 
   const chipDayLabel =
@@ -372,6 +434,25 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
               {roomTimeConflicts.lines.join("\n")}
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {roomBannerSequenceConflicts.length ? (
+        <div className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 800, marginBottom: 6 }}>Проверка последовательности баннеров</div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            Найдены последовательности в одной аудитории, где значение `Баннер` переключается между `Общий` и `Секционный`:
+            <b> {roomBannerSequenceConflicts.length}</b>.
+          </div>
+          <div className="muted" style={{ fontSize: 12, marginTop: 8, whiteSpace: "pre-line" }}>
+            {roomBannerSequenceConflicts
+              .slice(0, 20)
+              .map((c) => {
+                const d = c.dayKey ? formatDayFull(localDateFromDayKey(c.dayKey)) : "Без даты";
+                return `${d}: "${String(c.prev.title ?? "")}" (${c.prevBanner}) → "${String(c.next.title ?? "")}" (${c.nextBanner})`;
+              })
+              .join("\n")}
+          </div>
         </div>
       ) : null}
 
