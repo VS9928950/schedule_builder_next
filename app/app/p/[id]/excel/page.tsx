@@ -16,6 +16,14 @@ function uploadErrorText(code: string | undefined) {
       return "Достигнут лимит количества загруженных Excel для проекта.";
     case "bad_excel":
       return "Файл не удалось разобрать как корректный Excel.";
+    case "no_sheet_url":
+      return "Ссылка на Google Sheets не указана.";
+    case "bad_sheet_url":
+      return "Некорректная ссылка Google Sheets. Нужна ссылка вида docs.google.com/spreadsheets/d/<id>/...";
+    case "sheet_not_public":
+      return "Таблица недоступна по ссылке. Откройте доступ «У кого есть ссылка» и повторите.";
+    case "sheet_fetch_failed":
+      return "Не удалось скачать Google Sheets как .xlsx. Проверьте ссылку и попробуйте снова.";
     default:
       return "Ошибка загрузки файла.";
   }
@@ -44,7 +52,7 @@ export default async function ExcelTab({
   const uploadError = uploadErrorText(typeof sp?.err === "string" ? sp.err : undefined);
 
   return (
-    <div className="grid2">
+    <div className="grid">
       <div className="card">
         <h2 style={{ margin: "0 0 10px" }}>Документы</h2>
         {uploadError ? (
@@ -81,6 +89,30 @@ export default async function ExcelTab({
           </div>
         </form>
 
+        <div style={{ height: 12 }} />
+
+        <form className="grid" action={`/app/p/${project.id}/excel/import-url`} method="post">
+          <div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+              Ссылка Google Sheets
+            </div>
+            <input
+              name="sheetUrl"
+              type="url"
+              placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+              required
+            />
+          </div>
+          <div className="row">
+            <button type="submit" className="secondary">
+              Импортировать по ссылке
+            </button>
+          </div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            Поддерживается публичная ссылка. Будет скачан .xlsx и использован только лист «Перечень».
+          </div>
+        </form>
+
         <div style={{ height: 16 }} />
 
         <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Загруженные файлы</h3>
@@ -111,18 +143,6 @@ export default async function ExcelTab({
           </div>
         ) : (
           <div className="muted">Пока нет загруженных Excel.</div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2 style={{ margin: "0 0 10px" }}>Отладка: JSON активного документа</h2>
-        <div className="muted" style={{ marginBottom: 10, fontSize: 12 }}>
-          После парсинга в хранилище попадает только лист «Перечень» (или первый лист, если лист с таким именем не найден).
-        </div>
-        {project.excel_json ? (
-          <pre style={{ margin: 0, maxHeight: 720, overflow: "auto" }}>{JSON.stringify(project.excel_json, null, 2)}</pre>
-        ) : (
-          <div className="muted">Активный документ не выбран или ещё не загружен.</div>
         )}
       </div>
     </div>

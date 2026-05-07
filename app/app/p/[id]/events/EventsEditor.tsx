@@ -27,10 +27,14 @@ export type EditableEvent = {
   responsible4?: string;
   responsible5?: string;
   responsible6?: string;
+  teamLead?: string;
   volunteersCount?: number;
   vks?: "Да" | "Нет" | "Не указано";
+  photosFromResponsible?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
   simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
+  supportMaterials?: string;
+  banner?: "Общий" | "Секционный" | "Не указано";
   visible?: boolean;
   start: string; // ISO
   end: string; // ISO
@@ -61,10 +65,14 @@ export type UntimedEditableEvent = {
   responsible4?: string;
   responsible5?: string;
   responsible6?: string;
+  teamLead?: string;
   volunteersCount?: number;
   vks?: "Да" | "Нет" | "Не указано";
+  photosFromResponsible?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
   simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
+  supportMaterials?: string;
+  banner?: "Общий" | "Секционный" | "Не указано";
   orderNo?: number;
   day: string; // ISO date
   visible?: boolean;
@@ -105,6 +113,7 @@ function fromLocalInputValue(v: string) {
 }
 
 const YES_NO_UNKNOWN: Array<"Да" | "Нет" | "Не указано"> = ["Да", "Нет", "Не указано"];
+const BANNER_OPTIONS: Array<"Общий" | "Секционный" | "Не указано"> = ["Общий", "Секционный", "Не указано"];
 
 export function EventsEditor({
   projectId,
@@ -493,6 +502,50 @@ export function EventsEditor({
               </div>
               <input value={editing.responsible6 ?? ""} onChange={(e) => patchEvent(editing.id, { responsible6: e.target.value })} />
             </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Тимлид
+              </div>
+              <input value={editing.teamLead ?? ""} onChange={(e) => patchEvent(editing.id, { teamLead: e.target.value })} />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Фотографии от ответственного
+              </div>
+              <select
+                value={editing.photosFromResponsible ?? ""}
+                onChange={(e) => patchEvent(editing.id, { photosFromResponsible: (e.target.value as any) || undefined })}
+              >
+                <option value="">—</option>
+                {YES_NO_UNKNOWN.map((v) => (
+                  <option key={`photos-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Баннер
+              </div>
+              <select value={editing.banner ?? ""} onChange={(e) => patchEvent(editing.id, { banner: (e.target.value as any) || undefined })}>
+                <option value="">—</option>
+                {BANNER_OPTIONS.map((v) => (
+                  <option key={`banner-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Сопроводительные материалы
+              </div>
+              <textarea
+                value={editing.supportMaterials ?? ""}
+                onChange={(e) => patchEvent(editing.id, { supportMaterials: e.target.value })}
+              />
+            </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Ссылка (http или https, можно пусто)
@@ -841,6 +894,53 @@ export function EventsEditor({
               <input
                 value={editingUntimed.responsible6 ?? ""}
                 onChange={(e) => patchUntimed(editingUntimed.id, { responsible6: e.target.value })}
+              />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Тимлид
+              </div>
+              <input value={editingUntimed.teamLead ?? ""} onChange={(e) => patchUntimed(editingUntimed.id, { teamLead: e.target.value })} />
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Фотографии от ответственного
+              </div>
+              <select
+                value={editingUntimed.photosFromResponsible ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { photosFromResponsible: (e.target.value as any) || undefined })}
+              >
+                <option value="">—</option>
+                {YES_NO_UNKNOWN.map((v) => (
+                  <option key={`u-photos-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Баннер
+              </div>
+              <select
+                value={editingUntimed.banner ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { banner: (e.target.value as any) || undefined })}
+              >
+                <option value="">—</option>
+                {BANNER_OPTIONS.map((v) => (
+                  <option key={`u-banner-${v}`} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Сопроводительные материалы
+              </div>
+              <textarea
+                value={editingUntimed.supportMaterials ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { supportMaterials: e.target.value })}
               />
             </div>
             <div style={{ gridColumn: "1 / -1" }}>

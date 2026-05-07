@@ -42,8 +42,13 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
       responsible4: e.responsible4 != null ? String(e.responsible4) : undefined,
       responsible5: e.responsible5 != null ? String(e.responsible5) : undefined,
       responsible6: e.responsible6 != null ? String(e.responsible6) : undefined,
+      teamLead: e.teamLead != null ? String(e.teamLead) : undefined,
       volunteersCount: typeof e.volunteersCount === "number" ? e.volunteersCount : undefined,
       vks: e.vks === "Да" || e.vks === "Нет" || e.vks === "Не указано" ? e.vks : undefined,
+      photosFromResponsible:
+        e.photosFromResponsible === "Да" || e.photosFromResponsible === "Нет" || e.photosFromResponsible === "Не указано"
+          ? e.photosFromResponsible
+          : undefined,
       translation:
         e.translation === "Да" || e.translation === "Нет" || e.translation === "Не указано" ? e.translation : undefined,
       simultaneousInterpretation:
@@ -52,6 +57,8 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
         e.simultaneousInterpretation === "Не указано"
           ? e.simultaneousInterpretation
           : undefined,
+      supportMaterials: e.supportMaterials ? String(e.supportMaterials) : undefined,
+      banner: e.banner === "Общий" || e.banner === "Секционный" || e.banner === "Не указано" ? e.banner : undefined,
       orderNo: typeof e.orderNo === "number" ? e.orderNo : typeof e["№"] === "number" ? e["№"] : undefined,
       visible: typeof e.visible === "boolean" ? e.visible : true,
       day: typeof e.day === "string" ? e.day : new Date(e.day ?? Date.now()).toISOString(),
@@ -78,8 +85,13 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
       responsible4: e.responsible4 != null ? String(e.responsible4) : undefined,
       responsible5: e.responsible5 != null ? String(e.responsible5) : undefined,
       responsible6: e.responsible6 != null ? String(e.responsible6) : undefined,
+      teamLead: e.teamLead != null ? String(e.teamLead) : undefined,
       volunteersCount: typeof e.volunteersCount === "number" ? e.volunteersCount : undefined,
       vks: e.vks === "Да" || e.vks === "Нет" || e.vks === "Не указано" ? e.vks : undefined,
+      photosFromResponsible:
+        e.photosFromResponsible === "Да" || e.photosFromResponsible === "Нет" || e.photosFromResponsible === "Не указано"
+          ? e.photosFromResponsible
+          : undefined,
       translation:
         e.translation === "Да" || e.translation === "Нет" || e.translation === "Не указано" ? e.translation : undefined,
       simultaneousInterpretation:
@@ -88,6 +100,8 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
         e.simultaneousInterpretation === "Не указано"
           ? e.simultaneousInterpretation
           : undefined,
+      supportMaterials: e.supportMaterials ? String(e.supportMaterials) : undefined,
+      banner: e.banner === "Общий" || e.banner === "Секционный" || e.banner === "Не указано" ? e.banner : undefined,
       visible: typeof e.visible === "boolean" ? e.visible : true,
       start: typeof e.start === "string" ? e.start : e.start instanceof Date ? e.start.toISOString() : new Date(e.start).toISOString(),
       end: typeof e.end === "string" ? e.end : e.end instanceof Date ? e.end.toISOString() : new Date(e.end).toISOString(),

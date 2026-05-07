@@ -13,10 +13,14 @@ export type ScheduleEvent = {
   responsible4?: string;
   responsible5?: string;
   responsible6?: string;
+  teamLead?: string;
   volunteersCount?: number;
   vks?: "Да" | "Нет" | "Не указано";
+  photosFromResponsible?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
   simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
+  supportMaterials?: string;
+  banner?: "Общий" | "Секционный" | "Не указано";
   orderNo?: number;
   visible?: boolean;
   start: Date;
@@ -37,10 +41,14 @@ export type UntimedEvent = {
   responsible4?: string;
   responsible5?: string;
   responsible6?: string;
+  teamLead?: string;
   volunteersCount?: number;
   vks?: "Да" | "Нет" | "Не указано";
+  photosFromResponsible?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
   simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
+  supportMaterials?: string;
+  banner?: "Общий" | "Секционный" | "Не указано";
   orderNo?: number;
   visible?: boolean;
   day: Date; // date only (start of day)
@@ -118,6 +126,15 @@ function parseTernary(value: unknown): "Да" | "Нет" | "Не указано"
   return undefined;
 }
 
+function parseBanner(value: unknown): "Общий" | "Секционный" | "Не указано" | undefined {
+  const s = strAny(value)?.toLowerCase();
+  if (!s) return undefined;
+  if (s === "общий") return "Общий";
+  if (s === "секционный") return "Секционный";
+  if (s === "не указано") return "Не указано";
+  return undefined;
+}
+
 function normalizeKeys(row: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(row)) {
@@ -187,10 +204,14 @@ export function parseScheduleFromExcelRows(rows: unknown[]): ScheduleEvent[] {
       responsible4: strAny(row["Ответственный сотрудник 4"]) ?? undefined,
       responsible5: strAny(row["Ответственный сотрудник 5"]) ?? undefined,
       responsible6: strAny(row["Ответственный сотрудник 6"]) ?? undefined,
+      teamLead: strAny(row["Тимлид"]) ?? undefined,
       volunteersCount: num(row["Количество волонтеров"]) ?? undefined,
       vks: parseTernary(row["ВКС"]),
+      photosFromResponsible: parseTernary(row["Фотографии от ответственного"]),
       translation: parseTernary(row["Трансляция"]),
       simultaneousInterpretation: parseTernary(row["Синхронный перевод"]),
+      supportMaterials: str(row["Сопроводительные материалы"]) ?? undefined,
+      banner: parseBanner(row["Баннер"]),
       orderNo: num(row["№"] ?? row["N"] ?? row["No"] ?? row["Номер"]) ?? undefined,
       visible: true,
       start,
@@ -290,10 +311,14 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
     const responsible4 = strAny(row["Ответственный сотрудник 4"]) ?? undefined;
     const responsible5 = strAny(row["Ответственный сотрудник 5"]) ?? undefined;
     const responsible6 = strAny(row["Ответственный сотрудник 6"]) ?? undefined;
+    const teamLead = strAny(row["Тимлид"]) ?? undefined;
     const volunteersCount = num(row["Количество волонтеров"]) ?? undefined;
     const vks = parseTernary(row["ВКС"]);
+    const photosFromResponsible = parseTernary(row["Фотографии от ответственного"]);
     const translation = parseTernary(row["Трансляция"]);
     const simultaneousInterpretation = parseTernary(row["Синхронный перевод"]);
+    const supportMaterials = str(row["Сопроводительные материалы"]) ?? undefined;
+    const banner = parseBanner(row["Баннер"]);
 
     const baseDay = startOfDay(excelSerialToDate(dateSerial));
 
@@ -320,10 +345,14 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
         responsible4,
         responsible5,
         responsible6,
+        teamLead,
         volunteersCount,
         vks,
+        photosFromResponsible,
         translation,
         simultaneousInterpretation,
+        supportMaterials,
+        banner,
         orderNo,
         visible: true,
         start,
@@ -344,10 +373,14 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
         responsible4,
         responsible5,
         responsible6,
+        teamLead,
         volunteersCount,
         vks,
+        photosFromResponsible,
         translation,
         simultaneousInterpretation,
+        supportMaterials,
+        banner,
         orderNo,
         visible: true,
         day: baseDay

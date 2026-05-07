@@ -17,10 +17,14 @@ export type ProjectEventIso = {
   responsible4?: string;
   responsible5?: string;
   responsible6?: string;
+  teamLead?: string;
   volunteersCount?: number;
   vks?: "Да" | "Нет" | "Не указано";
+  photosFromResponsible?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
   simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
+  supportMaterials?: string;
+  banner?: "Общий" | "Секционный" | "Не указано";
   visible?: boolean;
 };
 

@@ -34,6 +34,8 @@ export function ProjectTabs({ projectId }: { projectId: number }) {
       <Tab href={`${base}/broadcasts`} label="Трансляции" active={path.includes("/broadcasts")} />
       <Tab href={`${base}/interpretation`} label="Перевод" active={path.includes("/interpretation")} />
       <Tab href={`${base}/volunteers`} label="Волонтеры" active={path.includes("/volunteers")} />
+      <Tab href={`${base}/announcements`} label="Анонсы" active={path.includes("/announcements")} />
+      <Tab href={`${base}/report`} label="Отчет" active={path.includes("/report")} />
       <Tab href={`${base}/export`} label="Экспорт" active={path.includes("/export")} />
     </div>
   );
