@@ -61,59 +61,84 @@ export default async function ExcelTab({
           </div>
         ) : null}
         <p className="muted" style={{ marginBottom: 14 }}>
-          Импорт идёт <b>только с листа «Перечень»</b> (остальные листы в файле игнорируются). Лишние колонки и пустые строки
-          не мешают: используются знакомые поля (дата, время, название и т.д.).
+          Можно загрузить документ двумя способами: файлом `.xlsx` или ссылкой на Google Sheets. В обоих вариантах используется
+          лист <b>«Перечень»</b>, остальные листы игнорируются.
         </p>
 
         <div className="row" style={{ gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-          <a className="chip" href={`/app/p/${project.id}/excel/template`}>
+          <a
+            href={`/app/p/${project.id}/excel/template`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              border: "1px solid var(--line)",
+              background: "rgba(37,99,235,.10)",
+              color: "var(--text)",
+              padding: "10px 14px",
+              borderRadius: 12,
+              textDecoration: "none"
+            }}
+          >
             Скачать шаблон .xlsx (лист «Перечень»)
           </a>
         </div>
 
-        <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Загрузка</h3>
-        <div className="muted" style={{ marginBottom: 10, fontSize: 13 }}>
-          Файлы сохраняются в каталог проекта. Можно хранить несколько версий, выбрать активный документ и при необходимости
-          удалить лишнее.
+        <div className="card" style={{ padding: 12, marginBottom: 16 }}>
+          <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Загрузка</h3>
+          <div className="muted" style={{ marginBottom: 10, fontSize: 13 }}>
+            Выберите удобный источник документа. Оба способа равнозначны: после импорта файл попадёт в список загруженных и
+            сможет быть выбран активным.
+          </div>
+          <div className="grid2" style={{ alignItems: "stretch" }}>
+            <form
+              className="card grid"
+              style={{ padding: 12, margin: 0, alignContent: "start" }}
+              action={`/app/p/${project.id}/excel/upload`}
+              method="post"
+              encType="multipart/form-data"
+            >
+              <div style={{ fontWeight: 700 }}>Загрузить файл</div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                Поддерживается файл `.xlsx`.
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Файл .xlsx
+                </div>
+                <input name="file" type="file" accept=".xlsx" required />
+              </div>
+              <div className="row">
+                <button type="submit">Загрузить</button>
+              </div>
+            </form>
+
+            <form
+              className="card grid"
+              style={{ padding: 12, margin: 0, alignContent: "start" }}
+              action={`/app/p/${project.id}/excel/import-url`}
+              method="post"
+            >
+              <div style={{ fontWeight: 700 }}>Импорт по ссылке</div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                Вставьте публичную ссылку Google Sheets.
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Ссылка Google Sheets
+                </div>
+                <input
+                  name="sheetUrl"
+                  type="url"
+                  placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                  required
+                />
+              </div>
+              <div className="row">
+                <button type="submit">Импортировать</button>
+              </div>
+            </form>
+          </div>
         </div>
-
-        <form className="grid" action={`/app/p/${project.id}/excel/upload`} method="post" encType="multipart/form-data">
-          <div>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-              Файл .xlsx
-            </div>
-            <input name="file" type="file" accept=".xlsx" required />
-          </div>
-          <div className="row">
-            <button type="submit">Загрузить</button>
-          </div>
-        </form>
-
-        <div style={{ height: 12 }} />
-
-        <form className="grid" action={`/app/p/${project.id}/excel/import-url`} method="post">
-          <div>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-              Ссылка Google Sheets
-            </div>
-            <input
-              name="sheetUrl"
-              type="url"
-              placeholder="https://docs.google.com/spreadsheets/d/.../edit"
-              required
-            />
-          </div>
-          <div className="row">
-            <button type="submit" className="secondary">
-              Импортировать по ссылке
-            </button>
-          </div>
-          <div className="muted" style={{ fontSize: 12 }}>
-            Поддерживается публичная ссылка. Будет скачан .xlsx и использован только лист «Перечень».
-          </div>
-        </form>
-
-        <div style={{ height: 16 }} />
 
         <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Загруженные файлы</h3>
         {uploads.length ? (
