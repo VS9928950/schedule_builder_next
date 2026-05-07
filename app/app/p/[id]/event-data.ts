@@ -4,6 +4,8 @@ import { parseScheduleAllFromExcelRows } from "@/lib/schedule";
 export type ProjectEventIso = {
   id?: string;
   title?: string;
+  description?: string;
+  description_md?: string;
   kind?: "timed" | "untimed";
   day?: string;
   start?: string;
