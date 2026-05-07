@@ -57,6 +57,7 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
         e.simultaneousInterpretation === "Не указано"
           ? e.simultaneousInterpretation
           : undefined,
+      supportMaterials_md: e.supportMaterials_md ? String(e.supportMaterials_md) : undefined,
       supportMaterials: e.supportMaterials ? String(e.supportMaterials) : undefined,
       banner: e.banner === "Общий" || e.banner === "Секционный" || e.banner === "Не указано" ? e.banner : undefined,
       orderNo: typeof e.orderNo === "number" ? e.orderNo : typeof e["№"] === "number" ? e["№"] : undefined,
@@ -100,6 +101,7 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
         e.simultaneousInterpretation === "Не указано"
           ? e.simultaneousInterpretation
           : undefined,
+      supportMaterials_md: e.supportMaterials_md ? String(e.supportMaterials_md) : undefined,
       supportMaterials: e.supportMaterials ? String(e.supportMaterials) : undefined,
       banner: e.banner === "Общий" || e.banner === "Секционный" || e.banner === "Не указано" ? e.banner : undefined,
       visible: typeof e.visible === "boolean" ? e.visible : true,
@@ -114,7 +116,8 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
       <div className="card">
         <h2 style={{ margin: "0 0 10px" }}>Версии сборки</h2>
         <div className="muted" style={{ marginBottom: 14 }}>
-          Версия фиксирует “результат сборки” (снимок событий). Можно держать несколько версий и выбирать актуальную.
+          Здесь сохраняются рабочие версии перечня событий. Можно вести несколько вариантов и в любой момент переключать
+          актуальную версию для вкладок и экспорта.
         </div>
 
         <form className="row" action={`/app/p/${project.id}/builds`} method="post">
@@ -170,12 +173,10 @@ export default async function EventsTab({ params }: { params: Promise<{ id: stri
       </div>
 
       <div className="card">
-        <h2 style={{ margin: "0 0 10px" }}>
-          События {activeBuild ? `(версия: ${activeBuild.version})` : "(из активного Excel, без версии)"}
-        </h2>
+        <h2 style={{ margin: "0 0 10px" }}>Перечень всех событий</h2>
         <div className="muted" style={{ marginBottom: 14 }}>
           {activeBuild
-            ? "Правьте/удаляйте события и сохраняйте — изменения записываются в выбранную версию."
+            ? `Редактирование ведётся в активной версии: ${activeBuild.version || `v${(activeBuild as any).seq ?? activeBuild.id}`}.`
             : "Чтобы править события, сначала создайте версию сборки выше (кнопка «Сохранить как версию»)."}
         </div>
         {editable.length ? (

@@ -33,6 +33,7 @@ export type EditableEvent = {
   photosFromResponsible?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
   simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
+  supportMaterials_md?: string;
   supportMaterials?: string;
   banner?: "Общий" | "Секционный" | "Не указано";
   visible?: boolean;
@@ -71,6 +72,7 @@ export type UntimedEditableEvent = {
   photosFromResponsible?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
   simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
+  supportMaterials_md?: string;
   supportMaterials?: string;
   banner?: "Общий" | "Секционный" | "Не указано";
   orderNo?: number;
@@ -313,10 +315,10 @@ export function EventsEditor({
         <div className="row">
           {error ? <div className="error">{error}</div> : null}
           <button type="button" className="secondary" onClick={createNewTimedEvent}>
-            + timed
+            Добавить с указанием времени
           </button>
           <button type="button" className="secondary" onClick={createNewUntimedEvent}>
-            + без времени
+            Добавить без указания времени
           </button>
           <button type="button" onClick={saveAll} disabled={!dirty || saving}>
             {saving ? "Сохранение..." : "Сохранить"}
@@ -335,7 +337,9 @@ export function EventsEditor({
             backdropFilter: "blur(10px)",
             background: "rgba(255,255,255,.94)",
             boxShadow: "0 18px 48px rgba(15,23,42,.16)",
-            isolation: "isolate"
+            isolation: "isolate",
+            maxHeight: "calc(100vh - 24px)",
+            overflowY: "auto"
           }}
         >
           <div className="row" style={{ justifyContent: "space-between" }}>
@@ -539,7 +543,16 @@ export function EventsEditor({
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Сопроводительные материалы
+                  Сопроводительные материалы (Форматируемое)
+              </div>
+              <textarea
+                  value={editing.supportMaterials_md ?? ""}
+                  onChange={(e) => patchEvent(editing.id, { supportMaterials_md: e.target.value })}
+                />
+              </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Сопроводительные материалы (Загруженное)
               </div>
               <textarea
                 value={editing.supportMaterials ?? ""}
@@ -566,7 +579,7 @@ export function EventsEditor({
             <div className="grid2">
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Описание (Markdown)
+                  Форматируемое описание
                 </div>
                 <textarea
                   value={editing.description_md ?? ""}
@@ -576,7 +589,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Описание (обычное, legacy)
+                  Загруженное описание
                 </div>
                 <textarea value={editing.description ?? ""} onChange={(e) => patchEvent(editing.id, { description: e.target.value })} />
               </div>
@@ -708,7 +721,9 @@ export function EventsEditor({
                   background: "rgba(255,255,255,.94)",
                   boxShadow: "0 18px 48px rgba(15,23,42,.16)",
                   isolation: "isolate"
-                })
+                }),
+            maxHeight: "calc(100vh - 24px)",
+            overflowY: "auto"
           }}
         >
           <div className="row" style={{ justifyContent: "space-between" }}>
@@ -936,7 +951,16 @@ export function EventsEditor({
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Сопроводительные материалы
+                  Сопроводительные материалы (Форматируемое)
+              </div>
+              <textarea
+                  value={editingUntimed.supportMaterials_md ?? ""}
+                  onChange={(e) => patchUntimed(editingUntimed.id, { supportMaterials_md: e.target.value })}
+                />
+              </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Сопроводительные материалы (Загруженное)
               </div>
               <textarea
                 value={editingUntimed.supportMaterials ?? ""}
@@ -963,7 +987,7 @@ export function EventsEditor({
             <div className="grid2">
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Описание (Markdown)
+                  Форматируемое описание
                 </div>
                 <textarea
                   value={editingUntimed.description_md ?? ""}
@@ -973,7 +997,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Описание (обычное, legacy)
+                  Загруженное описание
                 </div>
                 <textarea value={editingUntimed.description ?? ""} onChange={(e) => patchUntimed(editingUntimed.id, { description: e.target.value })} />
               </div>
@@ -1058,7 +1082,7 @@ export function EventsEditor({
       {untimed.length ? (
         <div className="card" style={{ padding: 12 }}>
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 900 }}>Без времени</div>
+            <div style={{ fontWeight: 900 }}>События без указанного времени</div>
             <div className="chip">{untimed.length}</div>
           </div>
           <div style={{ height: 10 }} />

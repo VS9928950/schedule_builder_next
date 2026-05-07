@@ -37,6 +37,7 @@ type IsoEvent = {
   responsible4?: string;
   responsible5?: string;
   responsible6?: string;
+  teamLead?: string;
   volunteersCount?: number;
   vks?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
@@ -546,20 +547,17 @@ export function TimelineViewer({
     const responsibles = [ev.responsible1, ev.responsible2, ev.responsible3, ev.responsible4, ev.responsible5, ev.responsible6]
       .map((x) => (x ?? "").trim())
       .filter(Boolean);
+    const teamLead = (ev.teamLead ?? "").trim();
     const lines: string[] = [];
-    const pushFlag = (label: string, value?: "Да" | "Нет" | "Не указано") => {
-      if (!value) return;
-      if (value === "Да") {
-        lines.push(label);
-        return;
-      }
-      lines.push(`${label}: ${value}`);
+    const pushFlagIfYes = (label: string, value?: "Да" | "Нет" | "Не указано") => {
+      if (value === "Да") lines.push(label);
     };
+    if (teamLead) lines.push(teamLead);
     if (responsibles.length) lines.push(`Ответственные: ${responsibles.join(", ")}`);
     if (typeof ev.volunteersCount === "number" && Number.isFinite(ev.volunteersCount)) lines.push(`Волонтеры: ${ev.volunteersCount}`);
-    pushFlag("ВКС", ev.vks);
-    pushFlag("Трансляция", ev.translation);
-    pushFlag("Перевод", ev.simultaneousInterpretation);
+    pushFlagIfYes("ВКС", ev.vks);
+    pushFlagIfYes("Трансляция", ev.translation);
+    pushFlagIfYes("Перевод", ev.simultaneousInterpretation);
     return lines;
   }
 
@@ -854,7 +852,7 @@ export function TimelineViewer({
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
             <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <span className="muted" style={{ fontSize: 12 }}>
-                Пачка
+                {showExtraFields ? "Период" : "Пачка"}
               </span>
               <button
                 type="button"
@@ -881,7 +879,7 @@ export function TimelineViewer({
             {!hideControls && activeBuildId ? (
               <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <label className="row muted" style={{ gap: 6, fontSize: 12 }}>
-                  Дней в пачке (N, до 10)
+                  {showExtraFields ? "Дней в периоде (От 1 до 10)" : "Дней в пачке (N, до 10)"}
                   <input
                     type="number"
                     min={1}

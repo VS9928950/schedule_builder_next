@@ -25,6 +25,7 @@ export type ProjectEventIso = {
   photosFromResponsible?: "Да" | "Нет" | "Не указано";
   translation?: "Да" | "Нет" | "Не указано";
   simultaneousInterpretation?: "Да" | "Нет" | "Не указано";
+  supportMaterials_md?: string;
   supportMaterials?: string;
   banner?: "Общий" | "Секционный" | "Не указано";
   visible?: boolean;
