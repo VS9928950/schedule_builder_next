@@ -1787,9 +1787,9 @@ function parseDayMarkTokens(tokens: string[]) {
                       />
                     </div>
 
-                    <div style={{ height: 10 }} />
+                    <div className="tl-section-divider" />
                     <div className="grid" style={{ gap: 8 }}>
-                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Заголовок</div>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Размер
@@ -1978,7 +1978,7 @@ function parseDayMarkTokens(tokens: string[]) {
                       </div>
                     </div>
 
-                    <div style={{ height: 10 }} />
+                    <div className="tl-section-divider" />
                     <div className="grid" style={{ gap: 8 }}>
                       <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Тимлид</div>
@@ -2263,6 +2263,7 @@ function parseDayMarkTokens(tokens: string[]) {
                       </div>
                     </div>
 
+                    <div className="tl-section-divider" />
                     <div className="row" style={{ gap: 10, alignItems: "flex-end", marginTop: 6, flexWrap: "wrap" }}>
                       <label className="muted" style={{ fontSize: 12 }}>
                         Открытие ссылки в названии
@@ -2285,7 +2286,7 @@ function parseDayMarkTokens(tokens: string[]) {
                       </span>
                     </div>
 
-                    <div style={{ height: 10 }} />
+                    <div className="tl-section-divider" />
                     <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
                       <label className="muted" style={{ fontSize: 12, width: "100%" }}>
                         Подложка
