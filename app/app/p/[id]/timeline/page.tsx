@@ -41,7 +41,7 @@ export default async function TimelineTab({ params }: { params: Promise<{ id: st
   return (
     <div className="card">
       <h2 style={{ margin: "0 0 10px" }}>Архитектура программы</h2>
-      <p className="muted" style={{ marginBottom: 14, maxWidth: 720 }}>
+      <p className="muted" style={{ marginBottom: 14, fontSize: 14, maxWidth: "none", width: "100%" }}>
         Расписание показано по дням с навигацией по периодам: можно переключать период стрелками и выбирать конкретный день
         внутри него. Для выбранного дня выводятся события с временем и блоки без времени. Скрытые дни исключаются только из
         отображения, исходные данные и события при этом сохраняются.

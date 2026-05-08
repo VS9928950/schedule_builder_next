@@ -22,7 +22,7 @@ export default async function TechScheduleTab({ params }: { params: Promise<{ id
   return (
     <div className="card">
       <h2 style={{ margin: "0 0 10px" }}>Техническое расписание</h2>
-      <p className="muted" style={{ marginBottom: 14, maxWidth: 720 }}>
+      <p className="muted" style={{ marginBottom: 14, fontSize: 14, maxWidth: "none", width: "100%" }}>
         Полнофункциональная копия «Архитектуры» с отдельными настройками и отдельным набором правил для техрасписания.
         Дополнительные поля событий показываются автоматически, если заполнены.
       </p>

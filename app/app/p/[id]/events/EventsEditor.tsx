@@ -364,7 +364,7 @@ export function EventsEditor({
                   onChange={(e) => patchEvent(editing.id, { visible: e.target.checked })}
                 />
                 <span className="muted" style={{ fontSize: 12 }}>
-                  Показывать в общем расписании
+                  Показать в общем расписании
                 </span>
               </label>
             </div>
@@ -768,7 +768,7 @@ export function EventsEditor({
                   onChange={(e) => patchUntimed(editingUntimed.id, { visible: e.target.checked })}
                 />
                 <span className="muted" style={{ fontSize: 12 }}>
-                  Показывать в общем расписании
+                  Показать в общем расписании
                 </span>
               </label>
             </div>

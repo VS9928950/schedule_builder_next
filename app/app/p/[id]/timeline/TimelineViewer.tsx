@@ -81,16 +81,32 @@ export function TimelineViewer({
 
     titleWeight?: number;
     titleItalic?: boolean;
+    titleColor?: string;
     timeWeight?: number;
     timeItalic?: boolean;
+    timeColor?: string;
     formatWeight?: number;
     formatItalic?: boolean;
+    formatColor?: string;
     placeWeight?: number;
     placeItalic?: boolean;
-    extraFieldsFontPx?: number;
-    extraFieldsColor?: string;
-    extraFieldsWeight?: number;
-    extraFieldsItalic?: boolean;
+    placeColor?: string;
+    teamLeadFontPx?: number;
+    teamLeadColor?: string;
+    teamLeadWeight?: number;
+    teamLeadItalic?: boolean;
+    responsiblesFontPx?: number;
+    responsiblesColor?: string;
+    responsiblesWeight?: number;
+    responsiblesItalic?: boolean;
+    flagsFontPx?: number;
+    flagsColor?: string;
+    flagsWeight?: number;
+    flagsItalic?: boolean;
+    volunteersFontPx?: number;
+    volunteersColor?: string;
+    volunteersWeight?: number;
+    volunteersItalic?: boolean;
 
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -145,16 +161,32 @@ export function TimelineViewer({
 
     titleWeight: number;
     titleItalic: boolean;
+    titleColor: string;
     timeWeight: number;
     timeItalic: boolean;
+    timeColor: string;
     formatWeight: number;
     formatItalic: boolean;
+    formatColor: string;
     placeWeight: number;
     placeItalic: boolean;
-    extraFieldsFontPx: number;
-    extraFieldsColor: string;
-    extraFieldsWeight: number;
-    extraFieldsItalic: boolean;
+    placeColor: string;
+    teamLeadFontPx: number;
+    teamLeadColor: string;
+    teamLeadWeight: number;
+    teamLeadItalic: boolean;
+    responsiblesFontPx: number;
+    responsiblesColor: string;
+    responsiblesWeight: number;
+    responsiblesItalic: boolean;
+    flagsFontPx: number;
+    flagsColor: string;
+    flagsWeight: number;
+    flagsItalic: boolean;
+    volunteersFontPx: number;
+    volunteersColor: string;
+    volunteersWeight: number;
+    volunteersItalic: boolean;
 
     eventBgColor: string;
     eventBgAlpha: number;
@@ -173,16 +205,32 @@ export function TimelineViewer({
 
     titleWeight: 700,
     titleItalic: false,
+    titleColor: "#0f172a",
     timeWeight: 400,
     timeItalic: false,
+    timeColor: "#64748b",
     formatWeight: 400,
     formatItalic: false,
+    formatColor: "#64748b",
     placeWeight: 400,
     placeItalic: false,
-    extraFieldsFontPx: 11,
-    extraFieldsColor: "#475569",
-    extraFieldsWeight: 500,
-    extraFieldsItalic: false,
+    placeColor: "#64748b",
+    teamLeadFontPx: 11,
+    teamLeadColor: "#475569",
+    teamLeadWeight: 500,
+    teamLeadItalic: false,
+    responsiblesFontPx: 11,
+    responsiblesColor: "#475569",
+    responsiblesWeight: 500,
+    responsiblesItalic: false,
+    flagsFontPx: 11,
+    flagsColor: "#475569",
+    flagsWeight: 500,
+    flagsItalic: false,
+    volunteersFontPx: 11,
+    volunteersColor: "#475569",
+    volunteersWeight: 500,
+    volunteersItalic: false,
 
     eventBgColor: "#60a5fa",
     eventBgAlpha: 0.1,
@@ -370,20 +418,49 @@ export function TimelineViewer({
 
       titleWeight: typeof initialStyle.titleWeight === "number" ? initialStyle.titleWeight : prev.titleWeight,
       titleItalic: typeof initialStyle.titleItalic === "boolean" ? initialStyle.titleItalic : prev.titleItalic,
+      titleColor: typeof initialStyle.titleColor === "string" ? initialStyle.titleColor : prev.titleColor,
       timeWeight: typeof initialStyle.timeWeight === "number" ? initialStyle.timeWeight : prev.timeWeight,
       timeItalic: typeof initialStyle.timeItalic === "boolean" ? initialStyle.timeItalic : prev.timeItalic,
+      timeColor: typeof initialStyle.timeColor === "string" ? initialStyle.timeColor : prev.timeColor,
       formatWeight: typeof initialStyle.formatWeight === "number" ? initialStyle.formatWeight : prev.formatWeight,
       formatItalic: typeof initialStyle.formatItalic === "boolean" ? initialStyle.formatItalic : prev.formatItalic,
+      formatColor: typeof initialStyle.formatColor === "string" ? initialStyle.formatColor : prev.formatColor,
       placeWeight: typeof initialStyle.placeWeight === "number" ? initialStyle.placeWeight : prev.placeWeight,
       placeItalic: typeof initialStyle.placeItalic === "boolean" ? initialStyle.placeItalic : prev.placeItalic,
-      extraFieldsFontPx:
-        typeof initialStyle.extraFieldsFontPx === "number" ? initialStyle.extraFieldsFontPx : prev.extraFieldsFontPx,
-      extraFieldsColor:
-        typeof initialStyle.extraFieldsColor === "string" ? initialStyle.extraFieldsColor : prev.extraFieldsColor,
-      extraFieldsWeight:
-        typeof initialStyle.extraFieldsWeight === "number" ? initialStyle.extraFieldsWeight : prev.extraFieldsWeight,
-      extraFieldsItalic:
-        typeof initialStyle.extraFieldsItalic === "boolean" ? initialStyle.extraFieldsItalic : prev.extraFieldsItalic,
+      placeColor: typeof initialStyle.placeColor === "string" ? initialStyle.placeColor : prev.placeColor,
+      teamLeadFontPx:
+        typeof initialStyle.teamLeadFontPx === "number" ? initialStyle.teamLeadFontPx : prev.teamLeadFontPx,
+      teamLeadColor: typeof initialStyle.teamLeadColor === "string" ? initialStyle.teamLeadColor : prev.teamLeadColor,
+      teamLeadWeight:
+        typeof initialStyle.teamLeadWeight === "number" ? initialStyle.teamLeadWeight : prev.teamLeadWeight,
+      teamLeadItalic:
+        typeof initialStyle.teamLeadItalic === "boolean" ? initialStyle.teamLeadItalic : prev.teamLeadItalic,
+      responsiblesFontPx:
+        typeof initialStyle.responsiblesFontPx === "number"
+          ? initialStyle.responsiblesFontPx
+          : prev.responsiblesFontPx,
+      responsiblesColor:
+        typeof initialStyle.responsiblesColor === "string" ? initialStyle.responsiblesColor : prev.responsiblesColor,
+      responsiblesWeight:
+        typeof initialStyle.responsiblesWeight === "number"
+          ? initialStyle.responsiblesWeight
+          : prev.responsiblesWeight,
+      responsiblesItalic:
+        typeof initialStyle.responsiblesItalic === "boolean"
+          ? initialStyle.responsiblesItalic
+          : prev.responsiblesItalic,
+      flagsFontPx: typeof initialStyle.flagsFontPx === "number" ? initialStyle.flagsFontPx : prev.flagsFontPx,
+      flagsColor: typeof initialStyle.flagsColor === "string" ? initialStyle.flagsColor : prev.flagsColor,
+      flagsWeight: typeof initialStyle.flagsWeight === "number" ? initialStyle.flagsWeight : prev.flagsWeight,
+      flagsItalic: typeof initialStyle.flagsItalic === "boolean" ? initialStyle.flagsItalic : prev.flagsItalic,
+      volunteersFontPx:
+        typeof initialStyle.volunteersFontPx === "number" ? initialStyle.volunteersFontPx : prev.volunteersFontPx,
+      volunteersColor:
+        typeof initialStyle.volunteersColor === "string" ? initialStyle.volunteersColor : prev.volunteersColor,
+      volunteersWeight:
+        typeof initialStyle.volunteersWeight === "number" ? initialStyle.volunteersWeight : prev.volunteersWeight,
+      volunteersItalic:
+        typeof initialStyle.volunteersItalic === "boolean" ? initialStyle.volunteersItalic : prev.volunteersItalic,
 
       eventBgColor: typeof initialStyle.eventBgColor === "string" ? initialStyle.eventBgColor : prev.eventBgColor,
       eventBgAlpha: typeof initialStyle.eventBgAlpha === "number" ? initialStyle.eventBgAlpha : prev.eventBgAlpha,
@@ -508,16 +585,32 @@ export function TimelineViewer({
 
             titleWeight: styleDraft.titleWeight,
             titleItalic: styleDraft.titleItalic,
+            titleColor: styleDraft.titleColor,
             timeWeight: styleDraft.timeWeight,
             timeItalic: styleDraft.timeItalic,
+            timeColor: styleDraft.timeColor,
             formatWeight: styleDraft.formatWeight,
             formatItalic: styleDraft.formatItalic,
+            formatColor: styleDraft.formatColor,
             placeWeight: styleDraft.placeWeight,
             placeItalic: styleDraft.placeItalic,
-            extraFieldsFontPx: styleDraft.extraFieldsFontPx,
-            extraFieldsColor: styleDraft.extraFieldsColor,
-            extraFieldsWeight: styleDraft.extraFieldsWeight,
-            extraFieldsItalic: styleDraft.extraFieldsItalic,
+            placeColor: styleDraft.placeColor,
+            teamLeadFontPx: styleDraft.teamLeadFontPx,
+            teamLeadColor: styleDraft.teamLeadColor,
+            teamLeadWeight: styleDraft.teamLeadWeight,
+            teamLeadItalic: styleDraft.teamLeadItalic,
+            responsiblesFontPx: styleDraft.responsiblesFontPx,
+            responsiblesColor: styleDraft.responsiblesColor,
+            responsiblesWeight: styleDraft.responsiblesWeight,
+            responsiblesItalic: styleDraft.responsiblesItalic,
+            flagsFontPx: styleDraft.flagsFontPx,
+            flagsColor: styleDraft.flagsColor,
+            flagsWeight: styleDraft.flagsWeight,
+            flagsItalic: styleDraft.flagsItalic,
+            volunteersFontPx: styleDraft.volunteersFontPx,
+            volunteersColor: styleDraft.volunteersColor,
+            volunteersWeight: styleDraft.volunteersWeight,
+            volunteersItalic: styleDraft.volunteersItalic,
 
             eventBgColor: styleDraft.eventBgColor,
             eventBgAlpha: styleDraft.eventBgAlpha,
@@ -567,18 +660,20 @@ export function TimelineViewer({
     return s !== "Питание";
   }
 
-  function extraFieldLines(ev: IsoEvent): string[] {
+  function extraFieldLines(ev: IsoEvent): Array<{ kind: "teamLead" | "responsibles" | "flags" | "volunteers"; text: string }> {
     const responsibles = [ev.responsible1, ev.responsible2, ev.responsible3, ev.responsible4, ev.responsible5, ev.responsible6]
       .map((x) => (x ?? "").trim())
       .filter(Boolean);
     const teamLead = (ev.teamLead ?? "").trim();
-    const lines: string[] = [];
+    const lines: Array<{ kind: "teamLead" | "responsibles" | "flags" | "volunteers"; text: string }> = [];
     const pushFlagIfYes = (label: string, value?: "Да" | "Нет" | "Не указано") => {
-      if (value === "Да") lines.push(label);
+      if (value === "Да") lines.push({ kind: "flags", text: label });
     };
-    if (teamLead) lines.push(teamLead);
-    if (responsibles.length) lines.push(`Ответственные: ${responsibles.join(", ")}`);
-    if (typeof ev.volunteersCount === "number" && Number.isFinite(ev.volunteersCount)) lines.push(`Волонтеры: ${ev.volunteersCount}`);
+    if (teamLead) lines.push({ kind: "teamLead", text: teamLead });
+    if (responsibles.length) lines.push({ kind: "responsibles", text: `Ответственные: ${responsibles.join(", ")}` });
+    if (typeof ev.volunteersCount === "number" && Number.isFinite(ev.volunteersCount)) {
+      lines.push({ kind: "volunteers", text: `Волонтеры: ${ev.volunteersCount}` });
+    }
     pushFlagIfYes("ВКС", ev.vks);
     pushFlagIfYes("Трансляция", ev.translation);
     pushFlagIfYes("Перевод", ev.simultaneousInterpretation);
@@ -859,16 +954,32 @@ export function TimelineViewer({
 
         ["--tl-title-font-weight" as any]: String(styleDraft.titleWeight),
         ["--tl-title-font-style" as any]: styleDraft.titleItalic ? "italic" : "normal",
+        ["--tl-title-color" as any]: styleDraft.titleColor,
         ["--tl-time-font-weight" as any]: String(styleDraft.timeWeight),
         ["--tl-time-font-style" as any]: styleDraft.timeItalic ? "italic" : "normal",
+        ["--tl-time-color" as any]: styleDraft.timeColor,
         ["--tl-format-font-weight" as any]: String(styleDraft.formatWeight),
         ["--tl-format-font-style" as any]: styleDraft.formatItalic ? "italic" : "normal",
+        ["--tl-format-color" as any]: styleDraft.formatColor,
         ["--tl-place-font-weight" as any]: String(styleDraft.placeWeight),
         ["--tl-place-font-style" as any]: styleDraft.placeItalic ? "italic" : "normal",
-        ["--tl-extra-font-px" as any]: `${styleDraft.extraFieldsFontPx}px`,
-        ["--tl-extra-color" as any]: styleDraft.extraFieldsColor,
-        ["--tl-extra-font-weight" as any]: String(styleDraft.extraFieldsWeight),
-        ["--tl-extra-font-style" as any]: styleDraft.extraFieldsItalic ? "italic" : "normal",
+        ["--tl-place-color" as any]: styleDraft.placeColor,
+        ["--tl-teamlead-font-px" as any]: `${styleDraft.teamLeadFontPx}px`,
+        ["--tl-teamlead-color" as any]: styleDraft.teamLeadColor,
+        ["--tl-teamlead-font-weight" as any]: String(styleDraft.teamLeadWeight),
+        ["--tl-teamlead-font-style" as any]: styleDraft.teamLeadItalic ? "italic" : "normal",
+        ["--tl-responsibles-font-px" as any]: `${styleDraft.responsiblesFontPx}px`,
+        ["--tl-responsibles-color" as any]: styleDraft.responsiblesColor,
+        ["--tl-responsibles-font-weight" as any]: String(styleDraft.responsiblesWeight),
+        ["--tl-responsibles-font-style" as any]: styleDraft.responsiblesItalic ? "italic" : "normal",
+        ["--tl-flags-font-px" as any]: `${styleDraft.flagsFontPx}px`,
+        ["--tl-flags-color" as any]: styleDraft.flagsColor,
+        ["--tl-flags-font-weight" as any]: String(styleDraft.flagsWeight),
+        ["--tl-flags-font-style" as any]: styleDraft.flagsItalic ? "italic" : "normal",
+        ["--tl-volunteers-font-px" as any]: `${styleDraft.volunteersFontPx}px`,
+        ["--tl-volunteers-color" as any]: styleDraft.volunteersColor,
+        ["--tl-volunteers-font-weight" as any]: String(styleDraft.volunteersWeight),
+        ["--tl-volunteers-font-style" as any]: styleDraft.volunteersItalic ? "italic" : "normal",
 
         ["--tl-event-bg" as any]: rgbaFrom(styleDraft.eventBgColor, styleDraft.eventBgAlpha) ?? "rgba(37,99,235,.08)",
         ["--tl-event-border" as any]: rgbaFrom(styleDraft.eventBorderColor, styleDraft.eventBorderAlpha) ?? "rgba(37,99,235,.22)",
@@ -1516,207 +1627,389 @@ export function TimelineViewer({
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>Размеры шрифтов</div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>Основные строки карточки</div>
                     <div style={{ height: 6 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Заголовок (px)
-                        <input
-                          type="number"
-                          min={10}
-                          max={28}
-                          value={styleDraft.titleFontPx}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, titleFontPx: Number(e.target.value) }))}
-                          style={{ width: 120 }}
-                        />
-                      </label>
+                    <div className="grid" style={{ gap: 8 }}>
+                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Заголовок</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер (px)
+                          <input
+                            type="number"
+                            min={10}
+                            max={28}
+                            value={styleDraft.titleFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, titleFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.titleColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, titleColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.titleWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, titleWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[400, 500, 600, 700, 800, 900].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.titleItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, titleItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
 
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Время (px)
-                        <input
-                          type="number"
-                          min={9}
-                          max={22}
-                          value={styleDraft.timeFontPx}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, timeFontPx: Number(e.target.value) }))}
-                          style={{ width: 110 }}
-                        />
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Формат (px)
-                        <input
-                          type="number"
-                          min={9}
-                          max={22}
-                          value={styleDraft.formatFontPx}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, formatFontPx: Number(e.target.value) }))}
-                          style={{ width: 120 }}
-                        />
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Место (px)
-                        <input
-                          type="number"
-                          min={9}
-                          max={22}
-                          value={styleDraft.placeFontPx}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, placeFontPx: Number(e.target.value) }))}
-                          style={{ width: 110 }}
-                        />
-                      </label>
-                    </div>
+                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Время</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер (px)
+                          <input
+                            type="number"
+                            min={9}
+                            max={22}
+                            value={styleDraft.timeFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, timeFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.timeColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, timeColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.timeWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, timeWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.timeItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, timeItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
 
-                    <div style={{ height: 10 }} />
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>Насыщенность и курсив</div>
-                    <div style={{ height: 6 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Заголовок: жирность
-                        <select
-                          value={styleDraft.titleWeight}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, titleWeight: Number(e.target.value) }))}
-                          style={{ width: 140 }}
-                        >
-                          {[400, 500, 600, 700, 800, 900].map((w) => (
-                            <option key={w} value={w}>
-                              {w}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        <input
-                          type="checkbox"
-                          checked={styleDraft.titleItalic}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, titleItalic: e.target.checked }))}
-                          style={{ width: 16, marginRight: 8 }}
-                        />
-                        Заголовок: курсив
-                      </label>
+                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Формат</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер (px)
+                          <input
+                            type="number"
+                            min={9}
+                            max={22}
+                            value={styleDraft.formatFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, formatFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.formatColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, formatColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.formatWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, formatWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.formatItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, formatItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
 
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Время: жирность
-                        <select
-                          value={styleDraft.timeWeight}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, timeWeight: Number(e.target.value) }))}
-                          style={{ width: 120 }}
-                        >
-                          {[300, 400, 500, 600, 700].map((w) => (
-                            <option key={w} value={w}>
-                              {w}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        <input
-                          type="checkbox"
-                          checked={styleDraft.timeItalic}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, timeItalic: e.target.checked }))}
-                          style={{ width: 16, marginRight: 8 }}
-                        />
-                        Время: курсив
-                      </label>
-
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Формат: жирность
-                        <select
-                          value={styleDraft.formatWeight}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, formatWeight: Number(e.target.value) }))}
-                          style={{ width: 130 }}
-                        >
-                          {[300, 400, 500, 600, 700].map((w) => (
-                            <option key={w} value={w}>
-                              {w}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        <input
-                          type="checkbox"
-                          checked={styleDraft.formatItalic}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, formatItalic: e.target.checked }))}
-                          style={{ width: 16, marginRight: 8 }}
-                        />
-                        Формат: курсив
-                      </label>
-
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Место: жирность
-                        <select
-                          value={styleDraft.placeWeight}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, placeWeight: Number(e.target.value) }))}
-                          style={{ width: 120 }}
-                        >
-                          {[300, 400, 500, 600, 700].map((w) => (
-                            <option key={w} value={w}>
-                              {w}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        <input
-                          type="checkbox"
-                          checked={styleDraft.placeItalic}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, placeItalic: e.target.checked }))}
-                          style={{ width: 16, marginRight: 8 }}
-                        />
-                        Место: курсив
-                      </label>
+                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Место</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер (px)
+                          <input
+                            type="number"
+                            min={9}
+                            max={22}
+                            value={styleDraft.placeFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, placeFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.placeColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, placeColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.placeWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, placeWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.placeItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, placeItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
                     </div>
 
                     <div style={{ height: 10 }} />
                     <div style={{ fontWeight: 700, fontSize: 13 }}>Дополнительные свойства событий</div>
                     <div style={{ height: 6 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Размер текста (px)
-                        <input
-                          type="number"
-                          min={9}
-                          max={20}
-                          value={styleDraft.extraFieldsFontPx}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, extraFieldsFontPx: Number(e.target.value) }))}
-                          style={{ width: 130 }}
-                        />
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Цвет текста
-                        <input
-                          type="color"
-                          value={styleDraft.extraFieldsColor}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, extraFieldsColor: e.target.value }))}
-                          style={{ width: 58, padding: 0, height: 36 }}
-                        />
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        Насыщенность
-                        <select
-                          value={styleDraft.extraFieldsWeight}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, extraFieldsWeight: Number(e.target.value) }))}
-                          style={{ width: 130 }}
-                        >
-                          {[300, 400, 500, 600, 700].map((w) => (
-                            <option key={w} value={w}>
-                              {w}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
-                        <input
-                          type="checkbox"
-                          checked={styleDraft.extraFieldsItalic}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, extraFieldsItalic: e.target.checked }))}
-                          style={{ width: 16, marginRight: 8 }}
-                        />
-                        Курсив
-                      </label>
-                    </div>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                      Применяется к строкам: тимлид, ответственные, ВКС/Трансляция/Перевод, волонтеры.
+                    <div className="grid" style={{ gap: 8 }}>
+                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Тимлид</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер (px)
+                          <input
+                            type="number"
+                            min={9}
+                            max={20}
+                            value={styleDraft.teamLeadFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, teamLeadFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.teamLeadColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, teamLeadColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.teamLeadWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, teamLeadWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.teamLeadItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, teamLeadItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
+
+                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Ответственные</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер (px)
+                          <input
+                            type="number"
+                            min={9}
+                            max={20}
+                            value={styleDraft.responsiblesFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, responsiblesFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.responsiblesColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, responsiblesColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.responsiblesWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, responsiblesWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.responsiblesItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, responsiblesItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
+
+                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>ВКС/Трансляция/Перевод</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер (px)
+                          <input
+                            type="number"
+                            min={9}
+                            max={20}
+                            value={styleDraft.flagsFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, flagsFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.flagsColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, flagsColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.flagsWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, flagsWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.flagsItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, flagsItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
+
+                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Волонтеры</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер (px)
+                          <input
+                            type="number"
+                            min={9}
+                            max={20}
+                            value={styleDraft.volunteersFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, volunteersFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.volunteersColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, volunteersColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.volunteersWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, volunteersWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.volunteersItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, volunteersItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
                     </div>
 
                     <div className="row" style={{ gap: 10, alignItems: "flex-end", marginTop: 6, flexWrap: "wrap" }}>
@@ -1744,8 +2037,8 @@ export function TimelineViewer({
                     <div style={{ height: 10 }} />
                     <div style={{ fontWeight: 700, fontSize: 13 }}>Цвета карточек и поля</div>
                     <div style={{ height: 6 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-                      <label className="muted" style={{ fontSize: 12 }}>
+                    <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+                      <label className="muted" style={{ fontSize: 12, width: "100%" }}>
                         Подложка
                         <div className="row" style={{ gap: 8, alignItems: "center" }}>
                           <input
@@ -1767,7 +2060,7 @@ export function TimelineViewer({
                         </div>
                       </label>
 
-                      <label className="muted" style={{ fontSize: 12 }}>
+                      <label className="muted" style={{ fontSize: 12, width: "100%" }}>
                         Обводка
                         <div className="row" style={{ gap: 8, alignItems: "center" }}>
                           <input
@@ -1788,7 +2081,7 @@ export function TimelineViewer({
                           <span className="chip">{styleDraft.eventBorderAlpha.toFixed(2)}</span>
                         </div>
                       </label>
-                      <label className="muted" style={{ fontSize: 12 }}>
+                      <label className="muted" style={{ fontSize: 12, width: "100%" }}>
                         Фон поля (где лежат события)
                         <div className="row" style={{ gap: 8, alignItems: "center" }}>
                           <input
@@ -1869,7 +2162,7 @@ export function TimelineViewer({
                         setMarksByDay((prev) => ({ ...prev, [dayKey]: [...(prev[dayKey] ?? []), "12:30"] }))
                       }
                     >
-                      + метка
+                      Добавить отметку
                     </button>
                   </div>
                   <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
@@ -1903,8 +2196,12 @@ export function TimelineViewer({
                               .join(" · ")}
                           </div>
                           {showExtraFields && extraFieldLines(e).length ? (
-                            <div className="eventExtra" style={{ marginTop: 6, whiteSpace: "pre-line" }}>
-                              {extraFieldLines(e).join("\n")}
+                            <div style={{ marginTop: 6 }}>
+                              {extraFieldLines(e).map((line, idx) => (
+                                <div key={`u-extra-${e.id}-${line.kind}-${idx}`} className={`eventExtra eventExtra--${line.kind}`}>
+                                  {line.text}
+                                </div>
+                              ))}
                             </div>
                           ) : null}
                         </div>
@@ -2114,8 +2411,12 @@ export function TimelineViewer({
                                 ) : null}
                                 {place ? <div className="eventPlace">{place}</div> : null}
                                 {extraLines.length ? (
-                                  <div className="eventExtra" style={{ whiteSpace: "pre-line" }}>
-                                    {extraLines.join("\n")}
+                                  <div style={{ marginTop: 6 }}>
+                                    {extraLines.map((line, idx) => (
+                                      <div key={`e-extra-${it.event.id}-${line.kind}-${idx}`} className={`eventExtra eventExtra--${line.kind}`}>
+                                        {line.text}
+                                      </div>
+                                    ))}
                                   </div>
                                 ) : null}
                               </>
@@ -2226,8 +2527,12 @@ export function TimelineViewer({
                             {[e.building ? String(e.building).trim() : null, e.room ? String(e.room).trim() : null].filter(Boolean).join(" · ")}
                           </div>
                           {showExtraFields && extraFieldLines(e).length ? (
-                            <div className="eventExtra" style={{ marginTop: 6, whiteSpace: "pre-line" }}>
-                              {extraFieldLines(e).join("\n")}
+                            <div style={{ marginTop: 6 }}>
+                              {extraFieldLines(e).map((line, idx) => (
+                                <div key={`evening-extra-${e.id}-${line.kind}-${idx}`} className={`eventExtra eventExtra--${line.kind}`}>
+                                  {line.text}
+                                </div>
+                              ))}
                             </div>
                           ) : null}
                           {(() => {

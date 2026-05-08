@@ -106,6 +106,8 @@ html, body { height: 100%; background: var(--bg); }
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
   min-height: 100vh;
   background-color: var(--bg);
   background-image:
@@ -115,6 +117,14 @@ body {
   background-attachment: fixed;
   background-size: cover;
   color: var(--text);
+}
+h2 {
+  font-size: 16px;
+  line-height: 1.3;
+}
+h3 {
+  font-size: 14px;
+  line-height: 1.3;
 }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -152,6 +162,7 @@ button {
   border: 1px solid var(--line);
   background: rgba(37,99,235,.10);
   color: var(--text);
+  font-size: 12px;
   padding: 10px 14px;
   border-radius: 12px;
   cursor: pointer;
@@ -204,6 +215,7 @@ button.secondary { background: rgba(15,23,42,.04); }
   font-weight: var(--tl-title-font-weight, 700);
   font-style: var(--tl-title-font-style, normal);
   font-size: var(--tl-title-font-px, 13px);
+  color: var(--tl-title-color, #0f172a);
   line-height: 1.2;
 }
 .eventMeta { margin-top: 6px; font-size: 11px; color: var(--muted); }
@@ -212,24 +224,44 @@ button.secondary { background: rgba(15,23,42,.04); }
   font-size: var(--tl-format-font-px, 11px);
   font-weight: var(--tl-format-font-weight, 400);
   font-style: var(--tl-format-font-style, normal);
-  color: var(--muted);
+  color: var(--tl-format-color, var(--muted));
 }
 .eventTime {
   margin-top: 6px;
   font-size: var(--tl-time-font-px, 11px);
   font-weight: var(--tl-time-font-weight, 400);
   font-style: var(--tl-time-font-style, normal);
-  color: var(--muted);
+  color: var(--tl-time-color, var(--muted));
 }
 .eventDesc { margin-top: 6px; font-size: 12px; line-height: 1.25; opacity: .92; }
 .eventExtra {
-  margin-top: 6px;
-  font-size: var(--tl-extra-font-px, 11px);
-  font-weight: var(--tl-extra-font-weight, 500);
-  font-style: var(--tl-extra-font-style, normal);
-  color: var(--tl-extra-color, #475569);
+  margin-top: 4px;
   line-height: 1.3;
   opacity: .95;
+}
+.eventExtra--teamLead {
+  font-size: var(--tl-teamlead-font-px, 11px);
+  font-weight: var(--tl-teamlead-font-weight, 500);
+  font-style: var(--tl-teamlead-font-style, normal);
+  color: var(--tl-teamlead-color, #475569);
+}
+.eventExtra--responsibles {
+  font-size: var(--tl-responsibles-font-px, 11px);
+  font-weight: var(--tl-responsibles-font-weight, 500);
+  font-style: var(--tl-responsibles-font-style, normal);
+  color: var(--tl-responsibles-color, #475569);
+}
+.eventExtra--flags {
+  font-size: var(--tl-flags-font-px, 11px);
+  font-weight: var(--tl-flags-font-weight, 500);
+  font-style: var(--tl-flags-font-style, normal);
+  color: var(--tl-flags-color, #475569);
+}
+.eventExtra--volunteers {
+  font-size: var(--tl-volunteers-font-px, 11px);
+  font-weight: var(--tl-volunteers-font-weight, 500);
+  font-style: var(--tl-volunteers-font-style, normal);
+  color: var(--tl-volunteers-color, #475569);
 }
 .eventDescClamp {
   display: -webkit-box;
@@ -242,7 +274,7 @@ button.secondary { background: rgba(15,23,42,.04); }
   font-size: var(--tl-place-font-px, 11px);
   font-weight: var(--tl-place-font-weight, 400);
   font-style: var(--tl-place-font-style, normal);
-  color: var(--muted);
+  color: var(--tl-place-color, var(--muted));
   opacity: .95;
 }
 .eventBlock.tiny { padding: 6px 8px; }
