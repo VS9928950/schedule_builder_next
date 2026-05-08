@@ -15,12 +15,18 @@ export default async function ResponsiblesTab({ params }: { params: Promise<{ id
   const project = getProject(projectId, user.id);
   if (!project) redirect("/app");
 
+  const normalizeResponsible = (v: unknown) => {
+    const s = String(v ?? "").replace(/\s+/g, " ").trim();
+    if (s === "-" || s === "—") return "";
+    return s;
+  };
+
   const events = getProjectEventsIso(project)
     .filter(
       (e) =>
         (e.visible ?? true) &&
         [e.responsible1, e.responsible2, e.responsible3, e.responsible4, e.responsible5, e.responsible6]
-          .map((v) => (v ?? "").trim())
+          .map((v) => normalizeResponsible(v))
           .filter(Boolean).length > 0
     )
     .sort((a, b) => {

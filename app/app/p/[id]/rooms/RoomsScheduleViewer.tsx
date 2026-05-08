@@ -35,7 +35,9 @@ type IsoEvent = {
 
 function normToken(s: unknown) {
   if (s == null) return "";
-  return String(s).replace(/\s+/g, " ").trim();
+  const t = String(s).replace(/\s+/g, " ").trim();
+  if (t === "-" || t === "—") return "";
+  return t;
 }
 
 function shouldShowFormat(fmt: unknown) {
@@ -58,7 +60,7 @@ function roomLabel(key: string) {
   if (bb && rr) return `${bb} · ${rr}`;
   if (rr) return rr;
   if (bb) return bb;
-  return "—";
+  return "Не указано";
 }
 
 function eventMatchesRoom(e: { building?: string; room?: string }, buildingNorm: string, roomNorm: string) {

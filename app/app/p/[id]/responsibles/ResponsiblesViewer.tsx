@@ -30,9 +30,11 @@ function eventDayKey(e: IsoEvent): string {
 }
 
 function normalizeName(v: unknown): string {
-  return String(v ?? "")
+  const s = String(v ?? "")
     .replace(/\s+/g, " ")
     .trim();
+  if (s === "-" || s === "—") return "";
+  return s;
 }
 
 function collectResponsibles(e: IsoEvent): string[] {
@@ -237,7 +239,10 @@ export function ResponsiblesViewer({ events }: { events: IsoEvent[] }) {
                 <div className="chip">{eventDayKey(e)}</div>
               </div>
               <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                {[e.format, e.building, e.room].filter(Boolean).join(" · ")}
+                {(() => {
+                  const parts = [normalizeName(e.format), normalizeName(e.building), normalizeName(e.room)].filter(Boolean);
+                  return parts.length ? parts.join(" · ") : "Не указано";
+                })()}
               </div>
               <ul style={{ marginTop: 8, marginBottom: 0 }}>
                 {collectResponsibles(e).map((name, i) => (
