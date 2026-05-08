@@ -89,9 +89,9 @@ export default async function ExcelTab({
             Выберите удобный источник документа. Оба способа равнозначны: после импорта файл попадёт в список загруженных и
             сможет быть выбран активным.
           </div>
-          <div className="grid2" style={{ alignItems: "stretch" }}>
+          <div className="grid2 excel-upload-grid" style={{ alignItems: "stretch" }}>
             <form
-              className="card grid"
+              className="card grid excel-upload-card"
               style={{ padding: 12, margin: 0, alignContent: "start" }}
               action={`/app/p/${project.id}/excel/upload`}
               method="post"
@@ -105,7 +105,7 @@ export default async function ExcelTab({
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                   Файл .xlsx
                 </div>
-                <input name="file" type="file" accept=".xlsx" required />
+                <input className="excel-upload-input" name="file" type="file" accept=".xlsx" required />
               </div>
               <div className="row">
                 <button type="submit">Загрузить</button>
@@ -113,7 +113,7 @@ export default async function ExcelTab({
             </form>
 
             <form
-              className="card grid"
+              className="card grid excel-upload-card"
               style={{ padding: 12, margin: 0, alignContent: "start" }}
               action={`/app/p/${project.id}/excel/import-url`}
               method="post"
@@ -127,6 +127,7 @@ export default async function ExcelTab({
                   Ссылка Google Sheets
                 </div>
                 <input
+                  className="excel-upload-input"
                   name="sheetUrl"
                   type="url"
                   placeholder="https://docs.google.com/spreadsheets/d/.../edit"

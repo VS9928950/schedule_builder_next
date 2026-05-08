@@ -1775,22 +1775,19 @@ function parseDayMarkTokens(tokens: string[]) {
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div className="row tl-style-line">
-                      <label className="muted" style={{ fontSize: 12 }}>
+                    <div className="row tl-title-row">
+                      <div className="muted" style={{ fontSize: 12, fontWeight: 600 }}>
                         Название блока вечерней программы
-                        <input
-                          type="text"
-                          value={styleDraft.eveningProgramTitle}
-                          onChange={(e) => setStyleDraft((p) => ({ ...p, eveningProgramTitle: e.target.value }))}
-                          style={{ width: 320 }}
-                          placeholder="Вечерняя программа"
-                        />
-                      </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={styleDraft.eveningProgramTitle}
+                        onChange={(e) => setStyleDraft((p) => ({ ...p, eveningProgramTitle: e.target.value }))}
+                        placeholder="Вечерняя программа"
+                      />
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>Основные строки карточки</div>
-                    <div style={{ height: 6 }} />
                     <div className="grid" style={{ gap: 8 }}>
                       <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Заголовок</div>
@@ -1982,8 +1979,6 @@ function parseDayMarkTokens(tokens: string[]) {
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>Дополнительные свойства событий</div>
-                    <div style={{ height: 6 }} />
                     <div className="grid" style={{ gap: 8 }}>
                       <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Тимлид</div>
@@ -2291,8 +2286,6 @@ function parseDayMarkTokens(tokens: string[]) {
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>Цвета карточек и поля</div>
-                    <div style={{ height: 6 }} />
                     <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
                       <label className="muted" style={{ fontSize: 12, width: "100%" }}>
                         Подложка
@@ -2826,11 +2819,7 @@ function parseDayMarkTokens(tokens: string[]) {
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Нет событий в этот день.
-                </div>
-              )}
+              ) : null}
 
               {(() => {
                 const key = Number.isFinite(dayDate.getTime()) ? dayKeyLocalFromDate(dayDate) : "";
