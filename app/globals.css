@@ -222,6 +222,15 @@ button.secondary { background: rgba(15,23,42,.04); }
   color: var(--muted);
 }
 .eventDesc { margin-top: 6px; font-size: 12px; line-height: 1.25; opacity: .92; }
+.eventExtra {
+  margin-top: 6px;
+  font-size: var(--tl-extra-font-px, 11px);
+  font-weight: var(--tl-extra-font-weight, 500);
+  font-style: var(--tl-extra-font-style, normal);
+  color: var(--tl-extra-color, #475569);
+  line-height: 1.3;
+  opacity: .95;
+}
 .eventDescClamp {
   display: -webkit-box;
   -webkit-line-clamp: 3;

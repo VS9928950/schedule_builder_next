@@ -87,6 +87,10 @@ export function TimelineViewer({
     formatItalic?: boolean;
     placeWeight?: number;
     placeItalic?: boolean;
+    extraFieldsFontPx?: number;
+    extraFieldsColor?: string;
+    extraFieldsWeight?: number;
+    extraFieldsItalic?: boolean;
 
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -147,6 +151,10 @@ export function TimelineViewer({
     formatItalic: boolean;
     placeWeight: number;
     placeItalic: boolean;
+    extraFieldsFontPx: number;
+    extraFieldsColor: string;
+    extraFieldsWeight: number;
+    extraFieldsItalic: boolean;
 
     eventBgColor: string;
     eventBgAlpha: number;
@@ -171,6 +179,10 @@ export function TimelineViewer({
     formatItalic: false,
     placeWeight: 400,
     placeItalic: false,
+    extraFieldsFontPx: 11,
+    extraFieldsColor: "#475569",
+    extraFieldsWeight: 500,
+    extraFieldsItalic: false,
 
     eventBgColor: "#60a5fa",
     eventBgAlpha: 0.1,
@@ -364,6 +376,14 @@ export function TimelineViewer({
       formatItalic: typeof initialStyle.formatItalic === "boolean" ? initialStyle.formatItalic : prev.formatItalic,
       placeWeight: typeof initialStyle.placeWeight === "number" ? initialStyle.placeWeight : prev.placeWeight,
       placeItalic: typeof initialStyle.placeItalic === "boolean" ? initialStyle.placeItalic : prev.placeItalic,
+      extraFieldsFontPx:
+        typeof initialStyle.extraFieldsFontPx === "number" ? initialStyle.extraFieldsFontPx : prev.extraFieldsFontPx,
+      extraFieldsColor:
+        typeof initialStyle.extraFieldsColor === "string" ? initialStyle.extraFieldsColor : prev.extraFieldsColor,
+      extraFieldsWeight:
+        typeof initialStyle.extraFieldsWeight === "number" ? initialStyle.extraFieldsWeight : prev.extraFieldsWeight,
+      extraFieldsItalic:
+        typeof initialStyle.extraFieldsItalic === "boolean" ? initialStyle.extraFieldsItalic : prev.extraFieldsItalic,
 
       eventBgColor: typeof initialStyle.eventBgColor === "string" ? initialStyle.eventBgColor : prev.eventBgColor,
       eventBgAlpha: typeof initialStyle.eventBgAlpha === "number" ? initialStyle.eventBgAlpha : prev.eventBgAlpha,
@@ -494,6 +514,10 @@ export function TimelineViewer({
             formatItalic: styleDraft.formatItalic,
             placeWeight: styleDraft.placeWeight,
             placeItalic: styleDraft.placeItalic,
+            extraFieldsFontPx: styleDraft.extraFieldsFontPx,
+            extraFieldsColor: styleDraft.extraFieldsColor,
+            extraFieldsWeight: styleDraft.extraFieldsWeight,
+            extraFieldsItalic: styleDraft.extraFieldsItalic,
 
             eventBgColor: styleDraft.eventBgColor,
             eventBgAlpha: styleDraft.eventBgAlpha,
@@ -841,6 +865,10 @@ export function TimelineViewer({
         ["--tl-format-font-style" as any]: styleDraft.formatItalic ? "italic" : "normal",
         ["--tl-place-font-weight" as any]: String(styleDraft.placeWeight),
         ["--tl-place-font-style" as any]: styleDraft.placeItalic ? "italic" : "normal",
+        ["--tl-extra-font-px" as any]: `${styleDraft.extraFieldsFontPx}px`,
+        ["--tl-extra-color" as any]: styleDraft.extraFieldsColor,
+        ["--tl-extra-font-weight" as any]: String(styleDraft.extraFieldsWeight),
+        ["--tl-extra-font-style" as any]: styleDraft.extraFieldsItalic ? "italic" : "normal",
 
         ["--tl-event-bg" as any]: rgbaFrom(styleDraft.eventBgColor, styleDraft.eventBgAlpha) ?? "rgba(37,99,235,.08)",
         ["--tl-event-border" as any]: rgbaFrom(styleDraft.eventBorderColor, styleDraft.eventBorderAlpha) ?? "rgba(37,99,235,.22)",
@@ -1474,7 +1502,7 @@ export function TimelineViewer({
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
                       <label className="muted" style={{ fontSize: 12 }}>
                         Название блока вечерней программы
                         <input
@@ -1488,7 +1516,9 @@ export function TimelineViewer({
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>Размеры шрифтов</div>
+                    <div style={{ height: 6 }} />
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
                       <label className="muted" style={{ fontSize: 12 }}>
                         Заголовок (px)
                         <input
@@ -1537,7 +1567,9 @@ export function TimelineViewer({
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>Насыщенность и курсив</div>
+                    <div style={{ height: 6 }} />
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
                       <label className="muted" style={{ fontSize: 12 }}>
                         Заголовок: жирность
                         <select
@@ -1635,6 +1667,58 @@ export function TimelineViewer({
                       </label>
                     </div>
 
+                    <div style={{ height: 10 }} />
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>Дополнительные свойства событий</div>
+                    <div style={{ height: 6 }} />
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Размер текста (px)
+                        <input
+                          type="number"
+                          min={9}
+                          max={20}
+                          value={styleDraft.extraFieldsFontPx}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, extraFieldsFontPx: Number(e.target.value) }))}
+                          style={{ width: 130 }}
+                        />
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Цвет текста
+                        <input
+                          type="color"
+                          value={styleDraft.extraFieldsColor}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, extraFieldsColor: e.target.value }))}
+                          style={{ width: 58, padding: 0, height: 36 }}
+                        />
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Насыщенность
+                        <select
+                          value={styleDraft.extraFieldsWeight}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, extraFieldsWeight: Number(e.target.value) }))}
+                          style={{ width: 130 }}
+                        >
+                          {[300, 400, 500, 600, 700].map((w) => (
+                            <option key={w} value={w}>
+                              {w}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={styleDraft.extraFieldsItalic}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, extraFieldsItalic: e.target.checked }))}
+                          style={{ width: 16, marginRight: 8 }}
+                        />
+                        Курсив
+                      </label>
+                    </div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                      Применяется к строкам: тимлид, ответственные, ВКС/Трансляция/Перевод, волонтеры.
+                    </div>
+
                     <div className="row" style={{ gap: 10, alignItems: "flex-end", marginTop: 6, flexWrap: "wrap" }}>
                       <label className="muted" style={{ fontSize: 12 }}>
                         Открытие ссылки в названии
@@ -1658,7 +1742,9 @@ export function TimelineViewer({
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>Цвета карточек и поля</div>
+                    <div style={{ height: 6 }} />
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
                       <label className="muted" style={{ fontSize: 12 }}>
                         Подложка
                         <div className="row" style={{ gap: 8, alignItems: "center" }}>
@@ -1817,7 +1903,7 @@ export function TimelineViewer({
                               .join(" · ")}
                           </div>
                           {showExtraFields && extraFieldLines(e).length ? (
-                            <div className="muted" style={{ fontSize: 12, marginTop: 6, whiteSpace: "pre-line" }}>
+                            <div className="eventExtra" style={{ marginTop: 6, whiteSpace: "pre-line" }}>
                               {extraFieldLines(e).join("\n")}
                             </div>
                           ) : null}
@@ -2028,7 +2114,7 @@ export function TimelineViewer({
                                 ) : null}
                                 {place ? <div className="eventPlace">{place}</div> : null}
                                 {extraLines.length ? (
-                                  <div className="eventDesc" style={{ whiteSpace: "pre-line" }}>
+                                  <div className="eventExtra" style={{ whiteSpace: "pre-line" }}>
                                     {extraLines.join("\n")}
                                   </div>
                                 ) : null}
@@ -2140,7 +2226,7 @@ export function TimelineViewer({
                             {[e.building ? String(e.building).trim() : null, e.room ? String(e.room).trim() : null].filter(Boolean).join(" · ")}
                           </div>
                           {showExtraFields && extraFieldLines(e).length ? (
-                            <div className="muted" style={{ fontSize: 12, marginTop: 6, whiteSpace: "pre-line" }}>
+                            <div className="eventExtra" style={{ marginTop: 6, whiteSpace: "pre-line" }}>
                               {extraFieldLines(e).join("\n")}
                             </div>
                           ) : null}
