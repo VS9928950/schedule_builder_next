@@ -1093,18 +1093,24 @@ export function EventsEditor({
 
       {untimed.length ? (
         <div className="card" style={{ padding: 12 }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-            <div style={{ fontWeight: 900 }}>События без указанного времени</div>
-            <div className="chip">{untimed.length}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8 }}>
+            <div />
+            <div style={{ fontWeight: 900, textAlign: "center" }}>События без указанного времени</div>
+            <div className="chip" style={{ justifySelf: "end" }}>
+              {untimed.length}
+            </div>
           </div>
           <div style={{ height: 10 }} />
           <div className="grid" style={{ gap: 12 }}>
             {untimedGrouped.map((g) => (
               <div key={`ug-${g.key}`} className="grid" style={{ gap: 10 }}>
                 <div className="card" style={{ padding: "10px 12px" }}>
-                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                    <div style={{ fontWeight: 900 }}>{g.label}</div>
-                    <div className="chip">{g.events.length}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8 }}>
+                    <div />
+                    <div style={{ fontWeight: 900, textAlign: "center" }}>{g.label}</div>
+                    <div className="chip" style={{ justifySelf: "end" }}>
+                      {g.events.length}
+                    </div>
                   </div>
                 </div>
                 {g.events.map((ev) => (
@@ -1167,9 +1173,12 @@ export function EventsEditor({
                     })
               }}
             >
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                <div style={{ fontWeight: 900 }}>{g.label}</div>
-                <div className="chip">{g.events.length} событий</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8 }}>
+                <div />
+                <div style={{ fontWeight: 900, textAlign: "center" }}>{g.label}</div>
+                <div className="chip" style={{ justifySelf: "end" }}>
+                  {g.events.length} событий
+                </div>
               </div>
             </div>
 
