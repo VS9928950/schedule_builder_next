@@ -288,6 +288,26 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
     return { count: overlaps.length, lines: lines.slice(0, 12) };
   }, [roomFilteredTimed]);
 
+  const roomShortBreaks = useMemo(() => {
+    const evs = [...(roomFilteredTimed as any[])].sort((a, b) => (a.start as Date).getTime() - (b.start as Date).getTime());
+    const issues: Array<{ prev: any; next: any; gapMin: number }> = [];
+    for (let i = 0; i < evs.length - 1; i++) {
+      const prev = evs[i]!;
+      const next = evs[i + 1]!;
+      const prevDay = dayKeyLocalFromDate(prev.start as Date);
+      const nextDay = dayKeyLocalFromDate(next.start as Date);
+      if (prevDay !== nextDay) continue;
+      const gapMin = Math.floor(((next.start as Date).getTime() - (prev.end as Date).getTime()) / 60000);
+      if (gapMin >= 0 && gapMin < 20) issues.push({ prev, next, gapMin });
+    }
+    const lines = issues.slice(0, 20).map(({ prev, next, gapMin }) => {
+      const leftTime = `${formatTime(prev.start)}–${formatTime(prev.end)}`;
+      const rightTime = `${formatTime(next.start)}–${formatTime(next.end)}`;
+      return `${leftTime} "${String(prev.title ?? "")}" → ${rightTime} "${String(next.title ?? "")}" · перерыв ${gapMin} мин`;
+    });
+    return { count: issues.length, lines };
+  }, [roomFilteredTimed]);
+
   const roomBannerSequenceConflicts = useMemo(() => {
     if (!activeRoomKey) return [] as Array<{ dayKey: string; prev: IsoEvent; next: IsoEvent; prevBanner: string; nextBanner: string }>;
     const [b0, r0] = activeRoomKey.split("||");
@@ -432,6 +452,21 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
           {roomTimeConflicts.lines.length ? (
             <div className="muted" style={{ fontSize: 12, marginTop: 8, whiteSpace: "pre-line" }}>
               {roomTimeConflicts.lines.join("\n")}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {roomShortBreaks.count ? (
+        <div className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 800, marginBottom: 6 }}>Проверка коротких перерывов</div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            В {activeRoomKey ? roomLabel(activeRoomKey) : "этой аудитории"} найдены перерывы между мероприятиями меньше 20 минут
+            {periodScope === "all_days" ? " за выбранный период" : " в выбранный день"}: <b>{roomShortBreaks.count}</b>.
+          </div>
+          {roomShortBreaks.lines.length ? (
+            <div className="muted" style={{ fontSize: 12, marginTop: 8, whiteSpace: "pre-line" }}>
+              {roomShortBreaks.lines.join("\n")}
             </div>
           ) : null}
         </div>

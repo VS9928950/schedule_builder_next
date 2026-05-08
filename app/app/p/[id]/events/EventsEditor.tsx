@@ -328,7 +328,7 @@ export function EventsEditor({
 
       {editing ? (
         <div
-          className="card"
+          className="card events-editor-pane"
           style={{
             padding: 14,
             position: "sticky",
@@ -343,20 +343,20 @@ export function EventsEditor({
           }}
         >
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 900 }}>Редактирование</div>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>Редактирование</div>
             <button type="button" className="secondary" onClick={() => setEditingId(null)}>
               Закрыть
             </button>
           </div>
           <div style={{ height: 10 }} />
-          <div className="grid2">
+          <div className="grid events-editor-form-grid">
             <div>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Название
               </div>
               <input value={editing.title} onChange={(e) => patchEvent(editing.id, { title: e.target.value })} />
             </div>
-            <div className="row" style={{ alignItems: "center", marginTop: 22 }}>
+            <div className="row" style={{ alignItems: "center" }}>
               <label className="row" style={{ gap: 8 }}>
                 <input
                   type="checkbox"
@@ -364,7 +364,7 @@ export function EventsEditor({
                   onChange={(e) => patchEvent(editing.id, { visible: e.target.checked })}
                 />
                 <span className="muted" style={{ fontSize: 12 }}>
-                  Показать в общем расписании
+                  Отображать в общем расписании
                 </span>
               </label>
             </div>
@@ -576,7 +576,7 @@ export function EventsEditor({
           </div>
           <div style={{ height: 10 }} />
           <div>
-            <div className="grid2">
+            <div className="grid events-editor-form-grid">
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                   Форматируемое описание
@@ -596,11 +596,14 @@ export function EventsEditor({
             </div>
             <div style={{ height: 10 }} />
             <div className="card" style={{ padding: 12 }}>
-              <div style={{ fontWeight: 900, marginBottom: 8 }}>Стиль мероприятия (переопределение)</div>
+              <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>Стиль мероприятия (переопределение)</div>
               <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
                 <label className="muted" style={{ fontSize: 12 }}>
                   Подложка
                   <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      Цвет
+                    </span>
                     <input
                       type="color"
                       value={editing.style_override?.eventBgColor ?? "#60a5fa"}
@@ -631,6 +634,9 @@ export function EventsEditor({
                 <label className="muted" style={{ fontSize: 12 }}>
                   Обводка
                   <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      Цвет
+                    </span>
                     <input
                       type="color"
                       value={editing.style_override?.eventBorderColor ?? "#ffffff"}
@@ -670,7 +676,7 @@ export function EventsEditor({
 
             <div style={{ height: 10 }} />
             <div className="card" style={{ padding: 12 }}>
-              <div style={{ fontWeight: 900, marginBottom: 8 }}>Верстка на таймлайне</div>
+              <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>Верстка на таймлайне</div>
               <div className="row" style={{ gap: 12 }}>
                 <label className="row muted" style={{ gap: 8, fontSize: 12 }}>
                   <input
@@ -707,7 +713,7 @@ export function EventsEditor({
 
       {editingUntimed ? (
         <div
-          className="card"
+          className="card events-editor-pane"
           style={{
             padding: 14,
             // Avoid sticky-on-sticky overlap when both editors are open.
@@ -727,13 +733,13 @@ export function EventsEditor({
           }}
         >
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 900 }}>Редактирование (без времени)</div>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>Редактирование (без времени)</div>
             <button type="button" className="secondary" onClick={() => setEditingUntimedId(null)}>
               Закрыть
             </button>
           </div>
           <div style={{ height: 10 }} />
-          <div className="grid2">
+          <div className="grid events-editor-form-grid">
             <div>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Дата
@@ -760,7 +766,7 @@ export function EventsEditor({
               </div>
               <input value={editingUntimed.title} onChange={(e) => patchUntimed(editingUntimed.id, { title: e.target.value })} />
             </div>
-            <div className="row" style={{ alignItems: "center", marginTop: 22 }}>
+            <div className="row" style={{ alignItems: "center" }}>
               <label className="row" style={{ gap: 8 }}>
                 <input
                   type="checkbox"
@@ -768,7 +774,7 @@ export function EventsEditor({
                   onChange={(e) => patchUntimed(editingUntimed.id, { visible: e.target.checked })}
                 />
                 <span className="muted" style={{ fontSize: 12 }}>
-                  Показать в общем расписании
+                  Отображать в общем расписании
                 </span>
               </label>
             </div>
@@ -984,7 +990,7 @@ export function EventsEditor({
           </div>
           <div style={{ height: 10 }} />
           <div>
-            <div className="grid2">
+            <div className="grid events-editor-form-grid">
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                   Форматируемое описание
@@ -1004,11 +1010,14 @@ export function EventsEditor({
             </div>
             <div style={{ height: 10 }} />
             <div className="card" style={{ padding: 12 }}>
-              <div style={{ fontWeight: 900, marginBottom: 8 }}>Стиль мероприятия (переопределение)</div>
+              <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>Стиль мероприятия (переопределение)</div>
               <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
                 <label className="muted" style={{ fontSize: 12 }}>
                   Подложка
                   <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      Цвет
+                    </span>
                     <input
                       type="color"
                       value={editingUntimed.style_override?.eventBgColor ?? "#60a5fa"}
@@ -1039,6 +1048,9 @@ export function EventsEditor({
                 <label className="muted" style={{ fontSize: 12 }}>
                   Обводка
                   <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      Цвет
+                    </span>
                     <input
                       type="color"
                       value={editingUntimed.style_override?.eventBorderColor ?? "#ffffff"}
@@ -1098,7 +1110,7 @@ export function EventsEditor({
                 {g.events.map((ev) => (
                   <div key={`u-${ev.id}`} className="card" style={{ padding: 12 }}>
                     <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-                      <div style={{ fontWeight: 800 }}>{ev.title}</div>
+                      <div style={{ fontWeight: 800, minWidth: 0, overflowWrap: "anywhere" }}>{ev.title}</div>
                       <div className="row">
                         <label className="row muted" style={{ gap: 6, fontSize: 12 }}>
                           <input
@@ -1106,7 +1118,7 @@ export function EventsEditor({
                             checked={ev.visible ?? true}
                             onChange={(e) => patchUntimed(ev.id, { visible: e.target.checked })}
                           />
-                          показывать
+                          Отображать
                         </label>
                         <div className="chip">№ {ev.orderNo ?? "—"}</div>
                         <button type="button" className="secondary" onClick={() => setEditingUntimedId(ev.id)}>
@@ -1164,7 +1176,7 @@ export function EventsEditor({
             {g.events.slice(0, 300).map((ev) => (
               <div key={`${ev.id}-${ev.start}`} className="card" style={{ padding: 12 }}>
                 <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-                  <div style={{ fontWeight: 800 }}>{ev.title}</div>
+                  <div style={{ fontWeight: 800, minWidth: 0, overflowWrap: "anywhere" }}>{ev.title}</div>
                   <div className="row">
                     <label className="row muted" style={{ gap: 6, fontSize: 12 }}>
                       <input
@@ -1172,7 +1184,7 @@ export function EventsEditor({
                         checked={ev.visible ?? true}
                         onChange={(e) => patchEvent(ev.id, { visible: e.target.checked })}
                       />
-                      показывать
+                      Отображать
                     </label>
                     <div className="chip">{fmtRange(ev)}</div>
                     <button type="button" className="secondary" onClick={() => setEditingId(ev.id)}>

@@ -41,6 +41,9 @@ const Schema = z.object({
     volunteersColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     volunteersWeight: z.number().int().min(100).max(900).optional(),
     volunteersItalic: z.boolean().optional(),
+    markFontPx: z.number().int().min(9).max(18).optional(),
+    markColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    markLineColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
 
     eventBgColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     eventBgAlpha: z.number().min(0).max(1).optional(),

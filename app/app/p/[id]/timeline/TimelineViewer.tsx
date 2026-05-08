@@ -107,6 +107,9 @@ export function TimelineViewer({
     volunteersColor?: string;
     volunteersWeight?: number;
     volunteersItalic?: boolean;
+    markFontPx?: number;
+    markColor?: string;
+    markLineColor?: string;
 
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -187,6 +190,9 @@ export function TimelineViewer({
     volunteersColor: string;
     volunteersWeight: number;
     volunteersItalic: boolean;
+    markFontPx: number;
+    markColor: string;
+    markLineColor: string;
 
     eventBgColor: string;
     eventBgAlpha: number;
@@ -231,6 +237,9 @@ export function TimelineViewer({
     volunteersColor: "#475569",
     volunteersWeight: 500,
     volunteersItalic: false,
+    markFontPx: 11,
+    markColor: "#64748b",
+    markLineColor: "#cbd5e1",
 
     eventBgColor: "#60a5fa",
     eventBgAlpha: 0.1,
@@ -461,6 +470,9 @@ export function TimelineViewer({
         typeof initialStyle.volunteersWeight === "number" ? initialStyle.volunteersWeight : prev.volunteersWeight,
       volunteersItalic:
         typeof initialStyle.volunteersItalic === "boolean" ? initialStyle.volunteersItalic : prev.volunteersItalic,
+      markFontPx: typeof initialStyle.markFontPx === "number" ? initialStyle.markFontPx : prev.markFontPx,
+      markColor: typeof initialStyle.markColor === "string" ? initialStyle.markColor : prev.markColor,
+      markLineColor: typeof initialStyle.markLineColor === "string" ? initialStyle.markLineColor : prev.markLineColor,
 
       eventBgColor: typeof initialStyle.eventBgColor === "string" ? initialStyle.eventBgColor : prev.eventBgColor,
       eventBgAlpha: typeof initialStyle.eventBgAlpha === "number" ? initialStyle.eventBgAlpha : prev.eventBgAlpha,
@@ -611,6 +623,9 @@ export function TimelineViewer({
             volunteersColor: styleDraft.volunteersColor,
             volunteersWeight: styleDraft.volunteersWeight,
             volunteersItalic: styleDraft.volunteersItalic,
+            markFontPx: styleDraft.markFontPx,
+            markColor: styleDraft.markColor,
+            markLineColor: styleDraft.markLineColor,
 
             eventBgColor: styleDraft.eventBgColor,
             eventBgAlpha: styleDraft.eventBgAlpha,
@@ -735,6 +750,28 @@ export function TimelineViewer({
     if (!Number.isFinite(hh) || !Number.isFinite(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
     return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
   }
+
+const HIDDEN_BASE_MARK_PREFIX = "!";
+
+function parseDayMarkTokens(tokens: string[]) {
+  const manualSet = new Set<string>();
+  const hiddenBaseSet = new Set<string>();
+  for (const raw of tokens) {
+    const src = String(raw ?? "").trim();
+    if (!src) continue;
+    if (src.startsWith(HIDDEN_BASE_MARK_PREFIX)) {
+      const t = normalizeTime(src.slice(1));
+      if (t) hiddenBaseSet.add(t);
+      continue;
+    }
+    const t = normalizeTime(src);
+    if (t) manualSet.add(t);
+  }
+  return {
+    manualMarks: Array.from(manualSet).sort(),
+    hiddenBaseMarks: hiddenBaseSet
+  };
+}
 
   function timeLabelToMinutes(label: string) {
     const t = normalizeTime(label);
@@ -980,6 +1017,9 @@ export function TimelineViewer({
         ["--tl-volunteers-color" as any]: styleDraft.volunteersColor,
         ["--tl-volunteers-font-weight" as any]: String(styleDraft.volunteersWeight),
         ["--tl-volunteers-font-style" as any]: styleDraft.volunteersItalic ? "italic" : "normal",
+        ["--tl-mark-font-px" as any]: `${styleDraft.markFontPx}px`,
+        ["--tl-mark-color" as any]: styleDraft.markColor,
+        ["--tl-mark-line-color" as any]: styleDraft.markLineColor,
 
         ["--tl-event-bg" as any]: rgbaFrom(styleDraft.eventBgColor, styleDraft.eventBgAlpha) ?? "rgba(37,99,235,.08)",
         ["--tl-event-border" as any]: rgbaFrom(styleDraft.eventBorderColor, styleDraft.eventBorderAlpha) ?? "rgba(37,99,235,.22)",
@@ -1076,13 +1116,14 @@ export function TimelineViewer({
             typeof manualColPxRaw === "number" && Number.isFinite(manualColPxRaw) ? Math.floor(manualColPxRaw) : null;
           const colPx = manualColPx != null ? Math.max(120, Math.min(1200, manualColPx)) : Math.max(MIN_COL_PX, Math.min(MAX_COL_PX, fittedColPx));
           const gridMinWidth = totalCols * colPx;
-          const manualMarks = dayKey ? (marksByDay[dayKey] ?? []) : [];
+          const dayMarkTokens = dayKey ? (marksByDay[dayKey] ?? []) : [];
+          const { manualMarks, hiddenBaseMarks } = parseDayMarkTokens(dayMarkTokens);
           const dayEventOverrides = dayKey ? layoutDraft.event_overrides?.[dayKey] : undefined;
 
           // Build anchors (time marks):
           // - always include all event start times
           // - include user marks (manual)
-          const anchors = (() => {
+          const baseAnchors = (() => {
             const set = new Set<string>();
             const labelFor = (absMin: number) => {
               const hh = String(Math.floor(absMin / 60)).padStart(2, "0");
@@ -1091,14 +1132,16 @@ export function TimelineViewer({
             };
             for (const it of layout.items) {
               const absMin = layout.dayStartMin + it.topMin;
-              set.add(labelFor(absMin));
-            }
-            for (const m of manualMarks) {
-              const t = normalizeTime(m);
-              if (t) set.add(t);
+              const label = labelFor(absMin);
+              if (!hiddenBaseMarks.has(label)) set.add(label);
             }
             const arr = Array.from(set).sort();
             return arr;
+          })();
+          const anchors = (() => {
+            const set = new Set<string>(baseAnchors);
+            for (const m of manualMarks) set.add(m);
+            return Array.from(set).sort();
           })();
 
           const MIN_ANCHOR_PX = 18; // grid row minimum
@@ -2123,50 +2166,119 @@ export function TimelineViewer({
                     </div>
                   </div>
                   <div style={{ height: 8 }} />
-                  <div className="row" style={{ gap: 8 }}>
-                    {(marksByDay[dayKey] ?? []).map((m, i) => (
-                      <span key={`${dayKey}-${i}`} className="chip">
-                        <input
-                          type="time"
-                          value={normalizeTime(m) ?? "12:00"}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setMarksByDay((prev) => {
-                              const cur = [...(prev[dayKey] ?? [])];
-                              cur[i] = v;
-                              return { ...prev, [dayKey]: cur };
-                            });
-                          }}
-                          style={{ background: "transparent", border: "none", color: "var(--text)", width: 78 }}
-                        />
-                        <button
-                          type="button"
-                          className="secondary"
-                          style={{ padding: "4px 8px" }}
-                          onClick={() =>
-                            setMarksByDay((prev) => {
-                              const cur = [...(prev[dayKey] ?? [])];
-                              cur.splice(i, 1);
-                              return { ...prev, [dayKey]: cur };
-                            })
-                          }
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() =>
-                        setMarksByDay((prev) => ({ ...prev, [dayKey]: [...(prev[dayKey] ?? []), "12:30"] }))
-                      }
-                    >
-                      Добавить отметку
-                    </button>
-                  </div>
+                  {(() => {
+                    const { manualMarks: marksManual, hiddenBaseMarks: marksHiddenSet } = parseDayMarkTokens(marksByDay[dayKey] ?? []);
+                    const marksHidden = Array.from(marksHiddenSet).sort();
+                    const updateDayMarks = (updater: (cur: string[]) => string[]) =>
+                      setMarksByDay((prev) => {
+                        const cur = [...(prev[dayKey] ?? [])];
+                        const next = updater(cur);
+                        return { ...prev, [dayKey]: next };
+                      });
+
+                    return (
+                      <div className="grid" style={{ gap: 8 }}>
+                        <div className="row" style={{ gap: 8 }}>
+                          {anchors.map((m) => {
+                            const isManual = marksManual.includes(m);
+                            return (
+                              <span key={`mark-visible-${dayKey}-${m}`} className="chip">
+                                <span>{m}</span>
+                                <span className="muted" style={{ fontSize: 12 }}>
+                                  {isManual ? "добавленная" : "базовая"}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="secondary"
+                                  style={{ padding: "4px 8px" }}
+                                  onClick={() =>
+                                    updateDayMarks((cur) => {
+                                      if (isManual) return cur.filter((x) => normalizeTime(x) !== m);
+                                      const token = `${HIDDEN_BASE_MARK_PREFIX}${m}`;
+                                      if (cur.includes(token)) return cur;
+                                      return [...cur, token];
+                                    })
+                                  }
+                                  title={isManual ? "Удалить добавленную отметку" : "Скрыть базовую отметку"}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            className="secondary"
+                            onClick={() =>
+                              updateDayMarks((cur) => {
+                                if (marksManual.includes("12:30")) return cur;
+                                return [...cur, "12:30"];
+                              })
+                            }
+                          >
+                            Добавить отметку
+                          </button>
+                        </div>
+
+                        {marksHidden.length ? (
+                          <div className="row" style={{ gap: 8 }}>
+                            <span className="muted" style={{ fontSize: 12 }}>
+                              Скрытые базовые:
+                            </span>
+                            {marksHidden.map((m) => (
+                              <span key={`mark-hidden-${dayKey}-${m}`} className="chip">
+                                <span>{m}</span>
+                                <button
+                                  type="button"
+                                  className="secondary"
+                                  style={{ padding: "4px 8px" }}
+                                  onClick={() =>
+                                    updateDayMarks((cur) => cur.filter((x) => String(x).trim() !== `${HIDDEN_BASE_MARK_PREFIX}${m}`))
+                                  }
+                                >
+                                  Вернуть
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                          <label className="muted" style={{ fontSize: 12 }}>
+                            Размер шрифта меток
+                            <input
+                              type="number"
+                              min={9}
+                              max={18}
+                              value={styleDraft.markFontPx}
+                              onChange={(e) => setStyleDraft((p) => ({ ...p, markFontPx: Number(e.target.value) }))}
+                              style={{ width: 140 }}
+                            />
+                          </label>
+                          <label className="muted" style={{ fontSize: 12 }}>
+                            Цвет шрифта меток
+                            <input
+                              type="color"
+                              value={styleDraft.markColor}
+                              onChange={(e) => setStyleDraft((p) => ({ ...p, markColor: e.target.value }))}
+                              style={{ width: 58, padding: 0, height: 36 }}
+                            />
+                          </label>
+                          <label className="muted" style={{ fontSize: 12 }}>
+                            Цвет линии границы
+                            <input
+                              type="color"
+                              value={styleDraft.markLineColor}
+                              onChange={(e) => setStyleDraft((p) => ({ ...p, markLineColor: e.target.value }))}
+                              style={{ width: 58, padding: 0, height: 36 }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                    По умолчанию метки строятся по стартам мероприятий. Здесь можно вручную убрать лишние (например 12:00) и поставить 12:30.
+                    Базовые метки строятся по стартам мероприятий. Их можно скрывать, а добавленные метки редактируются отдельно.
                   </div>
                 </div>
               ) : null}

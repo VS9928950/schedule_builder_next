@@ -122,6 +122,15 @@ function yForAnchor(idx: number, heights: number[]) {
   return y;
 }
 
+function normalizeTimeLabel(s: string) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(s ?? "").trim());
+  if (!m) return null;
+  const hh = Number(m[1]);
+  const mm = Number(m[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 export function buildTildaSnippet(args: {
   projectName: string;
   events: IsoEvent[];
@@ -242,7 +251,20 @@ ${rootSel} .sb-desc{margin-top:6px;font-size:12px;line-height:1.3;opacity:.92;wh
 
   for (const dayKey of daysToExport) {
     const dayEvents = timed.filter((e) => dayKeyFromDate(e.startD) === dayKey);
-    const manualMarks = marksByDay[dayKey] ?? [];
+    const markTokens = marksByDay[dayKey] ?? [];
+    const hiddenBaseMarks = new Set<string>();
+    const manualMarks: string[] = [];
+    for (const token of markTokens) {
+      const s = String(token ?? "").trim();
+      if (!s) continue;
+      if (s.startsWith("!")) {
+        const t = normalizeTimeLabel(s.slice(1));
+        if (t) hiddenBaseMarks.add(t);
+        continue;
+      }
+      const t = normalizeTimeLabel(s);
+      if (t) manualMarks.push(t);
+    }
 
     // Build layout like Timeline does (so columns are distributed, not all col=0).
     const scheduleEvents = dayEvents.map((e) => ({
@@ -268,8 +290,11 @@ ${rootSel} .sb-desc{margin-top:6px;font-size:12px;line-height:1.3;opacity:.92;wh
     };
 
     const anchorsSet = new Set<string>();
-    for (const it of dayLayout.items) anchorsSet.add(labelForAbsMin(dayLayout.dayStartMin + it.topMin));
-    for (const m of manualMarks) if (typeof m === "string" && /^\d{1,2}:\d{2}$/.test(m.trim())) anchorsSet.add(m.trim().padStart(5, "0"));
+    for (const it of dayLayout.items) {
+      const t = labelForAbsMin(dayLayout.dayStartMin + it.topMin);
+      if (!hiddenBaseMarks.has(t)) anchorsSet.add(t);
+    }
+    for (const m of manualMarks) anchorsSet.add(m);
     const anchors = Array.from(anchorsSet).sort();
     if (!anchors.length) continue;
 
