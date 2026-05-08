@@ -105,6 +105,22 @@ export function ResponsiblesViewer({ events }: { events: IsoEvent[] }) {
     [responsibleOptions, activeResponsibleNorm]
   );
 
+  const selectedDayForAvailability = useMemo(() => {
+    if (!dayKeys.length) return "";
+    if (activeDayKey && dayKeys.includes(activeDayKey)) return activeDayKey;
+    return dayKeys[0] ?? "";
+  }, [dayKeys, activeDayKey]);
+
+  const freeResponsiblesBySelectedDay = useMemo(() => {
+    if (!selectedDayForAvailability) return [];
+    const busy = new Set<string>();
+    for (const e of events) {
+      if (eventDayKey(e) !== selectedDayForAvailability) continue;
+      for (const name of collectResponsibles(e)) busy.add(name.toLocaleLowerCase("ru-RU"));
+    }
+    return responsibleOptions.filter((x) => !busy.has(x.value));
+  }, [events, responsibleOptions, selectedDayForAvailability]);
+
   const timedForConflicts = useMemo(() => {
     const out: TimedWithDates[] = [];
     for (const e of filtered) {
@@ -169,6 +185,26 @@ export function ResponsiblesViewer({ events }: { events: IsoEvent[] }) {
               {formatDayFull(localDateFromDayKey(dk))}
             </button>
           ))}
+        </div>
+      ) : null}
+
+      {selectedDayForAvailability ? (
+        <div className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 6 }}>Свободные ответственные на выбранную дату</div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            {formatDayFull(localDateFromDayKey(selectedDayForAvailability))}
+          </div>
+          {freeResponsiblesBySelectedDay.length ? (
+            <ul style={{ marginTop: 8, marginBottom: 0 }}>
+              {freeResponsiblesBySelectedDay.map((x) => (
+                <li key={`free-${selectedDayForAvailability}-${x.value}`}>{x.label}</li>
+              ))}
+            </ul>
+          ) : (
+            <div className="muted" style={{ marginTop: 8 }}>
+              В этот день свободных ответственных не найдено.
+            </div>
+          )}
         </div>
       ) : null}
 

@@ -481,9 +481,6 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
               </button>
             ))}
           </div>
-          <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-            Если аудиторий много, можно позже добавить поиск/фильтр по корпусу.
-          </div>
         </div>
       ) : (
         <div className="muted">Не найдено событий с заполненной аудиторией.</div>

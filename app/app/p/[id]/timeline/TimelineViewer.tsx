@@ -1453,7 +1453,7 @@ export function TimelineViewer({
               {!hideControls ? (
                 <>
                   <div className="card" style={{ padding: 12, marginBottom: 12, position: "sticky", top: 12, zIndex: 4 }}>
-                    <div style={{ fontWeight: 800, marginBottom: 6 }}>Что меняет каждый блок</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 6 }}>Что меняет каждый блок</div>
                     <div className="muted" style={{ fontSize: 12, whiteSpace: "pre-line" }}>
                       {"Сетка и расположение — управляет структурой дня: количеством колонок, шириной, высотой строк, ручным размещением карточек и скрытием дней.\n" +
                         "Оформление — управляет внешним видом: шрифтами, цветами, заголовками и отображением текста.\n" +
@@ -1463,7 +1463,7 @@ export function TimelineViewer({
 
                   <div className="card" style={{ padding: 12, marginBottom: 12 }}>
                     <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ fontWeight: 800 }}>Сетка и расположение</div>
+                      <div style={{ fontWeight: 800, fontSize: 14 }}>Сетка и расположение</div>
                       <div className="row" style={{ gap: 10, alignItems: "center" }}>
                         {layoutError ? <div className="error">{layoutError}</div> : null}
                         {activeBuildId && layoutEdit ? (
@@ -1597,7 +1597,7 @@ export function TimelineViewer({
 
                   <div className="card" style={{ padding: 12, marginBottom: 12 }}>
                     <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ fontWeight: 800 }}>Оформление</div>
+                      <div style={{ fontWeight: 800, fontSize: 14 }}>Оформление</div>
                       <div className="row">
                         {styleError ? <div className="error">{styleError}</div> : null}
                         {activeBuildId ? (
@@ -1613,7 +1613,7 @@ export function TimelineViewer({
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                    <div className="row tl-style-line">
                       <label className="muted" style={{ fontSize: 12 }}>
                         Название блока вечерней программы
                         <input
@@ -1633,7 +1633,7 @@ export function TimelineViewer({
                       <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Заголовок</div>
                         <label className="muted" style={{ fontSize: 12 }}>
-                          Размер (px)
+                          Размер
                           <input
                             type="number"
                             min={10}
@@ -1677,10 +1677,10 @@ export function TimelineViewer({
                         </label>
                       </div>
 
-                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Время</div>
                         <label className="muted" style={{ fontSize: 12 }}>
-                          Размер (px)
+                          Размер
                           <input
                             type="number"
                             min={9}
@@ -1724,10 +1724,10 @@ export function TimelineViewer({
                         </label>
                       </div>
 
-                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Формат</div>
                         <label className="muted" style={{ fontSize: 12 }}>
-                          Размер (px)
+                          Размер
                           <input
                             type="number"
                             min={9}
@@ -1771,10 +1771,10 @@ export function TimelineViewer({
                         </label>
                       </div>
 
-                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Место</div>
                         <label className="muted" style={{ fontSize: 12 }}>
-                          Размер (px)
+                          Размер
                           <input
                             type="number"
                             min={9}
@@ -1823,10 +1823,10 @@ export function TimelineViewer({
                     <div style={{ fontWeight: 700, fontSize: 13 }}>Дополнительные свойства событий</div>
                     <div style={{ height: 6 }} />
                     <div className="grid" style={{ gap: 8 }}>
-                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Тимлид</div>
                         <label className="muted" style={{ fontSize: 12 }}>
-                          Размер (px)
+                          Размер
                           <input
                             type="number"
                             min={9}
@@ -1870,10 +1870,10 @@ export function TimelineViewer({
                         </label>
                       </div>
 
-                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Ответственные</div>
                         <label className="muted" style={{ fontSize: 12 }}>
-                          Размер (px)
+                          Размер
                           <input
                             type="number"
                             min={9}
@@ -1917,10 +1917,10 @@ export function TimelineViewer({
                         </label>
                       </div>
 
-                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>ВКС/Трансляция/Перевод</div>
                         <label className="muted" style={{ fontSize: 12 }}>
-                          Размер (px)
+                          Размер
                           <input
                             type="number"
                             min={9}
@@ -1964,10 +1964,10 @@ export function TimelineViewer({
                         </label>
                       </div>
 
-                      <div className="row" style={{ gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="row tl-style-line">
                         <div style={{ minWidth: 120, fontWeight: 600 }}>Волонтеры</div>
                         <label className="muted" style={{ fontSize: 12 }}>
-                          Размер (px)
+                          Размер
                           <input
                             type="number"
                             min={9}
@@ -2035,7 +2035,7 @@ export function TimelineViewer({
                     </div>
 
                     <div style={{ height: 10 }} />
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>Цвета карточек и поля</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>Цвета карточек и поля</div>
                     <div style={{ height: 6 }} />
                     <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
                       <label className="muted" style={{ fontSize: 12, width: "100%" }}>
@@ -2113,8 +2113,8 @@ export function TimelineViewer({
 
               {!hideControls && dayKey && activeBuildId ? (
                 <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontWeight: 800 }}>Метки времени</div>
+                    <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontWeight: 800, fontSize: 14 }}>Метки времени</div>
                     <div className="row">
                       {marksError ? <div className="error">{marksError}</div> : null}
                       <button type="button" className="secondary" disabled={savingMarks} onClick={() => saveMarks(dayKey)}>
