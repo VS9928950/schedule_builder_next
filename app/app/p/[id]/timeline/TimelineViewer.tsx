@@ -818,7 +818,7 @@ export function TimelineViewer({
   if (!programDayKeys.length) {
     return (
       <div className="muted">
-        Все дни скрыты в этой версии сборки. Нажмите «Сбросить скрытые дни» в настройках пачки или выберите другую версию.
+        Все дни скрыты в этой версии сборки. Нажмите «Показать скрытые дни» в настройках периода или выберите другую версию.
       </div>
     );
   }
@@ -852,7 +852,7 @@ export function TimelineViewer({
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
             <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <span className="muted" style={{ fontSize: 12 }}>
-                {showExtraFields ? "Период" : "Пачка"}
+                Период
               </span>
               <button
                 type="button"
@@ -879,7 +879,7 @@ export function TimelineViewer({
             {!hideControls && activeBuildId ? (
               <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <label className="row muted" style={{ gap: 6, fontSize: 12 }}>
-                  {showExtraFields ? "Дней в периоде (От 1 до 10)" : "Дней в пачке (N, до 10)"}
+                  Дней в периоде (От 1 до 10)
                   <input
                     type="number"
                     min={1}
@@ -899,7 +899,7 @@ export function TimelineViewer({
                   onClick={() => setLayoutDraft((p) => ({ ...p, hidden_day_keys: [] }))}
                   title="Показать все дни снова в сетке"
                 >
-                  Сбросить скрытые дни
+                  Показать скрытые дни
                 </button>
               </div>
             ) : null}
@@ -1312,403 +1312,424 @@ export function TimelineViewer({
               ) : null}
 
               {!hideControls ? (
-                <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontWeight: 800 }}>Стили таймлайна</div>
-                  <div className="row">
-                    {styleError ? <div className="error">{styleError}</div> : null}
-                    {activeBuildId ? (
-                      <button type="button" className="secondary" disabled={savingStyle} onClick={saveStyle}>
-                        {savingStyle ? "Сохранение..." : "Сохранить стили"}
-                      </button>
-                    ) : (
-                      <div className="muted" style={{ fontSize: 12 }}>
-                        Создайте/выберите версию сборки, чтобы сохранять стили
-                      </div>
-                    )}
+                <>
+                  <div className="card" style={{ padding: 12, marginBottom: 12, position: "sticky", top: 12, zIndex: 4 }}>
+                    <div style={{ fontWeight: 800, marginBottom: 6 }}>Что меняет каждый блок</div>
+                    <div className="muted" style={{ fontSize: 12, whiteSpace: "pre-line" }}>
+                      {"Сетка и расположение — управляет структурой дня: количеством колонок, шириной, высотой строк, ручным размещением карточек и скрытием дней.\n" +
+                        "Оформление — управляет внешним видом: шрифтами, цветами, заголовками и отображением текста.\n" +
+                        "Сохраняйте блоки отдельно: «Сохранить сетку» записывает только расположение, «Сохранить оформление» — только внешний вид."}
+                    </div>
                   </div>
-                </div>
-                <div style={{ height: 8 }} />
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontWeight: 800 }}>Границы (раскладка)</div>
-                  <div className="row" style={{ gap: 10, alignItems: "center" }}>
-                    {layoutError ? <div className="error">{layoutError}</div> : null}
-                    {activeBuildId && layoutEdit ? (
-                      <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                        <label className="row muted" style={{ gap: 6, fontSize: 12 }}>
-                          <input
-                            type="checkbox"
-                            checked={autoSaveLayout}
-                            onChange={(e) => setAutoSaveLayout(e.target.checked)}
-                          />
-                          автосохранение
-                        </label>
-                        {hasUnsavedLayout ? (
-                          <span className="chip" title="Изменения пока не записаны в активную версию сборки">
-                            не сохранено
-                          </span>
+
+                  <div className="card" style={{ padding: 12, marginBottom: 12 }}>
+                    <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontWeight: 800 }}>Сетка и расположение</div>
+                      <div className="row" style={{ gap: 10, alignItems: "center" }}>
+                        {layoutError ? <div className="error">{layoutError}</div> : null}
+                        {activeBuildId && layoutEdit ? (
+                          <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                            <label className="row muted" style={{ gap: 6, fontSize: 12 }}>
+                              <input type="checkbox" checked={autoSaveLayout} onChange={(e) => setAutoSaveLayout(e.target.checked)} />
+                              автосохранение
+                            </label>
+                            {hasUnsavedLayout ? (
+                              <span className="chip" title="Изменения пока не записаны в активную версию сборки">
+                                не сохранено
+                              </span>
+                            ) : (
+                              <span className="chip" title="Раскладка сохранена в активную версию сборки">
+                                сохранено
+                              </span>
+                            )}
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          className={layoutEdit ? "" : "secondary"}
+                          onClick={() => setLayoutEdit((v) => !v)}
+                          disabled={!activeBuildId}
+                        >
+                          {layoutEdit ? "Завершить редактирование" : "Редактировать сетку"}
+                        </button>
+                        {activeBuildId ? (
+                          <button type="button" className="secondary" disabled={savingLayout} onClick={saveLayout}>
+                            {savingLayout ? "Сохранение..." : "Сохранить сетку"}
+                          </button>
                         ) : (
-                          <span className="chip" title="Раскладка сохранена в активную версию сборки">
-                            сохранено
-                          </span>
+                          <div className="muted" style={{ fontSize: 12 }}>
+                            Выберите версию сборки, чтобы сохранять сетку
+                          </div>
                         )}
                       </div>
-                    ) : null}
-                    <label className="row muted" style={{ gap: 6, fontSize: 12 }}>
-                      <input type="checkbox" checked={layoutEdit} onChange={(e) => setLayoutEdit(e.target.checked)} />
-                      режим правки
-                    </label>
-                    {activeBuildId ? (
-                      <button type="button" className="secondary" disabled={savingLayout} onClick={saveLayout}>
-                        {savingLayout ? "Сохранение..." : "Сохранить раскладку"}
-                      </button>
-                    ) : (
-                      <div className="muted" style={{ fontSize: 12 }}>
-                        Выберите версию сборки, чтобы сохранять раскладку
-                      </div>
-                    )}
+                    </div>
+
+                    <div className="muted" style={{ fontSize: 12, marginTop: 8, whiteSpace: "pre-line" }}>
+                      {"В режиме редактирования можно:\n" +
+                        "• тянуть горизонтальные линии, чтобы менять высоту строк;\n" +
+                        "• перетаскивать карточки между строками и колонками;\n" +
+                        "• растягивать карточки по высоте и ширине;\n" +
+                        "• скрывать дни и отдельные карточки только из отображения."}
+                    </div>
+
+                    <div className="row" style={{ gap: 20, alignItems: "flex-end", marginTop: 12, flexWrap: "wrap" }}>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Колонок
+                        <input
+                          type="number"
+                          min={1}
+                          max={64}
+                          value={dayKey ? Math.floor(layoutDraft.col_count?.[dayKey] ?? totalCols) : totalCols}
+                          onChange={(e) => {
+                            if (!dayKey) return;
+                            const v = Math.max(1, Math.min(64, Number(e.target.value)));
+                            setLayoutDraft((p) => ({ ...p, col_count: { ...(p.col_count ?? {}), [dayKey]: v } }));
+                          }}
+                          style={{ width: 90 }}
+                        />
+                      </label>
+                      {dayKey && layoutDraft.col_count?.[dayKey] != null ? (
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() =>
+                            setLayoutDraft((p) => {
+                              const next = { ...(p.col_count ?? {}) };
+                              delete (next as any)[dayKey];
+                              return { ...p, col_count: next };
+                            })
+                          }
+                          title="Вернуть авто (по пересечениям)"
+                        >
+                          авто
+                        </button>
+                      ) : null}
+
+                      <div style={{ width: 1, height: 34, background: "rgba(15,23,42,.14)", margin: "0 6px" }} />
+
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Ширина колонки (px)
+                        <input
+                          type="number"
+                          min={120}
+                          max={1200}
+                          value={dayKey ? Math.floor(layoutDraft.col_width_px?.[dayKey] ?? colPx) : colPx}
+                          onChange={(e) => {
+                            if (!dayKey) return;
+                            const v = Math.max(120, Math.min(1200, Number(e.target.value)));
+                            setLayoutDraft((p) => ({ ...p, col_width_px: { ...(p.col_width_px ?? {}), [dayKey]: v } }));
+                          }}
+                          style={{ width: 160 }}
+                        />
+                      </label>
+                      <input
+                        type="range"
+                        min={120}
+                        max={1200}
+                        step={10}
+                        value={dayKey ? Math.floor(layoutDraft.col_width_px?.[dayKey] ?? colPx) : colPx}
+                        onChange={(e) => {
+                          if (!dayKey) return;
+                          const v = Math.max(120, Math.min(1200, Number(e.target.value)));
+                          setLayoutDraft((p) => ({ ...p, col_width_px: { ...(p.col_width_px ?? {}), [dayKey]: v } }));
+                        }}
+                        style={{ width: 220 }}
+                        disabled={!dayKey}
+                        title="Ширина всех колонок на этом дне"
+                      />
+                      {dayKey && layoutDraft.col_width_px?.[dayKey] != null ? (
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() =>
+                            setLayoutDraft((p) => {
+                              const next = { ...(p.col_width_px ?? {}) };
+                              delete (next as any)[dayKey];
+                              return { ...p, col_width_px: next };
+                            })
+                          }
+                          title="Вернуть авто-подбор ширины"
+                        >
+                          авто
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                  Перетаскивайте горизонтальные линии сетки, чтобы менять высоту строк. Привязка — шаг 10px.
-                </div>
-                <div className="row" style={{ gap: 10, alignItems: "flex-end", marginTop: 8 }}>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Колонок
-                    <input
-                      type="number"
-                      min={1}
-                      max={64}
-                      value={dayKey ? Math.floor(layoutDraft.col_count?.[dayKey] ?? totalCols) : totalCols}
-                      onChange={(e) => {
-                        if (!dayKey) return;
-                        const v = Math.max(1, Math.min(64, Number(e.target.value)));
-                        setLayoutDraft((p) => ({ ...p, col_count: { ...(p.col_count ?? {}), [dayKey]: v } }));
-                      }}
-                      style={{ width: 90 }}
-                    />
-                  </label>
-                  {dayKey && layoutDraft.col_count?.[dayKey] != null ? (
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() =>
-                        setLayoutDraft((p) => {
-                          const next = { ...(p.col_count ?? {}) };
-                          delete (next as any)[dayKey];
-                          return { ...p, col_count: next };
-                        })
-                      }
-                      title="Вернуть авто (по пересечениям)"
-                    >
-                      авто
-                    </button>
-                  ) : null}
 
-                  <div style={{ width: 1, height: 26, background: "rgba(15,23,42,.10)" }} />
-
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Ширина колонки (px)
-                    <input
-                      type="number"
-                      min={120}
-                      max={1200}
-                      value={dayKey ? Math.floor(layoutDraft.col_width_px?.[dayKey] ?? colPx) : colPx}
-                      onChange={(e) => {
-                        if (!dayKey) return;
-                        const v = Math.max(120, Math.min(1200, Number(e.target.value)));
-                        setLayoutDraft((p) => ({ ...p, col_width_px: { ...(p.col_width_px ?? {}), [dayKey]: v } }));
-                      }}
-                      style={{ width: 160 }}
-                    />
-                  </label>
-                  <input
-                    type="range"
-                    min={120}
-                    max={1200}
-                    step={10}
-                    value={dayKey ? Math.floor(layoutDraft.col_width_px?.[dayKey] ?? colPx) : colPx}
-                    onChange={(e) => {
-                      if (!dayKey) return;
-                      const v = Math.max(120, Math.min(1200, Number(e.target.value)));
-                      setLayoutDraft((p) => ({ ...p, col_width_px: { ...(p.col_width_px ?? {}), [dayKey]: v } }));
-                    }}
-                    style={{ width: 220 }}
-                    disabled={!dayKey}
-                    title="Ширина всех колонок на этом дне"
-                  />
-                  {dayKey && layoutDraft.col_width_px?.[dayKey] != null ? (
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() =>
-                        setLayoutDraft((p) => {
-                          const next = { ...(p.col_width_px ?? {}) };
-                          delete (next as any)[dayKey];
-                          return { ...p, col_width_px: next };
-                        })
-                      }
-                      title="Вернуть авто-подбор ширины"
-                    >
-                      авто
-                    </button>
-                  ) : null}
-                </div>
-                <div style={{ height: 10 }} />
-                <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Заголовок секции “вечер”
-                    <input
-                      type="text"
-                      value={styleDraft.eveningProgramTitle}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, eveningProgramTitle: e.target.value }))}
-                      style={{ width: 280 }}
-                      placeholder="Вечерняя программа"
-                    />
-                  </label>
-                </div>
-                <div style={{ height: 10 }} />
-                <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Заголовок (px)
-                    <input
-                      type="number"
-                      min={10}
-                      max={28}
-                      value={styleDraft.titleFontPx}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, titleFontPx: Number(e.target.value) }))}
-                      style={{ width: 120 }}
-                    />
-                  </label>
-
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Время (px)
-                    <input
-                      type="number"
-                      min={9}
-                      max={22}
-                      value={styleDraft.timeFontPx}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, timeFontPx: Number(e.target.value) }))}
-                      style={{ width: 110 }}
-                    />
-                  </label>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Формат (px)
-                    <input
-                      type="number"
-                      min={9}
-                      max={22}
-                      value={styleDraft.formatFontPx}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, formatFontPx: Number(e.target.value) }))}
-                      style={{ width: 120 }}
-                    />
-                  </label>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Место (px)
-                    <input
-                      type="number"
-                      min={9}
-                      max={22}
-                      value={styleDraft.placeFontPx}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, placeFontPx: Number(e.target.value) }))}
-                      style={{ width: 110 }}
-                    />
-                  </label>
-                </div>
-
-                <div style={{ height: 10 }} />
-                <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Заголовок: жирность
-                    <select
-                      value={styleDraft.titleWeight}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, titleWeight: Number(e.target.value) }))}
-                      style={{ width: 140 }}
-                    >
-                      {[400, 500, 600, 700, 800, 900].map((w) => (
-                        <option key={w} value={w}>
-                          {w}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    <input
-                      type="checkbox"
-                      checked={styleDraft.titleItalic}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, titleItalic: e.target.checked }))}
-                      style={{ width: 16, marginRight: 8 }}
-                    />
-                    Заголовок: курсив
-                  </label>
-
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Время: жирность
-                    <select
-                      value={styleDraft.timeWeight}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, timeWeight: Number(e.target.value) }))}
-                      style={{ width: 120 }}
-                    >
-                      {[300, 400, 500, 600, 700].map((w) => (
-                        <option key={w} value={w}>
-                          {w}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    <input
-                      type="checkbox"
-                      checked={styleDraft.timeItalic}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, timeItalic: e.target.checked }))}
-                      style={{ width: 16, marginRight: 8 }}
-                    />
-                    Время: курсив
-                  </label>
-
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Формат: жирность
-                    <select
-                      value={styleDraft.formatWeight}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, formatWeight: Number(e.target.value) }))}
-                      style={{ width: 130 }}
-                    >
-                      {[300, 400, 500, 600, 700].map((w) => (
-                        <option key={w} value={w}>
-                          {w}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    <input
-                      type="checkbox"
-                      checked={styleDraft.formatItalic}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, formatItalic: e.target.checked }))}
-                      style={{ width: 16, marginRight: 8 }}
-                    />
-                    Формат: курсив
-                  </label>
-
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Место: жирность
-                    <select
-                      value={styleDraft.placeWeight}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, placeWeight: Number(e.target.value) }))}
-                      style={{ width: 120 }}
-                    >
-                      {[300, 400, 500, 600, 700].map((w) => (
-                        <option key={w} value={w}>
-                          {w}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    <input
-                      type="checkbox"
-                      checked={styleDraft.placeItalic}
-                      onChange={(e) => setStyleDraft((p) => ({ ...p, placeItalic: e.target.checked }))}
-                      style={{ width: 16, marginRight: 8 }}
-                    />
-                    Место: курсив
-                  </label>
-                </div>
-
-                <div className="row" style={{ gap: 10, alignItems: "flex-end", marginTop: 6, flexWrap: "wrap" }}>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Открытие ссылки в названии
-                    <select
-                      value={styleDraft.eventLinkTarget}
-                      onChange={(e) =>
-                        setStyleDraft((p) => ({
-                          ...p,
-                          eventLinkTarget: e.target.value === "_self" ? "_self" : "_blank"
-                        }))
-                      }
-                      style={{ width: 220, marginLeft: 8 }}
-                    >
-                      <option value="_blank">Новая вкладка</option>
-                      <option value="_self">Та же вкладка</option>
-                    </select>
-                  </label>
-                  <span className="muted" style={{ fontSize: 12 }}>
-                    Работает, если у события задано поле URL (http/https) на вкладке «События» или в Excel.
-                  </span>
-                </div>
-
-                <div style={{ height: 10 }} />
-                <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Подложка
-                    <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                      <input
-                        type="color"
-                        value={styleDraft.eventBgColor}
-                        onChange={(e) => setStyleDraft((p) => ({ ...p, eventBgColor: e.target.value }))}
-                        style={{ width: 44, padding: 0, height: 36 }}
-                      />
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.02}
-                        value={styleDraft.eventBgAlpha}
-                        onChange={(e) => setStyleDraft((p) => ({ ...p, eventBgAlpha: Number(e.target.value) }))}
-                        style={{ width: 140 }}
-                      />
-                      <span className="chip">{styleDraft.eventBgAlpha.toFixed(2)}</span>
+                  <div className="card" style={{ padding: 12, marginBottom: 12 }}>
+                    <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontWeight: 800 }}>Оформление</div>
+                      <div className="row">
+                        {styleError ? <div className="error">{styleError}</div> : null}
+                        {activeBuildId ? (
+                          <button type="button" className="secondary" disabled={savingStyle} onClick={saveStyle}>
+                            {savingStyle ? "Сохранение..." : "Сохранить оформление"}
+                          </button>
+                        ) : (
+                          <div className="muted" style={{ fontSize: 12 }}>
+                            Создайте/выберите версию сборки, чтобы сохранять оформление
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </label>
 
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Обводка
-                    <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                      <input
-                        type="color"
-                        value={styleDraft.eventBorderColor}
-                        onChange={(e) => setStyleDraft((p) => ({ ...p, eventBorderColor: e.target.value }))}
-                        style={{ width: 44, padding: 0, height: 36 }}
-                      />
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.02}
-                        value={styleDraft.eventBorderAlpha}
-                        onChange={(e) => setStyleDraft((p) => ({ ...p, eventBorderAlpha: Number(e.target.value) }))}
-                        style={{ width: 140 }}
-                      />
-                      <span className="chip">{styleDraft.eventBorderAlpha.toFixed(2)}</span>
+                    <div style={{ height: 10 }} />
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Название блока вечерней программы
+                        <input
+                          type="text"
+                          value={styleDraft.eveningProgramTitle}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, eveningProgramTitle: e.target.value }))}
+                          style={{ width: 320 }}
+                          placeholder="Вечерняя программа"
+                        />
+                      </label>
                     </div>
-                  </label>
-                  <label className="muted" style={{ fontSize: 12 }}>
-                    Фон поля (где лежат события)
-                    <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                      <input
-                        type="color"
-                        value={styleDraft.fieldBgColor}
-                        onChange={(e) => setStyleDraft((p) => ({ ...p, fieldBgColor: e.target.value }))}
-                        style={{ width: 44, padding: 0, height: 36 }}
-                      />
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.02}
-                        value={styleDraft.fieldBgAlpha}
-                        onChange={(e) => setStyleDraft((p) => ({ ...p, fieldBgAlpha: Number(e.target.value) }))}
-                        style={{ width: 140 }}
-                      />
-                      <span className="chip">{styleDraft.fieldBgAlpha.toFixed(2)}</span>
-                    </div>
-                  </label>
-                </div>
 
-                <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                  Цвета настраиваются через picker и прозрачность: отдельно для карточек мероприятий, их обводки и фона всей рабочей области.
-                </div>
-                </div>
+                    <div style={{ height: 10 }} />
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Заголовок (px)
+                        <input
+                          type="number"
+                          min={10}
+                          max={28}
+                          value={styleDraft.titleFontPx}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, titleFontPx: Number(e.target.value) }))}
+                          style={{ width: 120 }}
+                        />
+                      </label>
+
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Время (px)
+                        <input
+                          type="number"
+                          min={9}
+                          max={22}
+                          value={styleDraft.timeFontPx}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, timeFontPx: Number(e.target.value) }))}
+                          style={{ width: 110 }}
+                        />
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Формат (px)
+                        <input
+                          type="number"
+                          min={9}
+                          max={22}
+                          value={styleDraft.formatFontPx}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, formatFontPx: Number(e.target.value) }))}
+                          style={{ width: 120 }}
+                        />
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Место (px)
+                        <input
+                          type="number"
+                          min={9}
+                          max={22}
+                          value={styleDraft.placeFontPx}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, placeFontPx: Number(e.target.value) }))}
+                          style={{ width: 110 }}
+                        />
+                      </label>
+                    </div>
+
+                    <div style={{ height: 10 }} />
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Заголовок: жирность
+                        <select
+                          value={styleDraft.titleWeight}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, titleWeight: Number(e.target.value) }))}
+                          style={{ width: 140 }}
+                        >
+                          {[400, 500, 600, 700, 800, 900].map((w) => (
+                            <option key={w} value={w}>
+                              {w}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={styleDraft.titleItalic}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, titleItalic: e.target.checked }))}
+                          style={{ width: 16, marginRight: 8 }}
+                        />
+                        Заголовок: курсив
+                      </label>
+
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Время: жирность
+                        <select
+                          value={styleDraft.timeWeight}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, timeWeight: Number(e.target.value) }))}
+                          style={{ width: 120 }}
+                        >
+                          {[300, 400, 500, 600, 700].map((w) => (
+                            <option key={w} value={w}>
+                              {w}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={styleDraft.timeItalic}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, timeItalic: e.target.checked }))}
+                          style={{ width: 16, marginRight: 8 }}
+                        />
+                        Время: курсив
+                      </label>
+
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Формат: жирность
+                        <select
+                          value={styleDraft.formatWeight}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, formatWeight: Number(e.target.value) }))}
+                          style={{ width: 130 }}
+                        >
+                          {[300, 400, 500, 600, 700].map((w) => (
+                            <option key={w} value={w}>
+                              {w}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={styleDraft.formatItalic}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, formatItalic: e.target.checked }))}
+                          style={{ width: 16, marginRight: 8 }}
+                        />
+                        Формат: курсив
+                      </label>
+
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Место: жирность
+                        <select
+                          value={styleDraft.placeWeight}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, placeWeight: Number(e.target.value) }))}
+                          style={{ width: 120 }}
+                        >
+                          {[300, 400, 500, 600, 700].map((w) => (
+                            <option key={w} value={w}>
+                              {w}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={styleDraft.placeItalic}
+                          onChange={(e) => setStyleDraft((p) => ({ ...p, placeItalic: e.target.checked }))}
+                          style={{ width: 16, marginRight: 8 }}
+                        />
+                        Место: курсив
+                      </label>
+                    </div>
+
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end", marginTop: 6, flexWrap: "wrap" }}>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Открытие ссылки в названии
+                        <select
+                          value={styleDraft.eventLinkTarget}
+                          onChange={(e) =>
+                            setStyleDraft((p) => ({
+                              ...p,
+                              eventLinkTarget: e.target.value === "_self" ? "_self" : "_blank"
+                            }))
+                          }
+                          style={{ width: 220, marginLeft: 8 }}
+                        >
+                          <option value="_blank">Новая вкладка</option>
+                          <option value="_self">Та же вкладка</option>
+                        </select>
+                      </label>
+                      <span className="muted" style={{ fontSize: 12 }}>
+                        Работает, если у события задано поле URL (http/https) на вкладке «События» или в Excel.
+                      </span>
+                    </div>
+
+                    <div style={{ height: 10 }} />
+                    <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Подложка
+                        <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                          <input
+                            type="color"
+                            value={styleDraft.eventBgColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, eventBgColor: e.target.value }))}
+                            style={{ width: 44, padding: 0, height: 36 }}
+                          />
+                          <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.02}
+                            value={styleDraft.eventBgAlpha}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, eventBgAlpha: Number(e.target.value) }))}
+                            style={{ width: 140 }}
+                          />
+                          <span className="chip">{styleDraft.eventBgAlpha.toFixed(2)}</span>
+                        </div>
+                      </label>
+
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Обводка
+                        <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                          <input
+                            type="color"
+                            value={styleDraft.eventBorderColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, eventBorderColor: e.target.value }))}
+                            style={{ width: 44, padding: 0, height: 36 }}
+                          />
+                          <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.02}
+                            value={styleDraft.eventBorderAlpha}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, eventBorderAlpha: Number(e.target.value) }))}
+                            style={{ width: 140 }}
+                          />
+                          <span className="chip">{styleDraft.eventBorderAlpha.toFixed(2)}</span>
+                        </div>
+                      </label>
+                      <label className="muted" style={{ fontSize: 12 }}>
+                        Фон поля (где лежат события)
+                        <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                          <input
+                            type="color"
+                            value={styleDraft.fieldBgColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, fieldBgColor: e.target.value }))}
+                            style={{ width: 44, padding: 0, height: 36 }}
+                          />
+                          <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.02}
+                            value={styleDraft.fieldBgAlpha}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, fieldBgAlpha: Number(e.target.value) }))}
+                            style={{ width: 140 }}
+                          />
+                          <span className="chip">{styleDraft.fieldBgAlpha.toFixed(2)}</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                      Цвета настраиваются через picker и прозрачность: отдельно для карточек мероприятий, их обводки и фона всей рабочей области.
+                    </div>
+                  </div>
+                </>
               ) : null}
 
               {!hideControls && dayKey && activeBuildId ? (
