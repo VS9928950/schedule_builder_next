@@ -195,6 +195,15 @@ button.secondary { background: rgba(15,23,42,.04); }
   border-radius: 12px;
 }
 
+.events-editor-pane input:not([type="checkbox"]):not([type="range"]):not([type="color"]) {
+  width: 100%;
+  background: rgba(255,255,255,.98);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
 .events-editor-pane input[type="color"] {
   border-radius: 12px;
   border: 1px solid var(--line);
@@ -288,11 +297,23 @@ button.secondary { background: rgba(15,23,42,.04); }
   font-style: var(--tl-responsibles-font-style, normal);
   color: var(--tl-responsibles-color, #475569);
 }
-.eventExtra--flags {
-  font-size: var(--tl-flags-font-px, 11px);
-  font-weight: var(--tl-flags-font-weight, 500);
-  font-style: var(--tl-flags-font-style, normal);
-  color: var(--tl-flags-color, #475569);
+.eventExtra--vks {
+  font-size: var(--tl-vks-font-px, 11px);
+  font-weight: var(--tl-vks-font-weight, 500);
+  font-style: var(--tl-vks-font-style, normal);
+  color: var(--tl-vks-color, #475569);
+}
+.eventExtra--translation {
+  font-size: var(--tl-translation-font-px, 11px);
+  font-weight: var(--tl-translation-font-weight, 500);
+  font-style: var(--tl-translation-font-style, normal);
+  color: var(--tl-translation-color, #475569);
+}
+.eventExtra--interpretation {
+  font-size: var(--tl-interpretation-font-px, 11px);
+  font-weight: var(--tl-interpretation-font-weight, 500);
+  font-style: var(--tl-interpretation-font-style, normal);
+  color: var(--tl-interpretation-color, #475569);
 }
 .eventExtra--volunteers {
   font-size: var(--tl-volunteers-font-px, 11px);

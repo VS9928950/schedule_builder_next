@@ -99,10 +99,23 @@ export function TimelineViewer({
     responsiblesColor?: string;
     responsiblesWeight?: number;
     responsiblesItalic?: boolean;
+    // back-compat: old combined flags style
     flagsFontPx?: number;
     flagsColor?: string;
     flagsWeight?: number;
     flagsItalic?: boolean;
+    vksFontPx?: number;
+    vksColor?: string;
+    vksWeight?: number;
+    vksItalic?: boolean;
+    translationFontPx?: number;
+    translationColor?: string;
+    translationWeight?: number;
+    translationItalic?: boolean;
+    interpretationFontPx?: number;
+    interpretationColor?: string;
+    interpretationWeight?: number;
+    interpretationItalic?: boolean;
     volunteersFontPx?: number;
     volunteersColor?: string;
     volunteersWeight?: number;
@@ -182,10 +195,18 @@ export function TimelineViewer({
     responsiblesColor: string;
     responsiblesWeight: number;
     responsiblesItalic: boolean;
-    flagsFontPx: number;
-    flagsColor: string;
-    flagsWeight: number;
-    flagsItalic: boolean;
+    vksFontPx: number;
+    vksColor: string;
+    vksWeight: number;
+    vksItalic: boolean;
+    translationFontPx: number;
+    translationColor: string;
+    translationWeight: number;
+    translationItalic: boolean;
+    interpretationFontPx: number;
+    interpretationColor: string;
+    interpretationWeight: number;
+    interpretationItalic: boolean;
     volunteersFontPx: number;
     volunteersColor: string;
     volunteersWeight: number;
@@ -229,10 +250,18 @@ export function TimelineViewer({
     responsiblesColor: "#475569",
     responsiblesWeight: 500,
     responsiblesItalic: false,
-    flagsFontPx: 11,
-    flagsColor: "#475569",
-    flagsWeight: 500,
-    flagsItalic: false,
+    vksFontPx: 11,
+    vksColor: "#475569",
+    vksWeight: 500,
+    vksItalic: false,
+    translationFontPx: 11,
+    translationColor: "#475569",
+    translationWeight: 500,
+    translationItalic: false,
+    interpretationFontPx: 11,
+    interpretationColor: "#475569",
+    interpretationWeight: 500,
+    interpretationItalic: false,
     volunteersFontPx: 11,
     volunteersColor: "#475569",
     volunteersWeight: 500,
@@ -458,10 +487,78 @@ export function TimelineViewer({
         typeof initialStyle.responsiblesItalic === "boolean"
           ? initialStyle.responsiblesItalic
           : prev.responsiblesItalic,
-      flagsFontPx: typeof initialStyle.flagsFontPx === "number" ? initialStyle.flagsFontPx : prev.flagsFontPx,
-      flagsColor: typeof initialStyle.flagsColor === "string" ? initialStyle.flagsColor : prev.flagsColor,
-      flagsWeight: typeof initialStyle.flagsWeight === "number" ? initialStyle.flagsWeight : prev.flagsWeight,
-      flagsItalic: typeof initialStyle.flagsItalic === "boolean" ? initialStyle.flagsItalic : prev.flagsItalic,
+      vksFontPx:
+        typeof initialStyle.vksFontPx === "number"
+          ? initialStyle.vksFontPx
+          : typeof initialStyle.flagsFontPx === "number"
+            ? initialStyle.flagsFontPx
+            : prev.vksFontPx,
+      vksColor:
+        typeof initialStyle.vksColor === "string"
+          ? initialStyle.vksColor
+          : typeof initialStyle.flagsColor === "string"
+            ? initialStyle.flagsColor
+            : prev.vksColor,
+      vksWeight:
+        typeof initialStyle.vksWeight === "number"
+          ? initialStyle.vksWeight
+          : typeof initialStyle.flagsWeight === "number"
+            ? initialStyle.flagsWeight
+            : prev.vksWeight,
+      vksItalic:
+        typeof initialStyle.vksItalic === "boolean"
+          ? initialStyle.vksItalic
+          : typeof initialStyle.flagsItalic === "boolean"
+            ? initialStyle.flagsItalic
+            : prev.vksItalic,
+      translationFontPx:
+        typeof initialStyle.translationFontPx === "number"
+          ? initialStyle.translationFontPx
+          : typeof initialStyle.flagsFontPx === "number"
+            ? initialStyle.flagsFontPx
+            : prev.translationFontPx,
+      translationColor:
+        typeof initialStyle.translationColor === "string"
+          ? initialStyle.translationColor
+          : typeof initialStyle.flagsColor === "string"
+            ? initialStyle.flagsColor
+            : prev.translationColor,
+      translationWeight:
+        typeof initialStyle.translationWeight === "number"
+          ? initialStyle.translationWeight
+          : typeof initialStyle.flagsWeight === "number"
+            ? initialStyle.flagsWeight
+            : prev.translationWeight,
+      translationItalic:
+        typeof initialStyle.translationItalic === "boolean"
+          ? initialStyle.translationItalic
+          : typeof initialStyle.flagsItalic === "boolean"
+            ? initialStyle.flagsItalic
+            : prev.translationItalic,
+      interpretationFontPx:
+        typeof initialStyle.interpretationFontPx === "number"
+          ? initialStyle.interpretationFontPx
+          : typeof initialStyle.flagsFontPx === "number"
+            ? initialStyle.flagsFontPx
+            : prev.interpretationFontPx,
+      interpretationColor:
+        typeof initialStyle.interpretationColor === "string"
+          ? initialStyle.interpretationColor
+          : typeof initialStyle.flagsColor === "string"
+            ? initialStyle.flagsColor
+            : prev.interpretationColor,
+      interpretationWeight:
+        typeof initialStyle.interpretationWeight === "number"
+          ? initialStyle.interpretationWeight
+          : typeof initialStyle.flagsWeight === "number"
+            ? initialStyle.flagsWeight
+            : prev.interpretationWeight,
+      interpretationItalic:
+        typeof initialStyle.interpretationItalic === "boolean"
+          ? initialStyle.interpretationItalic
+          : typeof initialStyle.flagsItalic === "boolean"
+            ? initialStyle.flagsItalic
+            : prev.interpretationItalic,
       volunteersFontPx:
         typeof initialStyle.volunteersFontPx === "number" ? initialStyle.volunteersFontPx : prev.volunteersFontPx,
       volunteersColor:
@@ -615,10 +712,18 @@ export function TimelineViewer({
             responsiblesColor: styleDraft.responsiblesColor,
             responsiblesWeight: styleDraft.responsiblesWeight,
             responsiblesItalic: styleDraft.responsiblesItalic,
-            flagsFontPx: styleDraft.flagsFontPx,
-            flagsColor: styleDraft.flagsColor,
-            flagsWeight: styleDraft.flagsWeight,
-            flagsItalic: styleDraft.flagsItalic,
+            vksFontPx: styleDraft.vksFontPx,
+            vksColor: styleDraft.vksColor,
+            vksWeight: styleDraft.vksWeight,
+            vksItalic: styleDraft.vksItalic,
+            translationFontPx: styleDraft.translationFontPx,
+            translationColor: styleDraft.translationColor,
+            translationWeight: styleDraft.translationWeight,
+            translationItalic: styleDraft.translationItalic,
+            interpretationFontPx: styleDraft.interpretationFontPx,
+            interpretationColor: styleDraft.interpretationColor,
+            interpretationWeight: styleDraft.interpretationWeight,
+            interpretationItalic: styleDraft.interpretationItalic,
             volunteersFontPx: styleDraft.volunteersFontPx,
             volunteersColor: styleDraft.volunteersColor,
             volunteersWeight: styleDraft.volunteersWeight,
@@ -675,23 +780,29 @@ export function TimelineViewer({
     return s !== "Питание";
   }
 
-  function extraFieldLines(ev: IsoEvent): Array<{ kind: "teamLead" | "responsibles" | "flags" | "volunteers"; text: string }> {
+  function extraFieldLines(
+    ev: IsoEvent
+  ): Array<{ kind: "teamLead" | "responsibles" | "vks" | "translation" | "interpretation" | "volunteers"; text: string }> {
     const responsibles = [ev.responsible1, ev.responsible2, ev.responsible3, ev.responsible4, ev.responsible5, ev.responsible6]
       .map((x) => (x ?? "").trim())
       .filter(Boolean);
     const teamLead = (ev.teamLead ?? "").trim();
-    const lines: Array<{ kind: "teamLead" | "responsibles" | "flags" | "volunteers"; text: string }> = [];
-    const pushFlagIfYes = (label: string, value?: "Да" | "Нет" | "Не указано") => {
-      if (value === "Да") lines.push({ kind: "flags", text: label });
+    const lines: Array<{ kind: "teamLead" | "responsibles" | "vks" | "translation" | "interpretation" | "volunteers"; text: string }> = [];
+    const pushFlagIfYes = (
+      kind: "vks" | "translation" | "interpretation",
+      label: string,
+      value?: "Да" | "Нет" | "Не указано"
+    ) => {
+      if (value === "Да") lines.push({ kind, text: label });
     };
     if (teamLead) lines.push({ kind: "teamLead", text: teamLead });
     if (responsibles.length) lines.push({ kind: "responsibles", text: `Ответственные: ${responsibles.join(", ")}` });
     if (typeof ev.volunteersCount === "number" && Number.isFinite(ev.volunteersCount)) {
       lines.push({ kind: "volunteers", text: `Волонтеры: ${ev.volunteersCount}` });
     }
-    pushFlagIfYes("ВКС", ev.vks);
-    pushFlagIfYes("Трансляция", ev.translation);
-    pushFlagIfYes("Перевод", ev.simultaneousInterpretation);
+    pushFlagIfYes("vks", "ВКС", ev.vks);
+    pushFlagIfYes("translation", "Трансляция", ev.translation);
+    pushFlagIfYes("interpretation", "Перевод", ev.simultaneousInterpretation);
     return lines;
   }
 
@@ -1009,10 +1120,18 @@ function parseDayMarkTokens(tokens: string[]) {
         ["--tl-responsibles-color" as any]: styleDraft.responsiblesColor,
         ["--tl-responsibles-font-weight" as any]: String(styleDraft.responsiblesWeight),
         ["--tl-responsibles-font-style" as any]: styleDraft.responsiblesItalic ? "italic" : "normal",
-        ["--tl-flags-font-px" as any]: `${styleDraft.flagsFontPx}px`,
-        ["--tl-flags-color" as any]: styleDraft.flagsColor,
-        ["--tl-flags-font-weight" as any]: String(styleDraft.flagsWeight),
-        ["--tl-flags-font-style" as any]: styleDraft.flagsItalic ? "italic" : "normal",
+        ["--tl-vks-font-px" as any]: `${styleDraft.vksFontPx}px`,
+        ["--tl-vks-color" as any]: styleDraft.vksColor,
+        ["--tl-vks-font-weight" as any]: String(styleDraft.vksWeight),
+        ["--tl-vks-font-style" as any]: styleDraft.vksItalic ? "italic" : "normal",
+        ["--tl-translation-font-px" as any]: `${styleDraft.translationFontPx}px`,
+        ["--tl-translation-color" as any]: styleDraft.translationColor,
+        ["--tl-translation-font-weight" as any]: String(styleDraft.translationWeight),
+        ["--tl-translation-font-style" as any]: styleDraft.translationItalic ? "italic" : "normal",
+        ["--tl-interpretation-font-px" as any]: `${styleDraft.interpretationFontPx}px`,
+        ["--tl-interpretation-color" as any]: styleDraft.interpretationColor,
+        ["--tl-interpretation-font-weight" as any]: String(styleDraft.interpretationWeight),
+        ["--tl-interpretation-font-style" as any]: styleDraft.interpretationItalic ? "italic" : "normal",
         ["--tl-volunteers-font-px" as any]: `${styleDraft.volunteersFontPx}px`,
         ["--tl-volunteers-color" as any]: styleDraft.volunteersColor,
         ["--tl-volunteers-font-weight" as any]: String(styleDraft.volunteersWeight),
@@ -1961,15 +2080,15 @@ function parseDayMarkTokens(tokens: string[]) {
                       </div>
 
                       <div className="row tl-style-line">
-                        <div style={{ minWidth: 120, fontWeight: 600 }}>ВКС/Трансляция/Перевод</div>
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>ВКС</div>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Размер
                           <input
                             type="number"
                             min={9}
                             max={20}
-                            value={styleDraft.flagsFontPx}
-                            onChange={(e) => setStyleDraft((p) => ({ ...p, flagsFontPx: Number(e.target.value) }))}
+                            value={styleDraft.vksFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, vksFontPx: Number(e.target.value) }))}
                             style={{ width: 110 }}
                           />
                         </label>
@@ -1977,16 +2096,16 @@ function parseDayMarkTokens(tokens: string[]) {
                           Цвет
                           <input
                             type="color"
-                            value={styleDraft.flagsColor}
-                            onChange={(e) => setStyleDraft((p) => ({ ...p, flagsColor: e.target.value }))}
+                            value={styleDraft.vksColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, vksColor: e.target.value }))}
                             style={{ width: 58, padding: 0, height: 36 }}
                           />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
                           <select
-                            value={styleDraft.flagsWeight}
-                            onChange={(e) => setStyleDraft((p) => ({ ...p, flagsWeight: Number(e.target.value) }))}
+                            value={styleDraft.vksWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, vksWeight: Number(e.target.value) }))}
                             style={{ width: 120 }}
                           >
                             {[300, 400, 500, 600, 700].map((w) => (
@@ -1999,8 +2118,102 @@ function parseDayMarkTokens(tokens: string[]) {
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
                             type="checkbox"
-                            checked={styleDraft.flagsItalic}
-                            onChange={(e) => setStyleDraft((p) => ({ ...p, flagsItalic: e.target.checked }))}
+                            checked={styleDraft.vksItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, vksItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
+
+                      <div className="row tl-style-line">
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Трансляция</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер
+                          <input
+                            type="number"
+                            min={9}
+                            max={20}
+                            value={styleDraft.translationFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, translationFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.translationColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, translationColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.translationWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, translationWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.translationItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, translationItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
+
+                      <div className="row tl-style-line">
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Перевод</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер
+                          <input
+                            type="number"
+                            min={9}
+                            max={20}
+                            value={styleDraft.interpretationFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, interpretationFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.interpretationColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, interpretationColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <select
+                            value={styleDraft.interpretationWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, interpretationWeight: Number(e.target.value) }))}
+                            style={{ width: 120 }}
+                          >
+                            {[300, 400, 500, 600, 700].map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.interpretationItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, interpretationItalic: e.target.checked }))}
                             style={{ width: 16, marginRight: 8 }}
                           />
                           Курсив
