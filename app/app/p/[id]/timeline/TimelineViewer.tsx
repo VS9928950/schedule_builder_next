@@ -1674,7 +1674,7 @@ function parseDayMarkTokens(tokens: string[]) {
                     </div>
 
                     <div className="row" style={{ gap: 20, alignItems: "flex-end", marginTop: 12, flexWrap: "wrap" }}>
-                      <label className="muted" style={{ fontSize: 12 }}>
+                      <label className="muted" style={{ fontSize: 12, display: "grid", gap: 6 }}>
                         Колонок
                         <input
                           type="number"
@@ -1708,7 +1708,7 @@ function parseDayMarkTokens(tokens: string[]) {
 
                       <div style={{ width: 1, height: 34, background: "rgba(15,23,42,.14)", margin: "0 6px" }} />
 
-                      <label className="muted" style={{ fontSize: 12 }}>
+                      <label className="muted" style={{ fontSize: 12, display: "grid", gap: 6 }}>
                         Ширина колонки (px)
                         <input
                           type="number"
