@@ -7,17 +7,19 @@ export type SessionData = {
   role?: "admin" | "user";
 };
 
-const secret = (process.env.SB_SECRET || "").trim();
-if (!secret) {
-  throw new Error("SB_SECRET is required");
-}
-if (secret.length < 32) {
-  throw new Error("SB_SECRET must be at least 32 characters");
+function getSessionSecret() {
+  const secret = (process.env.SB_SECRET || "").trim();
+  if (!secret) {
+    throw new Error("SB_SECRET is required");
+  }
+  if (secret.length < 32) {
+    throw new Error("SB_SECRET must be at least 32 characters");
+  }
+  return secret;
 }
 
 const sessionOptions = {
   cookieName: "sb_session",
-  password: secret,
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const
@@ -26,7 +28,7 @@ const sessionOptions = {
 
 export async function getSession(): Promise<IronSession<SessionData>> {
   // Next.js App Router: pass cookies store
-  return getIronSession<SessionData>(await cookies(), sessionOptions);
+  return getIronSession<SessionData>(await cookies(), { ...sessionOptions, password: getSessionSecret() });
 }
 
 export async function getSessionUser() {
