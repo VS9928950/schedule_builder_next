@@ -7,7 +7,144 @@ import { formatDayFull, localDateFromDayKey } from "@/lib/schedule";
 import { TimelineViewer } from "../../timeline/TimelineViewer";
 import { PrintButton } from "./PrintButton";
 
-type IsoEv = Record<string, unknown> & { kind?: string; start?: string; day?: string; visible?: boolean };
+type IsoEv = Record<string, unknown> & {
+  id?: string;
+  title?: string;
+  kind?: string;
+  start?: string;
+  end?: string;
+  day?: string;
+  building?: string;
+  room?: string;
+  orderNo?: number;
+  visible?: boolean;
+};
+
+type TimedRoomEvent = {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  dayKey: string;
+};
+
+type UntimedRoomEvent = {
+  id: string;
+  title: string;
+  dayKey: string;
+  orderNo?: number;
+};
+
+type RoomExportEntry = {
+  key: string;
+  label: string;
+  building: string;
+  room: string;
+  timed: TimedRoomEvent[];
+  untimed: UntimedRoomEvent[];
+};
+
+function normToken(v: unknown): string {
+  if (v == null) return "";
+  const t = String(v).replace(/\s+/g, " ").trim();
+  if (!t || t === "-" || t === "—") return "";
+  return t;
+}
+
+function roomKeyFrom(building: unknown, room: unknown): string {
+  const b = normToken(building);
+  const r = normToken(room);
+  if (!r) return "";
+  return `${b}||${r}`;
+}
+
+function roomLabelFromKey(key: string): string {
+  const [bRaw, rRaw] = key.split("||");
+  const b = normToken(bRaw);
+  const r = normToken(rRaw);
+  return b ? `${b} · ${r}` : r || "Не указано";
+}
+
+function dayKeyFromEvent(ev: IsoEv): string {
+  if ((ev.kind ?? "timed") === "untimed") return String(ev.day ?? "").slice(0, 10);
+  return String(ev.start ?? "").slice(0, 10);
+}
+
+function formatHm(d: Date): string {
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function dateFromDayKey(dayKey: string): Date {
+  const d = localDateFromDayKey(dayKey);
+  if (Number.isFinite(d.getTime())) return d;
+  return new Date(`${dayKey}T00:00:00`);
+}
+
+function buildRoomsExportEntries(events: IsoEv[], selectedDayKeys: string[]): RoomExportEntry[] {
+  const daySet = new Set(selectedDayKeys);
+  const byRoom = new Map<string, RoomExportEntry>();
+
+  for (const ev of events) {
+    if (!(ev.visible ?? true)) continue;
+    const key = roomKeyFrom(ev.building, ev.room);
+    if (!key) continue;
+    const dayKey = dayKeyFromEvent(ev);
+    if (!dayKey || (daySet.size > 0 && !daySet.has(dayKey))) continue;
+
+    const [bRaw, rRaw] = key.split("||");
+    const entry =
+      byRoom.get(key) ??
+      ({
+        key,
+        label: roomLabelFromKey(key),
+        building: normToken(bRaw),
+        room: normToken(rRaw),
+        timed: [],
+        untimed: []
+      } satisfies RoomExportEntry);
+
+    if ((ev.kind ?? "timed") === "timed" && ev.start && ev.end) {
+      const start = new Date(ev.start);
+      const end = new Date(ev.end);
+      if (Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()) && end > start) {
+        entry.timed.push({
+          id: String(ev.id ?? `${dayKey}-${start.toISOString()}`),
+          title: String(ev.title ?? "Без названия"),
+          start,
+          end,
+          dayKey
+        });
+      }
+    } else if ((ev.kind ?? "timed") === "untimed") {
+      entry.untimed.push({
+        id: String(ev.id ?? `${dayKey}-untimed`),
+        title: String(ev.title ?? "Без названия"),
+        dayKey,
+        orderNo: typeof ev.orderNo === "number" && Number.isFinite(ev.orderNo) ? ev.orderNo : undefined
+      });
+    }
+
+    byRoom.set(key, entry);
+  }
+
+  const out = Array.from(byRoom.values());
+  for (const room of out) {
+    room.timed.sort((a, b) => a.start.getTime() - b.start.getTime());
+    room.untimed.sort((a, b) => {
+      const dk = a.dayKey.localeCompare(b.dayKey);
+      if (dk !== 0) return dk;
+      return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
+    });
+  }
+  out.sort((a, b) => {
+    const byRoomName = a.room.localeCompare(b.room, "ru-RU");
+    if (byRoomName !== 0) return byRoomName;
+    return a.building.localeCompare(b.building, "ru-RU");
+  });
+  return out;
+}
 
 export function PrintWorkspaceClient({
   projectId,
@@ -28,8 +165,10 @@ export function PrintWorkspaceClient({
 }) {
   const [mode, setMode] = useState<"single" | "all">("single");
   const [activeKey, setActiveKey] = useState(programDayKeys[0] ?? "");
+  const [roomsListMode, setRoomsListMode] = useState<"occupancy" | "events">("occupancy");
   const searchParams = useSearchParams();
   const exportView = String(searchParams.get("view") ?? "").trim();
+  const isRoomsView = exportView === "rooms";
   const viewLabel =
     exportView === "tech-schedule"
       ? "Техрасписание"
@@ -123,6 +262,126 @@ export function PrintWorkspaceClient({
     return Number.isFinite(d.getTime()) ? formatDayFull(d) : k;
   };
 
+  const selectedRoomsDayKeys = useMemo(() => {
+    if (mode === "all") return visibleKeys;
+    return activeKey ? [activeKey] : [];
+  }, [mode, visibleKeys, activeKey]);
+
+  const roomsEntries = useMemo(() => buildRoomsExportEntries(events, selectedRoomsDayKeys), [events, selectedRoomsDayKeys]);
+
+  const renderRoomsList = (entries: RoomExportEntry[], dayKeys: string[]) => {
+    if (!entries.length) {
+      return <div className="muted">Нет данных по аудиториям для выбранного периода.</div>;
+    }
+
+    const daySet = new Set(dayKeys);
+
+    return (
+      <div className="grid" style={{ gap: 10 }}>
+        {entries.map((entry) => {
+          if (roomsListMode === "occupancy") {
+            const grouped = new Map<string, string[]>();
+            for (const t of entry.timed) {
+              if (daySet.size > 0 && !daySet.has(t.dayKey)) continue;
+              const arr = grouped.get(t.dayKey) ?? [];
+              arr.push(`${formatHm(t.start)}-${formatHm(t.end)}`);
+              grouped.set(t.dayKey, arr);
+            }
+            const untimedCount = entry.untimed.filter((u) => (daySet.size > 0 ? daySet.has(u.dayKey) : true)).length;
+
+            return (
+              <div key={`occ-${entry.key}`} className="card" style={{ padding: 10 }}>
+                <div style={{ fontWeight: 800 }}>{entry.label}</div>
+                {grouped.size ? (
+                  <div className="grid" style={{ gap: 4, marginTop: 6 }}>
+                    {Array.from(grouped.keys())
+                      .sort()
+                      .map((dk) => (
+                        <div key={`${entry.key}-${dk}`} className="muted" style={{ fontSize: 12 }}>
+                          <b>{headingFor(dk)}</b>: {grouped.get(dk)!.join(", ")}
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Нет мероприятий с указанным временем.
+                  </div>
+                )}
+                {untimedCount > 0 ? (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                    Дополнительно: {untimedCount} мероприят(ий) без указанного времени.
+                  </div>
+                ) : null}
+              </div>
+            );
+          }
+
+          const groupedEvents = new Map<string, Array<TimedRoomEvent | UntimedRoomEvent>>();
+          for (const t of entry.timed) {
+            if (daySet.size > 0 && !daySet.has(t.dayKey)) continue;
+            const arr = groupedEvents.get(t.dayKey) ?? [];
+            arr.push(t);
+            groupedEvents.set(t.dayKey, arr);
+          }
+          for (const u of entry.untimed) {
+            if (daySet.size > 0 && !daySet.has(u.dayKey)) continue;
+            const arr = groupedEvents.get(u.dayKey) ?? [];
+            arr.push(u);
+            groupedEvents.set(u.dayKey, arr);
+          }
+
+          return (
+            <div key={`ev-${entry.key}`} className="card" style={{ padding: 10 }}>
+              <div style={{ fontWeight: 800 }}>{entry.label}</div>
+              {!groupedEvents.size ? (
+                <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                  Нет событий в выбранном периоде.
+                </div>
+              ) : (
+                <div className="grid" style={{ gap: 8, marginTop: 6 }}>
+                  {Array.from(groupedEvents.keys())
+                    .sort()
+                    .map((dk) => {
+                      const list = groupedEvents.get(dk) ?? [];
+                      const ordered = [...list].sort((a, b) => {
+                        const aIsTimed = "start" in a;
+                        const bIsTimed = "start" in b;
+                        if (aIsTimed && bIsTimed) return a.start.getTime() - b.start.getTime();
+                        if (aIsTimed) return -1;
+                        if (bIsTimed) return 1;
+                        return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
+                      });
+                      return (
+                        <div key={`${entry.key}-${dk}`}>
+                          <div style={{ fontWeight: 700, fontSize: 12 }}>{headingFor(dk)}</div>
+                          <div className="grid" style={{ gap: 4, marginTop: 4 }}>
+                            {ordered.map((ev, idx) => {
+                              if ("start" in ev) {
+                                return (
+                                  <div key={`${entry.key}-${dk}-${ev.id}-${idx}`} className="muted" style={{ fontSize: 12 }}>
+                                    {formatHm(ev.start)}-{formatHm(ev.end)} — {ev.title}
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div key={`${entry.key}-${dk}-${ev.id}-${idx}`} className="muted" style={{ fontSize: 12 }}>
+                                  Без времени — {ev.title}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="print-workspace-no-print">
@@ -151,47 +410,93 @@ export function PrintWorkspaceClient({
             Все дни (каждый с новой страницы)
           </label>
         </div>
+        {isRoomsView ? (
+          <>
+            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ fontWeight: 700 }}>Вид списка аудиторий</span>
+              <label className="row muted" style={{ gap: 8, fontSize: 13 }}>
+                <input
+                  type="radio"
+                  name="rooms-list-mode"
+                  checked={roomsListMode === "occupancy"}
+                  onChange={() => setRoomsListMode("occupancy")}
+                />
+                Перечень аудиторий с временем занятости
+              </label>
+              <label className="row muted" style={{ gap: 8, fontSize: 13 }}>
+                <input
+                  type="radio"
+                  name="rooms-list-mode"
+                  checked={roomsListMode === "events"}
+                  onChange={() => setRoomsListMode("events")}
+                />
+                Перечень аудиторий со списками мероприятий
+              </label>
+            </div>
+            {mode === "single" && visibleKeys.length ? (
+              <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                {visibleKeys.map((dk) => (
+                  <button
+                    key={dk}
+                    type="button"
+                    className={dk === activeKey ? "" : "secondary"}
+                    onClick={() => setActiveKey(dk)}
+                  >
+                    {headingFor(dk)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </>
+        ) : null}
         <div style={{ height: 14 }} />
-        <div className="tl-print-screen-scale">
-          <TimelineViewer
-            events={events as any}
-            projectId={projectId}
-            activeBuildId={activeBuildId}
-            initialMarks={marks}
-            initialStyle={style as any}
-            initialLayout={layout as any}
-            hideControls
-            onActiveDayKeyChange={setActiveKey}
-          />
-        </div>
+        {isRoomsView ? (
+          <div className="grid" style={{ gap: 8 }}>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Сортировка аудиторий строится по выбранному периоду ({mode === "single" ? headingFor(activeKey) : "Все дни"}) с
+              учетом пары «Корпус + Аудитория».
+            </div>
+            {renderRoomsList(roomsEntries, selectedRoomsDayKeys)}
+          </div>
+        ) : (
+          <div className="tl-print-screen-scale">
+            <TimelineViewer
+              events={events as any}
+              projectId={projectId}
+              activeBuildId={activeBuildId}
+              initialMarks={marks}
+              initialStyle={style as any}
+              initialLayout={layout as any}
+              hideControls
+              onActiveDayKeyChange={setActiveKey}
+            />
+          </div>
+        )}
       </div>
 
       <div className="print-workspace-print-only">
-        {mode === "single" && activeKey ? (
-          <section className="print-a4-sheet">
-            <h2 className="print-day-heading">{headingFor(activeKey)}</h2>
-            <div className="print-timeline-fit">
-              <div className="print-timeline-print-scale-inner">
-                <TimelineViewer
-                  events={events as any}
-                  projectId={projectId}
-                  activeBuildId={null}
-                  initialMarks={marks}
-                  initialStyle={style as any}
-                  initialLayout={layout as any}
-                  hideControls
-                  pinnedDayKey={activeKey}
-                  hidePackChrome
-                  omitDayBanner
-                />
-              </div>
-            </div>
-          </section>
-        ) : null}
-        {mode === "all"
-          ? visibleKeys.map((k) => (
-              <section key={k} className="print-a4-sheet print-page-break-after">
-                <h2 className="print-day-heading">{headingFor(k)}</h2>
+        {isRoomsView ? (
+          <>
+            {mode === "single" && activeKey ? (
+              <section className="print-a4-sheet">
+                <h2 className="print-day-heading">{headingFor(activeKey)}</h2>
+                {renderRoomsList(buildRoomsExportEntries(events, [activeKey]), [activeKey])}
+              </section>
+            ) : null}
+            {mode === "all"
+              ? visibleKeys.map((k) => (
+                  <section key={k} className="print-a4-sheet print-page-break-after">
+                    <h2 className="print-day-heading">{headingFor(k)}</h2>
+                    {renderRoomsList(buildRoomsExportEntries(events, [k]), [k])}
+                  </section>
+                ))
+              : null}
+          </>
+        ) : (
+          <>
+            {mode === "single" && activeKey ? (
+              <section className="print-a4-sheet">
+                <h2 className="print-day-heading">{headingFor(activeKey)}</h2>
                 <div className="print-timeline-fit">
                   <div className="print-timeline-print-scale-inner">
                     <TimelineViewer
@@ -202,15 +507,39 @@ export function PrintWorkspaceClient({
                       initialStyle={style as any}
                       initialLayout={layout as any}
                       hideControls
-                      pinnedDayKey={k}
+                      pinnedDayKey={activeKey}
                       hidePackChrome
                       omitDayBanner
                     />
                   </div>
                 </div>
               </section>
-            ))
-          : null}
+            ) : null}
+            {mode === "all"
+              ? visibleKeys.map((k) => (
+                  <section key={k} className="print-a4-sheet print-page-break-after">
+                    <h2 className="print-day-heading">{headingFor(k)}</h2>
+                    <div className="print-timeline-fit">
+                      <div className="print-timeline-print-scale-inner">
+                        <TimelineViewer
+                          events={events as any}
+                          projectId={projectId}
+                          activeBuildId={null}
+                          initialMarks={marks}
+                          initialStyle={style as any}
+                          initialLayout={layout as any}
+                          hideControls
+                          pinnedDayKey={k}
+                          hidePackChrome
+                          omitDayBanner
+                        />
+                      </div>
+                    </div>
+                  </section>
+                ))
+              : null}
+          </>
+        )}
       </div>
     </>
   );

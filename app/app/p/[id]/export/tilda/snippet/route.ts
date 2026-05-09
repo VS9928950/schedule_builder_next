@@ -32,6 +32,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const timelineLayout = ((isTechView ? (activeBuild as any).tech_timeline_layout : (activeBuild as any).timeline_layout) ?? null) as any;
   const timelineStyle = ((isTechView ? (activeBuild as any).tech_timeline_style : (activeBuild as any).timeline_style) ?? null) as any;
   const scope = u.searchParams.get("scope");
+  const roomsMode = u.searchParams.get("roomsMode");
   const font = u.searchParams.get("font");
   const fontMode = font === "tildaSans" || font === "tilda-sans" ? "tilda-sans" : "inherit";
 
@@ -43,6 +44,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     timelineStyle,
     scopeSelector: scope,
     onlyDayKey: u.searchParams.get("day"),
+    view,
+    roomsMode: roomsMode === "events" ? "events" : "occupancy",
     fontMode
   });
 

@@ -34,6 +34,7 @@ export async function GET(req: Request) {
   const timelineStyle = ((isTechView ? (activeBuild as any).tech_timeline_style : (activeBuild as any).timeline_style) ?? null) as any;
   const scope = url.searchParams.get("scope");
   const day = url.searchParams.get("day");
+  const roomsMode = url.searchParams.get("roomsMode");
   const font = url.searchParams.get("font");
   const fontMode = font === "tildaSans" || font === "tilda-sans" ? "tilda-sans" : "inherit";
 
@@ -45,6 +46,8 @@ export async function GET(req: Request) {
     timelineStyle,
     scopeSelector: scope,
     onlyDayKey: day,
+    view,
+    roomsMode: roomsMode === "events" ? "events" : "occupancy",
     fontMode
   });
 

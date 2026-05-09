@@ -24,8 +24,10 @@ export function TildaSnippetClient({
   const [loading, setLoading] = useState(false);
   const [scope, setScope] = useState<string>(""); // optional; can be left empty
   const [day, setDay] = useState<string>(""); // YYYY-MM-DD or empty for all
+  const [roomsMode, setRoomsMode] = useState<"occupancy" | "events">("occupancy");
   const [tildaSansProbe, setTildaSansProbe] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string>("");
+  const isRoomsView = String(view ?? "").trim() === "rooms";
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +37,7 @@ export function TildaSnippetClient({
     if (view && view.trim()) params.set("view", view.trim());
     if (scope.trim()) params.set("scope", scope.trim());
     if (day.trim()) params.set("day", day.trim());
+    if (isRoomsView) params.set("roomsMode", roomsMode);
     if (tildaSansProbe) params.set("font", "tildaSans");
     const qs = params.toString();
     const dataEndpoints = [`/api/export/tilda/data?${qs}`, `/app/p/${projectId}/export/tilda/data?${qs}`];
@@ -103,7 +106,7 @@ export function TildaSnippetClient({
     return () => {
       cancelled = true;
     };
-  }, [projectId, scope, day, tildaSansProbe, view]);
+  }, [projectId, scope, day, tildaSansProbe, view, isRoomsView, roomsMode]);
 
   useEffect(() => {
     if (day && !visibleDayKeys.includes(day)) setDay("");
@@ -158,6 +161,7 @@ export function TildaSnippetClient({
               if (view && view.trim()) p.set("view", view.trim());
               if (scope.trim()) p.set("scope", scope.trim());
               if (day.trim()) p.set("day", day.trim());
+              if (isRoomsView) p.set("roomsMode", roomsMode);
               if (tildaSansProbe) p.set("font", "tildaSans");
               return `/api/export/tilda/snippet?${p.toString()}`;
             })()}
@@ -213,6 +217,32 @@ export function TildaSnippetClient({
           })}
         </select>
       </div>
+      {isRoomsView ? (
+        <div className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 800, marginBottom: 6 }}>Вид списка аудиторий</div>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+            Для `rooms` доступны два формата: с временем занятости или со списками мероприятий по аудиториям.
+          </div>
+          <label className="row muted" style={{ gap: 8, fontSize: 13, marginBottom: 8 }}>
+            <input
+              type="radio"
+              name="rooms-mode"
+              checked={roomsMode === "occupancy"}
+              onChange={() => setRoomsMode("occupancy")}
+            />
+            Перечень аудиторий с временем занятости
+          </label>
+          <label className="row muted" style={{ gap: 8, fontSize: 13 }}>
+            <input
+              type="radio"
+              name="rooms-mode"
+              checked={roomsMode === "events"}
+              onChange={() => setRoomsMode("events")}
+            />
+            Перечень аудиторий со списками мероприятий
+          </label>
+        </div>
+      ) : null}
       <div className="card" style={{ padding: 12 }}>
         <div style={{ fontWeight: 800, marginBottom: 6 }}>Опционально: ограничить CSS</div>
         <div className="muted" style={{ fontSize: 12 }}>

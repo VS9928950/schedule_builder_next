@@ -21,6 +21,17 @@ type IsoEvent = {
   url?: string;
 };
 
+type RoomTimedEvent = { id: string; title: string; start: Date; end: Date; dayKey: string };
+type RoomUntimedEvent = { id: string; title: string; dayKey: string; orderNo?: number };
+type RoomEntry = {
+  key: string;
+  label: string;
+  building: string;
+  room: string;
+  timed: RoomTimedEvent[];
+  untimed: RoomUntimedEvent[];
+};
+
 type TimelineLayout = {
   row_heights?: Record<string, Record<string, number>>;
   col_width_px?: Record<string, number>;
@@ -93,6 +104,95 @@ function formatTime(d: Date) {
   return `${hh}:${mm}`;
 }
 
+function normToken(v: unknown): string {
+  if (v == null) return "";
+  const t = String(v).replace(/\s+/g, " ").trim();
+  if (!t || t === "-" || t === "—") return "";
+  return t;
+}
+
+function roomKeyFrom(building: unknown, room: unknown): string {
+  const b = normToken(building);
+  const r = normToken(room);
+  if (!r) return "";
+  return `${b}||${r}`;
+}
+
+function roomLabelFromKey(key: string): string {
+  const [bRaw, rRaw] = key.split("||");
+  const b = normToken(bRaw);
+  const r = normToken(rRaw);
+  return b ? `${b} · ${r}` : r || "Не указано";
+}
+
+function formatDayHuman(dayKey: string): string {
+  const d = new Date(`${dayKey}T00:00:00`);
+  if (!Number.isFinite(d.getTime())) return dayKey;
+  return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+}
+
+function buildRoomsEntries(events: IsoEvent[], selectedDayKeys: Set<string>): RoomEntry[] {
+  const byRoom = new Map<string, RoomEntry>();
+  for (const ev of events) {
+    if (!(ev.visible ?? true)) continue;
+    const key = roomKeyFrom(ev.building, ev.room);
+    if (!key) continue;
+    const dayKey = (ev.kind ?? "timed") === "untimed" ? String(ev.day ?? "").slice(0, 10) : String(ev.start ?? "").slice(0, 10);
+    if (!dayKey || !selectedDayKeys.has(dayKey)) continue;
+
+    const [bRaw, rRaw] = key.split("||");
+    const entry =
+      byRoom.get(key) ??
+      ({
+        key,
+        label: roomLabelFromKey(key),
+        building: normToken(bRaw),
+        room: normToken(rRaw),
+        timed: [],
+        untimed: []
+      } satisfies RoomEntry);
+
+    if ((ev.kind ?? "timed") === "timed" && ev.start && ev.end) {
+      const start = new Date(ev.start);
+      const end = new Date(ev.end);
+      if (Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()) && end > start) {
+        entry.timed.push({
+          id: String(ev.id ?? `${dayKey}-${start.toISOString()}`),
+          title: String(ev.title ?? "Без названия"),
+          start,
+          end,
+          dayKey
+        });
+      }
+    } else if ((ev.kind ?? "timed") === "untimed") {
+      entry.untimed.push({
+        id: String(ev.id ?? `${dayKey}-untimed`),
+        title: String(ev.title ?? "Без названия"),
+        dayKey,
+        orderNo: typeof ev.orderNo === "number" && Number.isFinite(ev.orderNo) ? ev.orderNo : undefined
+      });
+    }
+
+    byRoom.set(key, entry);
+  }
+
+  const out = Array.from(byRoom.values());
+  for (const room of out) {
+    room.timed.sort((a, b) => a.start.getTime() - b.start.getTime());
+    room.untimed.sort((a, b) => {
+      const byDay = a.dayKey.localeCompare(b.dayKey);
+      if (byDay !== 0) return byDay;
+      return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
+    });
+  }
+  out.sort((a, b) => {
+    const byRoomName = a.room.localeCompare(b.room, "ru-RU");
+    if (byRoomName !== 0) return byRoomName;
+    return a.building.localeCompare(b.building, "ru-RU");
+  });
+  return out;
+}
+
 function shouldShowFormat(fmt: unknown) {
   const s = fmt == null ? "" : String(fmt).trim();
   if (!s) return false;
@@ -148,10 +248,12 @@ export function buildTildaSnippet(args: {
   } | null;
   scopeSelector?: string | null; // e.g. "#rec123456"
   onlyDayKey?: string | null; // YYYY-MM-DD (optional)
+  view?: string | null;
+  roomsMode?: "occupancy" | "events";
   /** Default: inherit site fonts. `tilda-sans` forces Tilda Sans for layout checks. */
   fontMode?: "inherit" | "tilda-sans";
 }) {
-  const { projectName, events, marksByDay, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode } = args;
+  const { projectName, events, marksByDay, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode, view, roomsMode } = args;
   const layout = timelineLayout ?? {};
   const eventOverrides = layout.event_overrides ?? {};
 
@@ -179,6 +281,135 @@ export function buildTildaSnippet(args: {
     `sb-${onlyDayKey ? onlyDayKey : "all"}-${hashShort(projectName)}`
   );
   const rootSel = `${sc}.sb-wrap[data-sb-scope="${internalScopeId}"]`;
+
+  if (view === "rooms") {
+    const timedForDays = events
+      .filter((e) => (e.visible ?? true) && (e.kind ?? "timed") === "timed" && e.start && e.end)
+      .map((e) => ({ ...e, startD: new Date(e.start!), endD: new Date(e.end!) }))
+      .filter((e) => Number.isFinite(e.startD.getTime()) && Number.isFinite(e.endD.getTime()) && e.endD > e.startD);
+
+    const hiddenDay = new Set(
+      (timelineLayout?.hidden_day_keys ?? [])
+        .map((k) => String(k).slice(0, 10))
+        .filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k))
+    );
+    const allDayKeys = Array.from(
+      new Set([
+        ...timedForDays.map((e) => dayKeyFromDate(e.startD)),
+        ...events
+          .filter((e) => (e.visible ?? true) && (e.kind ?? "timed") === "untimed" && e.day)
+          .map((e) => String(e.day).slice(0, 10))
+      ])
+    )
+      .sort()
+      .filter((d) => !hiddenDay.has(d));
+    const selectedDayKeys = new Set(onlyDayKey ? allDayKeys.filter((d) => d === onlyDayKey) : allDayKeys);
+    const entries = buildRoomsEntries(events, selectedDayKeys);
+    const mode = roomsMode === "events" ? "events" : "occupancy";
+
+    const css = `
+/* Tilda snippet: ${esc(projectName)} rooms export */
+${rootSel}{
+  --sb-text:#0f172a;
+  --sb-muted:rgba(15,23,42,.62);
+  --sb-border:rgba(15,23,42,.12);
+  --sb-card-bg:#fff;
+  ${fontMode === "tilda-sans" ? `font-family:"Tilda Sans",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;` : `/* font: inherit from Tilda page */`}
+  color:var(--sb-text);
+}
+${rootSel} .sb-title{font-size:20px;line-height:1.2;font-weight:800;margin:0 0 10px}
+${rootSel} .sb-meta{font-size:13px;color:var(--sb-muted);margin:0 0 14px}
+${rootSel} .sb-rooms{display:grid;gap:10px}
+${rootSel} .sb-room{border:1px solid var(--sb-border);border-radius:12px;background:var(--sb-card-bg);padding:10px}
+${rootSel} .sb-room-head{font-size:15px;line-height:1.3;font-weight:800}
+${rootSel} .sb-lines{display:grid;gap:4px;margin-top:6px}
+${rootSel} .sb-line{font-size:12px;line-height:1.35;color:var(--sb-muted)}
+${rootSel} .sb-day{font-weight:700;color:var(--sb-text)}
+`.trim();
+
+    let html = `<div class="sb-wrap" data-sb-scope="${esc(internalScopeId)}">\n`;
+    html += `<h2 class="sb-title">Аудитории</h2>\n`;
+    html += `<div class="sb-meta">Вид: ${mode === "occupancy" ? "перечень аудиторий с временем занятости" : "перечень аудиторий со списками мероприятий"}. Период: ${
+      onlyDayKey ? esc(formatDayHuman(onlyDayKey)) : "Все дни"
+    }.</div>\n`;
+
+    if (!entries.length) {
+      html += `<div class="sb-line">Нет данных по аудиториям для выбранного периода.</div>\n`;
+      html += `</div>`;
+      return { html, css };
+    }
+
+    html += `<div class="sb-rooms">\n`;
+    for (const entry of entries) {
+      html += `<div class="sb-room">\n`;
+      html += `<div class="sb-room-head">${esc(entry.label)}</div>\n`;
+
+      if (mode === "occupancy") {
+        const grouped = new Map<string, string[]>();
+        for (const t of entry.timed) {
+          const arr = grouped.get(t.dayKey) ?? [];
+          arr.push(`${formatTime(t.start)}-${formatTime(t.end)}`);
+          grouped.set(t.dayKey, arr);
+        }
+        const untimedCount = entry.untimed.length;
+        if (grouped.size === 0) {
+          html += `<div class="sb-lines"><div class="sb-line">Нет мероприятий с указанным временем.</div></div>\n`;
+        } else {
+          html += `<div class="sb-lines">\n`;
+          for (const dk of Array.from(grouped.keys()).sort()) {
+            html += `<div class="sb-line"><span class="sb-day">${esc(formatDayHuman(dk))}</span>: ${esc(grouped.get(dk)!.join(", "))}</div>\n`;
+          }
+          html += `</div>\n`;
+        }
+        if (untimedCount > 0) {
+          html += `<div class="sb-line">Дополнительно: ${untimedCount} мероприят(ий) без указанного времени.</div>\n`;
+        }
+      } else {
+        const grouped = new Map<string, Array<RoomTimedEvent | RoomUntimedEvent>>();
+        for (const t of entry.timed) {
+          const arr = grouped.get(t.dayKey) ?? [];
+          arr.push(t);
+          grouped.set(t.dayKey, arr);
+        }
+        for (const u of entry.untimed) {
+          const arr = grouped.get(u.dayKey) ?? [];
+          arr.push(u);
+          grouped.set(u.dayKey, arr);
+        }
+        if (grouped.size === 0) {
+          html += `<div class="sb-lines"><div class="sb-line">Нет событий в выбранном периоде.</div></div>\n`;
+        } else {
+          html += `<div class="sb-lines">\n`;
+          for (const dk of Array.from(grouped.keys()).sort()) {
+            html += `<div class="sb-line"><span class="sb-day">${esc(formatDayHuman(dk))}</span></div>\n`;
+            const list = grouped.get(dk) ?? [];
+            const ordered = [...list].sort((a, b) => {
+              const aIsTimed = "start" in a;
+              const bIsTimed = "start" in b;
+              if (aIsTimed && bIsTimed) return a.start.getTime() - b.start.getTime();
+              if (aIsTimed) return -1;
+              if (bIsTimed) return 1;
+              return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
+            });
+            for (const ev of ordered) {
+              if ("start" in ev) {
+                html += `<div class="sb-line">${esc(formatTime(ev.start))}-${esc(formatTime(ev.end))} — ${esc(ev.title)}</div>\n`;
+              } else {
+                html += `<div class="sb-line">Без времени — ${esc(ev.title)}</div>\n`;
+              }
+            }
+          }
+          html += `</div>\n`;
+        }
+      }
+
+      html += `</div>\n`;
+    }
+    html += `</div>\n`;
+    html += `</div>`;
+
+    return { html, css };
+  }
 
   const defaultTileBg =
     (timelineStyle?.eventBgColor ? rgbaFrom(timelineStyle.eventBgColor, timelineStyle.eventBgAlpha ?? 1) : null) ??
