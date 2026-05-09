@@ -10,12 +10,29 @@ import { PrintButton } from "./PrintButton";
 type IsoEv = Record<string, unknown> & {
   id?: string;
   title?: string;
+  description?: string;
+  description_md?: string;
+  format?: string;
   kind?: string;
   start?: string;
   end?: string;
   day?: string;
   building?: string;
   room?: string;
+  responsible1?: string;
+  responsible2?: string;
+  responsible3?: string;
+  responsible4?: string;
+  responsible5?: string;
+  responsible6?: string;
+  teamLead?: string;
+  volunteersCount?: number;
+  vks?: string;
+  translation?: string;
+  simultaneousInterpretation?: string;
+  photosFromResponsible?: string;
+  supportMaterials?: string;
+  banner?: string;
   orderNo?: number;
   visible?: boolean;
 };
@@ -26,6 +43,7 @@ type TimedRoomEvent = {
   start: Date;
   end: Date;
   dayKey: string;
+  raw: IsoEv;
 };
 
 type UntimedRoomEvent = {
@@ -33,6 +51,7 @@ type UntimedRoomEvent = {
   title: string;
   dayKey: string;
   orderNo?: number;
+  raw: IsoEv;
 };
 
 type RoomExportEntry = {
@@ -69,6 +88,10 @@ function roomLabelFromKey(key: string): string {
   const b = normToken(bRaw);
   const r = normToken(rRaw);
   return b ? `${b} · ${r}` : r || "Не указано";
+}
+
+function roomShortLabel(entry: RoomExportEntry): string {
+  return normToken(entry.room) || "Не указано";
 }
 
 function dayKeyFromEvent(ev: IsoEv): string {
@@ -120,7 +143,8 @@ function buildRoomsExportEntries(events: IsoEv[], selectedDayKeys: string[]): Ro
           title: String(ev.title ?? "Без названия"),
           start,
           end,
-          dayKey
+          dayKey,
+          raw: ev
         });
       }
     } else if ((ev.kind ?? "timed") === "untimed") {
@@ -128,7 +152,8 @@ function buildRoomsExportEntries(events: IsoEv[], selectedDayKeys: string[]): Ro
         id: String(ev.id ?? `${dayKey}-untimed`),
         title: String(ev.title ?? "Без названия"),
         dayKey,
-        orderNo: typeof ev.orderNo === "number" && Number.isFinite(ev.orderNo) ? ev.orderNo : undefined
+        orderNo: typeof ev.orderNo === "number" && Number.isFinite(ev.orderNo) ? ev.orderNo : undefined,
+        raw: ev
       });
     }
 
@@ -167,6 +192,43 @@ function groupRoomsByBuilding(entries: RoomExportEntry[]): RoomBuildingGroup[] {
   }));
   groups.sort((a, b) => a.label.localeCompare(b.label, "ru-RU"));
   return groups;
+}
+
+function eventDetails(raw: IsoEv): string[] {
+  const responsibles = [
+    raw.responsible1,
+    raw.responsible2,
+    raw.responsible3,
+    raw.responsible4,
+    raw.responsible5,
+    raw.responsible6
+  ]
+    .map((x) => normToken(x))
+    .filter(Boolean);
+  const lines: string[] = [];
+  const format = normToken(raw.format);
+  if (format) lines.push(`Формат: ${format}`);
+  const teamLead = normToken(raw.teamLead);
+  if (teamLead) lines.push(`Тимлид: ${teamLead}`);
+  if (responsibles.length) lines.push(`Ответственные: ${responsibles.join(", ")}`);
+  const vks = normToken(raw.vks);
+  if (vks) lines.push(`ВКС: ${vks}`);
+  const tr = normToken(raw.translation);
+  if (tr) lines.push(`Трансляция: ${tr}`);
+  const intr = normToken(raw.simultaneousInterpretation);
+  if (intr) lines.push(`Перевод: ${intr}`);
+  if (typeof raw.volunteersCount === "number" && Number.isFinite(raw.volunteersCount)) {
+    lines.push(`Волонтеры: ${raw.volunteersCount}`);
+  }
+  const photos = normToken(raw.photosFromResponsible);
+  if (photos) lines.push(`Фотографии от ответственного: ${photos}`);
+  const banner = normToken(raw.banner);
+  if (banner) lines.push(`Баннер: ${banner}`);
+  const support = normToken(raw.supportMaterials);
+  if (support) lines.push(`Сопроводительные материалы: ${support}`);
+  const desc = normToken(raw.description_md ?? raw.description);
+  if (desc) lines.push(`Описание: ${desc}`);
+  return lines;
 }
 
 export function PrintWorkspaceClient({
@@ -311,28 +373,44 @@ export function PrintWorkspaceClient({
             <div style={{ height: 8 }} />
             <div className="grid" style={{ gap: 10 }}>
               {group.rooms.map((entry) => {
+          const isSingleDay = dayKeys.length === 1;
           if (roomsListMode === "occupancy") {
             const grouped = new Map<string, string[]>();
+            const groupedTimed = new Map<string, TimedRoomEvent[]>();
             for (const t of entry.timed) {
               if (daySet.size > 0 && !daySet.has(t.dayKey)) continue;
               const arr = grouped.get(t.dayKey) ?? [];
               arr.push(`${formatHm(t.start)}-${formatHm(t.end)}`);
               grouped.set(t.dayKey, arr);
+              const evArr = groupedTimed.get(t.dayKey) ?? [];
+              evArr.push(t);
+              groupedTimed.set(t.dayKey, evArr);
             }
             const untimedCount = entry.untimed.filter((u) => (daySet.size > 0 ? daySet.has(u.dayKey) : true)).length;
 
             return (
               <div key={`occ-${entry.key}`} className="card" style={{ padding: 10 }}>
-                <div style={{ fontWeight: 800 }}>{entry.label}</div>
+                <div style={{ fontWeight: 800 }}>{roomShortLabel(entry)}</div>
                 {grouped.size ? (
                   <div className="grid" style={{ gap: 4, marginTop: 6 }}>
-                    {Array.from(grouped.keys())
+                    {Array.from(groupedTimed.keys())
                       .sort()
                       .map((dk) => {
-                        const items = grouped.get(dk) ?? [];
+                        const items = groupedTimed.get(dk) ?? [];
+                        const first = items[0];
+                        const last = items[items.length - 1];
                         return (
                         <div key={`${entry.key}-${dk}`} className="muted" style={{ fontSize: 12 }}>
-                          <b>{headingFor(dk)}</b> ({items.length} событий): {items.join(", ")}
+                          {!isSingleDay ? <b>{headingFor(dk)}. </b> : null}
+                          Количество мероприятий: {items.length}
+                          {first && last ? ` · Старт мероприятий: ${formatHm(first.start)} · Окончание мероприятий: ${formatHm(last.end)}` : ""}
+                          <div className="grid" style={{ gap: 2, marginTop: 4 }}>
+                            {items.map((ev, idx) => (
+                              <div key={`${entry.key}-${dk}-ev-${ev.id}-${idx}`} className="muted" style={{ fontSize: 12 }}>
+                                {formatHm(ev.start)}-{formatHm(ev.end)} - {ev.title}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                         );
                       })}
@@ -367,7 +445,7 @@ export function PrintWorkspaceClient({
 
           return (
             <div key={`ev-${entry.key}`} className="card" style={{ padding: 10 }}>
-              <div style={{ fontWeight: 800 }}>{entry.label}</div>
+              <div style={{ fontWeight: 800 }}>{roomShortLabel(entry)}</div>
               {!groupedEvents.size ? (
                 <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
                   Нет событий в выбранном периоде.
@@ -394,15 +472,31 @@ export function PrintWorkspaceClient({
                           <div className="grid" style={{ gap: 4, marginTop: 4 }}>
                             {ordered.map((ev, idx) => {
                               if ("start" in ev) {
+                                const details = eventDetails(ev.raw);
                                 return (
-                                  <div key={`${entry.key}-${dk}-${ev.id}-${idx}`} className="muted" style={{ fontSize: 12 }}>
-                                    {formatHm(ev.start)}-{formatHm(ev.end)} — {ev.title}
+                                  <div key={`${entry.key}-${dk}-${ev.id}-${idx}`} className="grid" style={{ gap: 2 }}>
+                                    <div className="muted" style={{ fontSize: 12 }}>
+                                      {formatHm(ev.start)}-{formatHm(ev.end)} — {ev.title}
+                                    </div>
+                                    {details.map((line, dIdx) => (
+                                      <div key={`${entry.key}-${dk}-${ev.id}-d-${dIdx}`} className="muted" style={{ fontSize: 12 }}>
+                                        {line}
+                                      </div>
+                                    ))}
                                   </div>
                                 );
                               }
+                              const details = eventDetails(ev.raw);
                               return (
-                                <div key={`${entry.key}-${dk}-${ev.id}-${idx}`} className="muted" style={{ fontSize: 12 }}>
-                                  Без времени — {ev.title}
+                                <div key={`${entry.key}-${dk}-${ev.id}-${idx}`} className="grid" style={{ gap: 2 }}>
+                                  <div className="muted" style={{ fontSize: 12 }}>
+                                    Без времени — {ev.title}
+                                  </div>
+                                  {details.map((line, dIdx) => (
+                                    <div key={`${entry.key}-${dk}-${ev.id}-d-${dIdx}`} className="muted" style={{ fontSize: 12 }}>
+                                      {line}
+                                    </div>
+                                  ))}
                                 </div>
                               );
                             })}

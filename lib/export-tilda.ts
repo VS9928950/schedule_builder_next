@@ -12,6 +12,20 @@ type IsoEvent = {
   building?: string;
   room?: string;
   format?: string;
+  responsible1?: string;
+  responsible2?: string;
+  responsible3?: string;
+  responsible4?: string;
+  responsible5?: string;
+  responsible6?: string;
+  teamLead?: string;
+  volunteersCount?: number;
+  vks?: string;
+  translation?: string;
+  simultaneousInterpretation?: string;
+  photosFromResponsible?: string;
+  supportMaterials?: string;
+  banner?: string;
   orderNo?: number;
   visible?: boolean;
   kind?: "timed" | "untimed";
@@ -21,8 +35,8 @@ type IsoEvent = {
   url?: string;
 };
 
-type RoomTimedEvent = { id: string; title: string; start: Date; end: Date; dayKey: string };
-type RoomUntimedEvent = { id: string; title: string; dayKey: string; orderNo?: number };
+type RoomTimedEvent = { id: string; title: string; start: Date; end: Date; dayKey: string; raw: IsoEvent };
+type RoomUntimedEvent = { id: string; title: string; dayKey: string; orderNo?: number; raw: IsoEvent };
 type RoomEntry = {
   key: string;
   label: string;
@@ -130,6 +144,10 @@ function roomLabelFromKey(key: string): string {
   return b ? `${b} · ${r}` : r || "Не указано";
 }
 
+function roomShortLabel(entry: RoomEntry): string {
+  return normToken(entry.room) || "Не указано";
+}
+
 function formatDayHuman(dayKey: string): string {
   const d = new Date(`${dayKey}T00:00:00`);
   if (!Number.isFinite(d.getTime())) return dayKey;
@@ -171,7 +189,8 @@ function buildRoomsEntries(events: IsoEvent[], selectedDayKeys: Set<string>): Ro
           title: String(ev.title ?? "Без названия"),
           start,
           end,
-          dayKey
+          dayKey,
+          raw: ev
         });
       }
     } else if ((ev.kind ?? "timed") === "untimed") {
@@ -179,7 +198,8 @@ function buildRoomsEntries(events: IsoEvent[], selectedDayKeys: Set<string>): Ro
         id: String(ev.id ?? `${dayKey}-untimed`),
         title: String(ev.title ?? "Без названия"),
         dayKey,
-        orderNo: typeof ev.orderNo === "number" && Number.isFinite(ev.orderNo) ? ev.orderNo : undefined
+        orderNo: typeof ev.orderNo === "number" && Number.isFinite(ev.orderNo) ? ev.orderNo : undefined,
+        raw: ev
       });
     }
 
@@ -218,6 +238,36 @@ function groupRoomsByBuilding(entries: RoomEntry[]): RoomBuildingGroup[] {
   }));
   groups.sort((a, b) => a.label.localeCompare(b.label, "ru-RU"));
   return groups;
+}
+
+function eventDetails(raw: IsoEvent): string[] {
+  const responsibles = [raw.responsible1, raw.responsible2, raw.responsible3, raw.responsible4, raw.responsible5, raw.responsible6]
+    .map((x) => normToken(x))
+    .filter(Boolean);
+  const lines: string[] = [];
+  const format = normToken(raw.format);
+  if (format) lines.push(`Формат: ${format}`);
+  const teamLead = normToken(raw.teamLead);
+  if (teamLead) lines.push(`Тимлид: ${teamLead}`);
+  if (responsibles.length) lines.push(`Ответственные: ${responsibles.join(", ")}`);
+  const vks = normToken(raw.vks);
+  if (vks) lines.push(`ВКС: ${vks}`);
+  const tr = normToken(raw.translation);
+  if (tr) lines.push(`Трансляция: ${tr}`);
+  const intr = normToken(raw.simultaneousInterpretation);
+  if (intr) lines.push(`Перевод: ${intr}`);
+  if (typeof raw.volunteersCount === "number" && Number.isFinite(raw.volunteersCount)) {
+    lines.push(`Волонтеры: ${raw.volunteersCount}`);
+  }
+  const photos = normToken(raw.photosFromResponsible);
+  if (photos) lines.push(`Фотографии от ответственного: ${photos}`);
+  const banner = normToken(raw.banner);
+  if (banner) lines.push(`Баннер: ${banner}`);
+  const support = normToken(raw.supportMaterials);
+  if (support) lines.push(`Сопроводительные материалы: ${support}`);
+  const desc = normToken(raw.description_md ?? raw.description);
+  if (desc) lines.push(`Описание: ${desc}`);
+  return lines;
 }
 
 function shouldShowFormat(fmt: unknown) {
@@ -377,7 +427,7 @@ ${rootSel} .sb-day{font-weight:700;color:var(--sb-text)}
       html += `<div class="sb-building-meta">${group.rooms.length} аудиторий</div>\n`;
       for (const entry of group.rooms) {
         html += `<div class="sb-room">\n`;
-        html += `<div class="sb-room-head">${esc(entry.label)}</div>\n`;
+        html += `<div class="sb-room-head">${esc(roomShortLabel(entry))}</div>\n`;
 
         if (mode === "occupancy") {
           const grouped = new Map<string, string[]>();
@@ -391,9 +441,18 @@ ${rootSel} .sb-day{font-weight:700;color:var(--sb-text)}
             html += `<div class="sb-lines"><div class="sb-line">Нет мероприятий с указанным временем.</div></div>\n`;
           } else {
             html += `<div class="sb-lines">\n`;
+            const isSingleDay = selectedDayKeys.size === 1;
             for (const dk of Array.from(grouped.keys()).sort()) {
               const items = grouped.get(dk)!;
-              html += `<div class="sb-line"><span class="sb-day">${esc(formatDayHuman(dk))}</span> (${items.length} событий): ${esc(items.join(", "))}</div>\n`;
+              const sortedTimed = [...(entry.timed.filter((t) => t.dayKey === dk))].sort((a, b) => a.start.getTime() - b.start.getTime());
+              const first = sortedTimed[0];
+              const last = sortedTimed[sortedTimed.length - 1];
+              html += `<div class="sb-line">${isSingleDay ? "" : `<span class="sb-day">${esc(formatDayHuman(dk))}. </span>`}Количество мероприятий: ${items.length}${
+                first && last ? ` · Старт мероприятий: ${esc(formatTime(first.start))} · Окончание мероприятий: ${esc(formatTime(last.end))}` : ""
+              }</div>\n`;
+              for (const ev of sortedTimed) {
+                html += `<div class="sb-line">${esc(formatTime(ev.start))}-${esc(formatTime(ev.end))} - ${esc(ev.title)}</div>\n`;
+              }
             }
             html += `</div>\n`;
           }
@@ -430,8 +489,14 @@ ${rootSel} .sb-day{font-weight:700;color:var(--sb-text)}
               for (const ev of ordered) {
                 if ("start" in ev) {
                   html += `<div class="sb-line">${esc(formatTime(ev.start))}-${esc(formatTime(ev.end))} — ${esc(ev.title)}</div>\n`;
+                  for (const line of eventDetails(ev.raw)) {
+                    html += `<div class="sb-line">${esc(line)}</div>\n`;
+                  }
                 } else {
                   html += `<div class="sb-line">Без времени — ${esc(ev.title)}</div>\n`;
+                  for (const line of eventDetails(ev.raw)) {
+                    html += `<div class="sb-line">${esc(line)}</div>\n`;
+                  }
                 }
               }
             }
