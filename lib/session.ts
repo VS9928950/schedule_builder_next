@@ -4,6 +4,7 @@ import { getIronSession, IronSession } from "iron-session";
 export type SessionData = {
   userId?: number;
   email?: string;
+  role?: "admin" | "user";
 };
 
 const sessionOptions = {
@@ -23,6 +24,6 @@ export async function getSession(): Promise<IronSession<SessionData>> {
 export async function getSessionUser() {
   const session = await getSession();
   if (!session.userId || !session.email) return null;
-  return { id: session.userId, email: session.email };
+  return { id: session.userId, email: session.email, role: session.role === "admin" ? "admin" : "user" };
 }
 

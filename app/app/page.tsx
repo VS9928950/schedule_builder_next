@@ -13,6 +13,11 @@ export default async function Dashboard() {
         <div className="row" style={{ gap: 12 }}>
           <div className="brand">Schedule Builder</div>
           <div className="chip">{user.email}</div>
+          {user.role === "admin" ? (
+            <a className="chip" href="/app/admin">
+              Администрирование
+            </a>
+          ) : null}
         </div>
         <form action="/sign-out" method="post">
           <button className="secondary" type="submit">

@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
-export type User = { id: number; email: string; password_hash: string; created_at: string };
+export type UserRole = "admin" | "user";
+export type User = { id: number; email: string; password_hash: string; created_at: string; role: UserRole };
 export type StoredUser = User & { email_verified?: boolean };
 
 export type ProjectUpload = {
@@ -178,8 +179,12 @@ function ensureStore(): StoreData {
   st.users = (st.users ?? []).map((u: any) => ({
     ...u,
     // Backward compatibility: legacy users become verified to avoid forced lockout.
-    email_verified: typeof u?.email_verified === "boolean" ? u.email_verified : true
+    email_verified: typeof u?.email_verified === "boolean" ? u.email_verified : true,
+    role: u?.role === "admin" ? "admin" : "user"
   }));
+  if (st.users.length > 0 && !st.users.some((u) => u.role === "admin")) {
+    st.users[0]!.role = "admin";
+  }
   if (!st.nextUploadId) st.nextUploadId = 1;
   if (!st.nextBuildId) st.nextBuildId = 1;
   return st;
@@ -200,15 +205,17 @@ export function findUserById(userId: number): StoredUser | null {
   return st.users.find((u) => u.id === userId) ?? null;
 }
 
-export function createUser(email: string, password: string): StoredUser {
+export function createUser(email: string, password: string, role?: UserRole): StoredUser {
   const st = ensureStore();
   const exists = st.users.some((u) => u.email === email);
   if (exists) throw new Error("Email already exists");
+  const isFirstUser = st.users.length === 0;
   const u: StoredUser = {
     id: st.nextUserId++,
     email,
     password_hash: hashPassword(password),
     email_verified: false,
+    role: role ?? (isFirstUser ? "admin" : "user"),
     created_at: now()
   };
   st.users.push(u);
@@ -223,12 +230,45 @@ export function authenticate(email: string, password: string): StoredUser | null
   return u;
 }
 
+export function isUserAdmin(userId: number): boolean {
+  const u = findUserById(userId);
+  return !!u && u.role === "admin";
+}
+
+export function listUsers(): StoredUser[] {
+  const st = ensureStore();
+  return [...st.users].sort((a, b) => a.email.localeCompare(b.email, "ru-RU"));
+}
+
+export function createUserByAdmin(email: string, password: string, role: UserRole = "user"): StoredUser {
+  const user = createUser(email, password, role);
+  markUserEmailVerified(user.id);
+  return findUserById(user.id)!;
+}
+
 export function setUserPassword(userId: number, password: string) {
   const st = ensureStore();
   const u = st.users.find((x) => x.id === userId);
   if (!u) throw new Error("User not found");
   u.password_hash = hashPassword(password);
   u.created_at = u.created_at || now();
+  saveStore(st);
+}
+
+export function deleteUserByAdmin(userId: number) {
+  const st = ensureStore();
+  const target = st.users.find((u) => u.id === userId);
+  if (!target) throw new Error("User not found");
+
+  if (target.role === "admin") {
+    const admins = st.users.filter((u) => u.role === "admin");
+    if (admins.length <= 1) {
+      throw new Error("Cannot delete the last admin");
+    }
+  }
+
+  st.users = st.users.filter((u) => u.id !== userId);
+  st.projects = st.projects.filter((p) => p.user_id !== userId);
   saveStore(st);
 }
 
