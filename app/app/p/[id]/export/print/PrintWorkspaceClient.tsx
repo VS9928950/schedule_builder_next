@@ -44,6 +44,12 @@ type RoomExportEntry = {
   untimed: UntimedRoomEvent[];
 };
 
+type RoomBuildingGroup = {
+  building: string;
+  label: string;
+  rooms: RoomExportEntry[];
+};
+
 function normToken(v: unknown): string {
   if (v == null) return "";
   const t = String(v).replace(/\s+/g, " ").trim();
@@ -139,11 +145,28 @@ function buildRoomsExportEntries(events: IsoEv[], selectedDayKeys: string[]): Ro
     });
   }
   out.sort((a, b) => {
-    const byRoomName = a.room.localeCompare(b.room, "ru-RU");
-    if (byRoomName !== 0) return byRoomName;
-    return a.building.localeCompare(b.building, "ru-RU");
+    const byBuilding = a.building.localeCompare(b.building, "ru-RU");
+    if (byBuilding !== 0) return byBuilding;
+    return a.room.localeCompare(b.room, "ru-RU");
   });
   return out;
+}
+
+function groupRoomsByBuilding(entries: RoomExportEntry[]): RoomBuildingGroup[] {
+  const map = new Map<string, RoomExportEntry[]>();
+  for (const entry of entries) {
+    const key = entry.building || "__no_building__";
+    const list = map.get(key) ?? [];
+    list.push(entry);
+    map.set(key, list);
+  }
+  const groups: RoomBuildingGroup[] = Array.from(map.entries()).map(([building, rooms]) => ({
+    building,
+    label: building === "__no_building__" ? "Здание не указано" : building,
+    rooms: [...rooms].sort((a, b) => a.room.localeCompare(b.room, "ru-RU"))
+  }));
+  groups.sort((a, b) => a.label.localeCompare(b.label, "ru-RU"));
+  return groups;
 }
 
 export function PrintWorkspaceClient({
@@ -276,9 +299,18 @@ export function PrintWorkspaceClient({
 
     const daySet = new Set(dayKeys);
 
+    const buildingGroups = groupRoomsByBuilding(entries);
     return (
-      <div className="grid" style={{ gap: 10 }}>
-        {entries.map((entry) => {
+      <div className="grid" style={{ gap: 12 }}>
+        {buildingGroups.map((group) => (
+          <div key={`building-${group.building}`} className="card" style={{ padding: 10 }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ fontWeight: 900 }}>{group.label}</div>
+              <div className="chip">{group.rooms.length} аудиторий</div>
+            </div>
+            <div style={{ height: 8 }} />
+            <div className="grid" style={{ gap: 10 }}>
+              {group.rooms.map((entry) => {
           if (roomsListMode === "occupancy") {
             const grouped = new Map<string, string[]>();
             for (const t of entry.timed) {
@@ -296,11 +328,14 @@ export function PrintWorkspaceClient({
                   <div className="grid" style={{ gap: 4, marginTop: 6 }}>
                     {Array.from(grouped.keys())
                       .sort()
-                      .map((dk) => (
+                      .map((dk) => {
+                        const items = grouped.get(dk) ?? [];
+                        return (
                         <div key={`${entry.key}-${dk}`} className="muted" style={{ fontSize: 12 }}>
-                          <b>{headingFor(dk)}</b>: {grouped.get(dk)!.join(", ")}
+                          <b>{headingFor(dk)}</b> ({items.length} событий): {items.join(", ")}
                         </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 ) : (
                   <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
@@ -353,7 +388,9 @@ export function PrintWorkspaceClient({
                       });
                       return (
                         <div key={`${entry.key}-${dk}`}>
-                          <div style={{ fontWeight: 700, fontSize: 12 }}>{headingFor(dk)}</div>
+                          <div style={{ fontWeight: 700, fontSize: 12 }}>
+                            {headingFor(dk)} ({ordered.length} событий)
+                          </div>
                           <div className="grid" style={{ gap: 4, marginTop: 4 }}>
                             {ordered.map((ev, idx) => {
                               if ("start" in ev) {
@@ -378,6 +415,9 @@ export function PrintWorkspaceClient({
             </div>
           );
         })}
+            </div>
+          </div>
+        ))}
       </div>
     );
   };

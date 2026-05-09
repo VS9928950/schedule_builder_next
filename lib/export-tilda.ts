@@ -31,6 +31,11 @@ type RoomEntry = {
   timed: RoomTimedEvent[];
   untimed: RoomUntimedEvent[];
 };
+type RoomBuildingGroup = {
+  building: string;
+  label: string;
+  rooms: RoomEntry[];
+};
 
 type TimelineLayout = {
   row_heights?: Record<string, Record<string, number>>;
@@ -128,7 +133,12 @@ function roomLabelFromKey(key: string): string {
 function formatDayHuman(dayKey: string): string {
   const d = new Date(`${dayKey}T00:00:00`);
   if (!Number.isFinite(d.getTime())) return dayKey;
-  return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+  return new Intl.DateTimeFormat("ru-RU", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(d);
 }
 
 function buildRoomsEntries(events: IsoEvent[], selectedDayKeys: Set<string>): RoomEntry[] {
@@ -186,11 +196,28 @@ function buildRoomsEntries(events: IsoEvent[], selectedDayKeys: Set<string>): Ro
     });
   }
   out.sort((a, b) => {
-    const byRoomName = a.room.localeCompare(b.room, "ru-RU");
-    if (byRoomName !== 0) return byRoomName;
-    return a.building.localeCompare(b.building, "ru-RU");
+    const byBuilding = a.building.localeCompare(b.building, "ru-RU");
+    if (byBuilding !== 0) return byBuilding;
+    return a.room.localeCompare(b.room, "ru-RU");
   });
   return out;
+}
+
+function groupRoomsByBuilding(entries: RoomEntry[]): RoomBuildingGroup[] {
+  const map = new Map<string, RoomEntry[]>();
+  for (const entry of entries) {
+    const key = entry.building || "__no_building__";
+    const list = map.get(key) ?? [];
+    list.push(entry);
+    map.set(key, list);
+  }
+  const groups: RoomBuildingGroup[] = Array.from(map.entries()).map(([building, rooms]) => ({
+    building,
+    label: building === "__no_building__" ? "Здание не указано" : building,
+    rooms: [...rooms].sort((a, b) => a.room.localeCompare(b.room, "ru-RU"))
+  }));
+  groups.sort((a, b) => a.label.localeCompare(b.label, "ru-RU"));
+  return groups;
 }
 
 function shouldShowFormat(fmt: unknown) {
@@ -305,6 +332,7 @@ export function buildTildaSnippet(args: {
       .filter((d) => !hiddenDay.has(d));
     const selectedDayKeys = new Set(onlyDayKey ? allDayKeys.filter((d) => d === onlyDayKey) : allDayKeys);
     const entries = buildRoomsEntries(events, selectedDayKeys);
+    const groups = groupRoomsByBuilding(entries);
     const mode = roomsMode === "events" ? "events" : "occupancy";
 
     const css = `
@@ -320,6 +348,9 @@ ${rootSel}{
 ${rootSel} .sb-title{font-size:20px;line-height:1.2;font-weight:800;margin:0 0 10px}
 ${rootSel} .sb-meta{font-size:13px;color:var(--sb-muted);margin:0 0 14px}
 ${rootSel} .sb-rooms{display:grid;gap:10px}
+${rootSel} .sb-building{border:1px solid var(--sb-border);border-radius:12px;background:var(--sb-card-bg);padding:10px}
+${rootSel} .sb-building-head{font-size:16px;line-height:1.3;font-weight:900;margin-bottom:2px}
+${rootSel} .sb-building-meta{font-size:12px;line-height:1.3;color:var(--sb-muted);margin-bottom:8px}
 ${rootSel} .sb-room{border:1px solid var(--sb-border);border-radius:12px;background:var(--sb-card-bg);padding:10px}
 ${rootSel} .sb-room-head{font-size:15px;line-height:1.3;font-weight:800}
 ${rootSel} .sb-lines{display:grid;gap:4px;margin-top:6px}
@@ -333,76 +364,83 @@ ${rootSel} .sb-day{font-weight:700;color:var(--sb-text)}
       onlyDayKey ? esc(formatDayHuman(onlyDayKey)) : "Все дни"
     }.</div>\n`;
 
-    if (!entries.length) {
+    if (!groups.length) {
       html += `<div class="sb-line">Нет данных по аудиториям для выбранного периода.</div>\n`;
       html += `</div>`;
       return { html, css };
     }
 
     html += `<div class="sb-rooms">\n`;
-    for (const entry of entries) {
-      html += `<div class="sb-room">\n`;
-      html += `<div class="sb-room-head">${esc(entry.label)}</div>\n`;
+    for (const group of groups) {
+      html += `<div class="sb-building">\n`;
+      html += `<div class="sb-building-head">${esc(group.label)}</div>\n`;
+      html += `<div class="sb-building-meta">${group.rooms.length} аудиторий</div>\n`;
+      for (const entry of group.rooms) {
+        html += `<div class="sb-room">\n`;
+        html += `<div class="sb-room-head">${esc(entry.label)}</div>\n`;
 
-      if (mode === "occupancy") {
-        const grouped = new Map<string, string[]>();
-        for (const t of entry.timed) {
-          const arr = grouped.get(t.dayKey) ?? [];
-          arr.push(`${formatTime(t.start)}-${formatTime(t.end)}`);
-          grouped.set(t.dayKey, arr);
-        }
-        const untimedCount = entry.untimed.length;
-        if (grouped.size === 0) {
-          html += `<div class="sb-lines"><div class="sb-line">Нет мероприятий с указанным временем.</div></div>\n`;
-        } else {
-          html += `<div class="sb-lines">\n`;
-          for (const dk of Array.from(grouped.keys()).sort()) {
-            html += `<div class="sb-line"><span class="sb-day">${esc(formatDayHuman(dk))}</span>: ${esc(grouped.get(dk)!.join(", "))}</div>\n`;
+        if (mode === "occupancy") {
+          const grouped = new Map<string, string[]>();
+          for (const t of entry.timed) {
+            const arr = grouped.get(t.dayKey) ?? [];
+            arr.push(`${formatTime(t.start)}-${formatTime(t.end)}`);
+            grouped.set(t.dayKey, arr);
           }
-          html += `</div>\n`;
-        }
-        if (untimedCount > 0) {
-          html += `<div class="sb-line">Дополнительно: ${untimedCount} мероприят(ий) без указанного времени.</div>\n`;
-        }
-      } else {
-        const grouped = new Map<string, Array<RoomTimedEvent | RoomUntimedEvent>>();
-        for (const t of entry.timed) {
-          const arr = grouped.get(t.dayKey) ?? [];
-          arr.push(t);
-          grouped.set(t.dayKey, arr);
-        }
-        for (const u of entry.untimed) {
-          const arr = grouped.get(u.dayKey) ?? [];
-          arr.push(u);
-          grouped.set(u.dayKey, arr);
-        }
-        if (grouped.size === 0) {
-          html += `<div class="sb-lines"><div class="sb-line">Нет событий в выбранном периоде.</div></div>\n`;
+          const untimedCount = entry.untimed.length;
+          if (grouped.size === 0) {
+            html += `<div class="sb-lines"><div class="sb-line">Нет мероприятий с указанным временем.</div></div>\n`;
+          } else {
+            html += `<div class="sb-lines">\n`;
+            for (const dk of Array.from(grouped.keys()).sort()) {
+              const items = grouped.get(dk)!;
+              html += `<div class="sb-line"><span class="sb-day">${esc(formatDayHuman(dk))}</span> (${items.length} событий): ${esc(items.join(", "))}</div>\n`;
+            }
+            html += `</div>\n`;
+          }
+          if (untimedCount > 0) {
+            html += `<div class="sb-line">Дополнительно: ${untimedCount} мероприят(ий) без указанного времени.</div>\n`;
+          }
         } else {
-          html += `<div class="sb-lines">\n`;
-          for (const dk of Array.from(grouped.keys()).sort()) {
-            html += `<div class="sb-line"><span class="sb-day">${esc(formatDayHuman(dk))}</span></div>\n`;
-            const list = grouped.get(dk) ?? [];
-            const ordered = [...list].sort((a, b) => {
-              const aIsTimed = "start" in a;
-              const bIsTimed = "start" in b;
-              if (aIsTimed && bIsTimed) return a.start.getTime() - b.start.getTime();
-              if (aIsTimed) return -1;
-              if (bIsTimed) return 1;
-              return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
-            });
-            for (const ev of ordered) {
-              if ("start" in ev) {
-                html += `<div class="sb-line">${esc(formatTime(ev.start))}-${esc(formatTime(ev.end))} — ${esc(ev.title)}</div>\n`;
-              } else {
-                html += `<div class="sb-line">Без времени — ${esc(ev.title)}</div>\n`;
+          const grouped = new Map<string, Array<RoomTimedEvent | RoomUntimedEvent>>();
+          for (const t of entry.timed) {
+            const arr = grouped.get(t.dayKey) ?? [];
+            arr.push(t);
+            grouped.set(t.dayKey, arr);
+          }
+          for (const u of entry.untimed) {
+            const arr = grouped.get(u.dayKey) ?? [];
+            arr.push(u);
+            grouped.set(u.dayKey, arr);
+          }
+          if (grouped.size === 0) {
+            html += `<div class="sb-lines"><div class="sb-line">Нет событий в выбранном периоде.</div></div>\n`;
+          } else {
+            html += `<div class="sb-lines">\n`;
+            for (const dk of Array.from(grouped.keys()).sort()) {
+              const list = grouped.get(dk) ?? [];
+              const ordered = [...list].sort((a, b) => {
+                const aIsTimed = "start" in a;
+                const bIsTimed = "start" in b;
+                if (aIsTimed && bIsTimed) return a.start.getTime() - b.start.getTime();
+                if (aIsTimed) return -1;
+                if (bIsTimed) return 1;
+                return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
+              });
+              html += `<div class="sb-line"><span class="sb-day">${esc(formatDayHuman(dk))}</span> (${ordered.length} событий)</div>\n`;
+              for (const ev of ordered) {
+                if ("start" in ev) {
+                  html += `<div class="sb-line">${esc(formatTime(ev.start))}-${esc(formatTime(ev.end))} — ${esc(ev.title)}</div>\n`;
+                } else {
+                  html += `<div class="sb-line">Без времени — ${esc(ev.title)}</div>\n`;
+                }
               }
             }
+            html += `</div>\n`;
           }
-          html += `</div>\n`;
         }
-      }
 
+        html += `</div>\n`;
+      }
       html += `</div>\n`;
     }
     html += `</div>\n`;
