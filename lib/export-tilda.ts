@@ -296,6 +296,24 @@ function eventDetails(raw: IsoEvent): string[] {
   return lines;
 }
 
+function listEventDetails(raw: IsoEvent, view: "responsibles" | "vks" | "broadcasts" | "interpretation" | "volunteers"): string[] {
+  if (view === "responsibles") return eventDetails(raw);
+  if (view === "volunteers") {
+    return typeof raw.volunteersCount === "number" && Number.isFinite(raw.volunteersCount)
+      ? [`Волонтеры: ${raw.volunteersCount}`]
+      : [];
+  }
+  const lines: string[] = [];
+  const fmt = normToken(raw.format);
+  if (fmt) lines.push(`Формат: ${fmt}`);
+  const place = [normToken(raw.building), normToken(raw.room)].filter(Boolean).join(" · ");
+  if (place) lines.push(`Место: ${place}`);
+  if (view === "vks") lines.push("ВКС: Да");
+  if (view === "broadcasts") lines.push("Трансляция: Да");
+  if (view === "interpretation") lines.push("Перевод: Да");
+  return lines;
+}
+
 function shouldShowFormat(fmt: unknown) {
   const s = fmt == null ? "" : String(fmt).trim();
   if (!s) return false;
@@ -353,10 +371,11 @@ export function buildTildaSnippet(args: {
   onlyDayKey?: string | null; // YYYY-MM-DD (optional)
   view?: string | null;
   roomsMode?: "occupancy" | "events";
+  responsibleFilter?: string | null;
   /** Default: inherit site fonts. `tilda-sans` forces Tilda Sans for layout checks. */
   fontMode?: "inherit" | "tilda-sans";
 }) {
-  const { projectName, events, marksByDay, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode, view, roomsMode } = args;
+  const { projectName, events, marksByDay, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode, view, roomsMode, responsibleFilter } = args;
   const filteredEvents = applyExportViewFilter(events, view);
   const layout = timelineLayout ?? {};
   const eventOverrides = layout.event_overrides ?? {};
@@ -544,6 +563,136 @@ ${rootSel} .sb-day{font-weight:700;color:var(--sb-text)}
     html += `</div>\n`;
     html += `</div>`;
 
+    return { html, css };
+  }
+
+  if (
+    view === "responsibles" ||
+    view === "vks" ||
+    view === "broadcasts" ||
+    view === "interpretation" ||
+    view === "volunteers"
+  ) {
+    const listView = view;
+    const respNorm = normalizeResponsible(responsibleFilter).toLocaleLowerCase("ru-RU");
+    const listEvents = filteredEvents.filter((e) => {
+      if (listView !== "responsibles" || !respNorm) return true;
+      return [e.responsible1, e.responsible2, e.responsible3, e.responsible4, e.responsible5, e.responsible6]
+        .map((x) => normalizeResponsible(x).toLocaleLowerCase("ru-RU"))
+        .some((x) => x === respNorm);
+    });
+    const hiddenDay = new Set(
+      (timelineLayout?.hidden_day_keys ?? [])
+        .map((k) => String(k).slice(0, 10))
+        .filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k))
+    );
+    const dayKeys = Array.from(
+      new Set(
+        listEvents
+          .map((e) => ((e.kind ?? "timed") === "untimed" ? String(e.day ?? "").slice(0, 10) : String(e.start ?? "").slice(0, 10)))
+          .filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x))
+      )
+    )
+      .sort()
+      .filter((d) => !hiddenDay.has(d));
+    const selectedDayKeys = onlyDayKey ? dayKeys.filter((d) => d === onlyDayKey) : dayKeys;
+    const daySet = new Set(selectedDayKeys);
+
+    const normalized = listEvents
+      .map((e, idx) => {
+        const dayKey = (e.kind ?? "timed") === "untimed" ? String(e.day ?? "").slice(0, 10) : String(e.start ?? "").slice(0, 10);
+        if (!daySet.has(dayKey)) return null;
+        const start = e.start ? new Date(e.start) : undefined;
+        const end = e.end ? new Date(e.end) : undefined;
+        return {
+          id: String(e.id ?? `${dayKey}-${idx}`),
+          title: String(e.title ?? "Без названия"),
+          dayKey,
+          start: start && Number.isFinite(start.getTime()) ? start : undefined,
+          end: end && Number.isFinite(end.getTime()) ? end : undefined,
+          raw: e
+        };
+      })
+      .filter(Boolean) as Array<{ id: string; title: string; dayKey: string; start?: Date; end?: Date; raw: IsoEvent }>;
+
+    const css = `
+/* Tilda snippet: ${esc(projectName)} list export */
+${rootSel}{
+  --sb-text:#0f172a;
+  --sb-muted:rgba(15,23,42,.62);
+  --sb-border:rgba(15,23,42,.12);
+  --sb-card-bg:#fff;
+  ${fontMode === "tilda-sans" ? `font-family:"Tilda Sans",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;` : `/* font: inherit from Tilda page */`}
+  color:var(--sb-text);
+}
+${rootSel} .sb-title{font-size:20px;line-height:1.2;font-weight:800;margin:0 0 10px}
+${rootSel} .sb-meta{font-size:13px;color:var(--sb-muted);margin:0 0 12px}
+${rootSel} .sb-days{display:grid;gap:10px}
+${rootSel} .sb-day{border:1px solid var(--sb-border);border-radius:12px;background:var(--sb-card-bg);padding:10px}
+${rootSel} .sb-head{font-size:12px;line-height:1.35;font-weight:700;color:var(--sb-text)}
+${rootSel} .sb-lines{display:grid;gap:4px;margin-top:6px}
+${rootSel} .sb-line{font-size:12px;line-height:1.35;color:var(--sb-muted)}
+${rootSel} .sb-day-label{font-weight:700;color:var(--sb-text)}
+`.trim();
+
+    const viewLabel =
+      listView === "responsibles"
+        ? "Ответственные"
+        : listView === "vks"
+          ? "ВКС"
+          : listView === "broadcasts"
+            ? "Трансляции"
+            : listView === "interpretation"
+              ? "Перевод"
+              : "Волонтеры";
+    let html = `<div class="sb-wrap" data-sb-scope="${esc(internalScopeId)}">\n`;
+    html += `<h2 class="sb-title">${esc(viewLabel)}</h2>\n`;
+    html += `<div class="sb-meta">Период: ${onlyDayKey ? esc(formatDayHuman(onlyDayKey)) : "Все дни"}.</div>\n`;
+    if (listView === "responsibles" && respNorm) {
+      const label =
+        [normalized[0]?.raw.responsible1, normalized[0]?.raw.responsible2, normalized[0]?.raw.responsible3, normalized[0]?.raw.responsible4, normalized[0]?.raw.responsible5, normalized[0]?.raw.responsible6]
+          .map((x) => normalizeResponsible(x))
+          .find((x) => x.toLocaleLowerCase("ru-RU") === respNorm) ?? responsibleFilter ?? "";
+      if (label) html += `<div class="sb-meta">Ответственный: ${esc(label)}</div>\n`;
+    }
+    if (!normalized.length) {
+      html += `<div class="sb-line">Нет данных для выбранного периода.</div>\n`;
+      html += `</div>`;
+      return { html, css };
+    }
+
+    const byDay = new Map<string, typeof normalized>();
+    for (const ev of normalized) {
+      const arr = byDay.get(ev.dayKey) ?? [];
+      arr.push(ev);
+      byDay.set(ev.dayKey, arr);
+    }
+    html += `<div class="sb-days">\n`;
+    const isSingleDay = selectedDayKeys.length === 1;
+    for (const dk of Array.from(byDay.keys()).sort()) {
+      const items = (byDay.get(dk) ?? []).slice().sort((a, b) => {
+        if (a.start && b.start) return a.start.getTime() - b.start.getTime();
+        if (a.start) return -1;
+        if (b.start) return 1;
+        return a.title.localeCompare(b.title, "ru-RU");
+      });
+      const timedItems = items.filter((x) => x.start && x.end);
+      const first = timedItems[0];
+      const last = timedItems[timedItems.length - 1];
+      html += `<div class="sb-day">\n`;
+      html += `<div class="sb-head">${isSingleDay ? "" : `<span class="sb-day-label">${esc(formatDayHuman(dk))}. </span>`}Количество мероприятий: ${items.length}${
+        first && last ? ` · Старт мероприятий: ${esc(formatTime(first.start!))} · Окончание мероприятий: ${esc(formatTime(last.end!))}` : ""
+      }</div>\n`;
+      html += `<div class="sb-lines">\n`;
+      for (const ev of items) {
+        html += `<div class="sb-line">${ev.start && ev.end ? `${esc(formatTime(ev.start))}-${esc(formatTime(ev.end))}` : "Без времени"} - ${esc(ev.title)}</div>\n`;
+        for (const line of listEventDetails(ev.raw, listView)) {
+          html += `<div class="sb-line">${esc(line)}</div>\n`;
+        }
+      }
+      html += `</div>\n</div>\n`;
+    }
+    html += `</div>\n</div>`;
     return { html, css };
   }
 

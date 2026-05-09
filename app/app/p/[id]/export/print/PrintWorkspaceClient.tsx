@@ -68,6 +68,15 @@ type RoomBuildingGroup = {
   label: string;
   rooms: RoomExportEntry[];
 };
+type ListExportView = "responsibles" | "vks" | "broadcasts" | "interpretation" | "volunteers";
+type ListEvent = {
+  id: string;
+  title: string;
+  dayKey: string;
+  start?: Date;
+  end?: Date;
+  raw: IsoEv;
+};
 
 function normToken(v: unknown): string {
   if (v == null) return "";
@@ -231,6 +240,32 @@ function eventDetails(raw: IsoEv): string[] {
   return lines;
 }
 
+function collectResponsibles(raw: IsoEv): string[] {
+  return [raw.responsible1, raw.responsible2, raw.responsible3, raw.responsible4, raw.responsible5, raw.responsible6]
+    .map((x) => normToken(x))
+    .filter(Boolean);
+}
+
+function listEventDetails(raw: IsoEv, view: ListExportView): string[] {
+  if (view === "volunteers") {
+    return typeof raw.volunteersCount === "number" && Number.isFinite(raw.volunteersCount)
+      ? [`Волонтеры: ${raw.volunteersCount}`]
+      : [];
+  }
+  if (view === "responsibles") {
+    return eventDetails(raw);
+  }
+  const lines: string[] = [];
+  const format = normToken(raw.format);
+  if (format) lines.push(`Формат: ${format}`);
+  const place = [normToken(raw.building), normToken(raw.room)].filter(Boolean).join(" · ");
+  if (place) lines.push(`Место: ${place}`);
+  if (view === "vks") lines.push("ВКС: Да");
+  if (view === "broadcasts") lines.push("Трансляция: Да");
+  if (view === "interpretation") lines.push("Перевод: Да");
+  return lines;
+}
+
 export function PrintWorkspaceClient({
   projectId,
   activeBuildId,
@@ -254,6 +289,13 @@ export function PrintWorkspaceClient({
   const searchParams = useSearchParams();
   const exportView = String(searchParams.get("view") ?? "").trim();
   const isRoomsView = exportView === "rooms";
+  const isListView =
+    exportView === "responsibles" ||
+    exportView === "vks" ||
+    exportView === "broadcasts" ||
+    exportView === "interpretation" ||
+    exportView === "volunteers";
+  const [activeResponsibleNorm, setActiveResponsibleNorm] = useState("");
   const viewLabel =
     exportView === "tech-schedule"
       ? "Техрасписание"
@@ -353,6 +395,122 @@ export function PrintWorkspaceClient({
   }, [mode, visibleKeys, activeKey]);
 
   const roomsEntries = useMemo(() => buildRoomsExportEntries(events, selectedRoomsDayKeys), [events, selectedRoomsDayKeys]);
+
+  const responsibleOptions = useMemo(() => {
+    if (exportView !== "responsibles") return [] as Array<{ value: string; label: string }>;
+    const seen = new Map<string, string>();
+    for (const e of events) {
+      for (const name of collectResponsibles(e)) {
+        const norm = name.toLocaleLowerCase("ru-RU");
+        if (!norm || seen.has(norm)) continue;
+        seen.set(norm, name);
+      }
+    }
+    return Array.from(seen.entries())
+      .sort((a, b) => a[1].localeCompare(b[1], "ru-RU"))
+      .map(([value, label]) => ({ value, label }));
+  }, [events, exportView]);
+
+  useEffect(() => {
+    if (exportView !== "responsibles") return;
+    if (!responsibleOptions.length) {
+      setActiveResponsibleNorm("");
+      return;
+    }
+    if (activeResponsibleNorm && responsibleOptions.some((x) => x.value === activeResponsibleNorm)) return;
+    setActiveResponsibleNorm(responsibleOptions[0]!.value);
+  }, [exportView, responsibleOptions, activeResponsibleNorm]);
+
+  const listEvents = useMemo(() => {
+    if (!isListView) return [] as ListEvent[];
+    const out: ListEvent[] = [];
+    for (const ev of events) {
+      if (exportView === "responsibles" && activeResponsibleNorm) {
+        const matches = collectResponsibles(ev).some((n) => n.toLocaleLowerCase("ru-RU") === activeResponsibleNorm);
+        if (!matches) continue;
+      }
+      const dayKey = dayKeyFromEvent(ev);
+      if (!dayKey) continue;
+      const start = ev.start ? new Date(ev.start) : undefined;
+      const end = ev.end ? new Date(ev.end) : undefined;
+      out.push({
+        id: String(ev.id ?? `${dayKey}-${out.length}`),
+        title: String(ev.title ?? "Без названия"),
+        dayKey,
+        start: start && Number.isFinite(start.getTime()) ? start : undefined,
+        end: end && Number.isFinite(end.getTime()) ? end : undefined,
+        raw: ev
+      });
+    }
+    out.sort((a, b) => {
+      const d = a.dayKey.localeCompare(b.dayKey);
+      if (d !== 0) return d;
+      if (a.start && b.start) return a.start.getTime() - b.start.getTime();
+      if (a.start) return -1;
+      if (b.start) return 1;
+      return a.title.localeCompare(b.title, "ru-RU");
+    });
+    return out;
+  }, [events, isListView, exportView, activeResponsibleNorm]);
+
+  const selectedListDayKeys = useMemo(() => {
+    if (mode === "all") return visibleKeys;
+    return activeKey ? [activeKey] : [];
+  }, [mode, visibleKeys, activeKey]);
+
+  const renderListView = (dayKeys: string[]) => {
+    const daySet = new Set(dayKeys);
+    const relevant = listEvents.filter((e) => (daySet.size > 0 ? daySet.has(e.dayKey) : true));
+    if (!relevant.length) return <div className="muted">Нет данных для выбранного периода.</div>;
+    const byDay = new Map<string, ListEvent[]>();
+    for (const ev of relevant) {
+      const arr = byDay.get(ev.dayKey) ?? [];
+      arr.push(ev);
+      byDay.set(ev.dayKey, arr);
+    }
+    const isSingleDay = dayKeys.length === 1;
+    const view = exportView as ListExportView;
+    return (
+      <div className="grid" style={{ gap: 12 }}>
+        {Array.from(byDay.keys())
+          .sort()
+          .map((dk) => {
+            const items = (byDay.get(dk) ?? []).slice().sort((a, b) => {
+              if (a.start && b.start) return a.start.getTime() - b.start.getTime();
+              if (a.start) return -1;
+              if (b.start) return 1;
+              return a.title.localeCompare(b.title, "ru-RU");
+            });
+            const timed = items.filter((x) => x.start && x.end);
+            const first = timed[0];
+            const last = timed[timed.length - 1];
+            return (
+              <div key={`list-${dk}`} className="card" style={{ padding: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: 12 }}>
+                  {!isSingleDay ? `${headingFor(dk)}. ` : ""}
+                  Количество мероприятий: {items.length}
+                  {first && last ? ` · Старт мероприятий: ${formatHm(first.start!)} · Окончание мероприятий: ${formatHm(last.end!)}` : ""}
+                </div>
+                <div className="grid" style={{ gap: 4, marginTop: 6 }}>
+                  {items.map((ev, idx) => (
+                    <div key={`${dk}-${ev.id}-${idx}`} className="grid" style={{ gap: 2 }}>
+                      <div className="muted" style={{ fontSize: 12 }}>
+                        {ev.start && ev.end ? `${formatHm(ev.start)}-${formatHm(ev.end)} - ${ev.title}` : `Без времени - ${ev.title}`}
+                      </div>
+                      {listEventDetails(ev.raw, view).map((line, dIdx) => (
+                        <div key={`${dk}-${ev.id}-d-${dIdx}`} className="muted" style={{ fontSize: 12 }}>
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+      </div>
+    );
+  };
 
   const renderRoomsList = (entries: RoomExportEntry[], dayKeys: string[]) => {
     if (!entries.length) {
@@ -590,6 +748,35 @@ export function PrintWorkspaceClient({
             ) : null}
           </>
         ) : null}
+        {isListView && exportView === "responsibles" && responsibleOptions.length ? (
+          <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontWeight: 700 }}>Ответственный</span>
+            {responsibleOptions.map((x) => (
+              <button
+                key={x.value}
+                type="button"
+                className={x.value === activeResponsibleNorm ? "" : "secondary"}
+                onClick={() => setActiveResponsibleNorm(x.value)}
+              >
+                {x.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {isListView && mode === "single" && visibleKeys.length ? (
+          <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            {visibleKeys.map((dk) => (
+              <button
+                key={`list-day-${dk}`}
+                type="button"
+                className={dk === activeKey ? "" : "secondary"}
+                onClick={() => setActiveKey(dk)}
+              >
+                {headingFor(dk)}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div style={{ height: 14 }} />
         {isRoomsView ? (
           <div className="grid" style={{ gap: 8 }}>
@@ -599,6 +786,8 @@ export function PrintWorkspaceClient({
             </div>
             {renderRoomsList(roomsEntries, selectedRoomsDayKeys)}
           </div>
+        ) : isListView ? (
+          renderListView(selectedListDayKeys)
         ) : (
           <div className="tl-print-screen-scale">
             <TimelineViewer
@@ -629,6 +818,23 @@ export function PrintWorkspaceClient({
                   <section key={k} className="print-a4-sheet print-page-break-after">
                     <h2 className="print-day-heading">{headingFor(k)}</h2>
                     {renderRoomsList(buildRoomsExportEntries(events, [k]), [k])}
+                  </section>
+                ))
+              : null}
+          </>
+        ) : isListView ? (
+          <>
+            {mode === "single" && activeKey ? (
+              <section className="print-a4-sheet">
+                <h2 className="print-day-heading">{headingFor(activeKey)}</h2>
+                {renderListView([activeKey])}
+              </section>
+            ) : null}
+            {mode === "all"
+              ? visibleKeys.map((k) => (
+                  <section key={`list-print-${k}`} className="print-a4-sheet print-page-break-after">
+                    <h2 className="print-day-heading">{headingFor(k)}</h2>
+                    {renderListView([k])}
                   </section>
                 ))
               : null}

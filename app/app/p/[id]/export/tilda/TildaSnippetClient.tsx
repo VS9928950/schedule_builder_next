@@ -13,11 +13,13 @@ function parseSnippetText(snippet: string): { html: string; css: string } {
 export function TildaSnippetClient({
   projectId,
   visibleDayKeys,
-  view
+  view,
+  responsibleOptions = []
 }: {
   projectId: number;
   visibleDayKeys: string[];
   view?: string;
+  responsibleOptions?: Array<{ value: string; label: string }>;
 }) {
   const [data, setData] = useState<{ html: string; css: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,9 +27,11 @@ export function TildaSnippetClient({
   const [scope, setScope] = useState<string>(""); // optional; can be left empty
   const [day, setDay] = useState<string>(""); // YYYY-MM-DD or empty for all
   const [roomsMode, setRoomsMode] = useState<"occupancy" | "events">("occupancy");
+  const [responsibleFilter, setResponsibleFilter] = useState("");
   const [tildaSansProbe, setTildaSansProbe] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string>("");
   const isRoomsView = String(view ?? "").trim() === "rooms";
+  const isResponsiblesView = String(view ?? "").trim() === "responsibles";
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +42,7 @@ export function TildaSnippetClient({
     if (scope.trim()) params.set("scope", scope.trim());
     if (day.trim()) params.set("day", day.trim());
     if (isRoomsView) params.set("roomsMode", roomsMode);
+    if (isResponsiblesView && responsibleFilter) params.set("responsible", responsibleFilter);
     if (tildaSansProbe) params.set("font", "tildaSans");
     const qs = params.toString();
     const dataEndpoints = [`/api/export/tilda/data?${qs}`, `/app/p/${projectId}/export/tilda/data?${qs}`];
@@ -106,7 +111,17 @@ export function TildaSnippetClient({
     return () => {
       cancelled = true;
     };
-  }, [projectId, scope, day, tildaSansProbe, view, isRoomsView, roomsMode]);
+  }, [projectId, scope, day, tildaSansProbe, view, isRoomsView, roomsMode, isResponsiblesView, responsibleFilter]);
+
+  useEffect(() => {
+    if (!isResponsiblesView) return;
+    if (!responsibleOptions.length) {
+      setResponsibleFilter("");
+      return;
+    }
+    if (responsibleFilter && responsibleOptions.some((x) => x.value === responsibleFilter)) return;
+    setResponsibleFilter(responsibleOptions[0]!.value);
+  }, [isResponsiblesView, responsibleFilter, responsibleOptions]);
 
   useEffect(() => {
     if (day && !visibleDayKeys.includes(day)) setDay("");
@@ -162,6 +177,7 @@ export function TildaSnippetClient({
               if (scope.trim()) p.set("scope", scope.trim());
               if (day.trim()) p.set("day", day.trim());
               if (isRoomsView) p.set("roomsMode", roomsMode);
+              if (isResponsiblesView && responsibleFilter) p.set("responsible", responsibleFilter);
               if (tildaSansProbe) p.set("font", "tildaSans");
               return `/api/export/tilda/snippet?${p.toString()}`;
             })()}
@@ -241,6 +257,35 @@ export function TildaSnippetClient({
             />
             Перечень аудиторий со списками мероприятий
           </label>
+        </div>
+      ) : null}
+      {isResponsiblesView && responsibleOptions.length ? (
+        <div className="card" style={{ padding: 12 }}>
+          <div style={{ fontWeight: 800, marginBottom: 6 }}>Ответственный</div>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+            Для области `Ответственные` можно сформировать экспорт по конкретному сотруднику.
+          </div>
+          <select
+            value={responsibleFilter}
+            onChange={(e) => setResponsibleFilter(e.target.value)}
+            aria-label="Выбор ответственного"
+            style={{
+              minWidth: 280,
+              maxWidth: "100%",
+              font: "inherit",
+              padding: "8px 10px",
+              borderRadius: 10,
+              border: "1px solid var(--line)",
+              background: "var(--card)",
+              color: "var(--text)"
+            }}
+          >
+            {responsibleOptions.map((x) => (
+              <option key={x.value} value={x.value}>
+                {x.label}
+              </option>
+            ))}
+          </select>
         </div>
       ) : null}
       <div className="card" style={{ padding: 12 }}>

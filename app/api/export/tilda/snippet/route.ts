@@ -35,6 +35,7 @@ export async function GET(req: Request) {
   const scope = url.searchParams.get("scope");
   const day = url.searchParams.get("day");
   const roomsMode = url.searchParams.get("roomsMode");
+  const responsible = url.searchParams.get("responsible");
   const font = url.searchParams.get("font");
   const fontMode = font === "tildaSans" || font === "tilda-sans" ? "tilda-sans" : "inherit";
 
@@ -48,6 +49,7 @@ export async function GET(req: Request) {
     onlyDayKey: day,
     view,
     roomsMode: roomsMode === "events" ? "events" : "occupancy",
+    responsibleFilter: responsible,
     fontMode
   });
 

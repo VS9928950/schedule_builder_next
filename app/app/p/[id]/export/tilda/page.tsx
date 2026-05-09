@@ -11,6 +11,21 @@ function normalizeResponsible(v: unknown): string {
   return s;
 }
 
+function collectResponsibleOptions(events: any[]): Array<{ value: string; label: string }> {
+  const seen = new Map<string, string>();
+  for (const e of events) {
+    for (const raw of [e.responsible1, e.responsible2, e.responsible3, e.responsible4, e.responsible5, e.responsible6]) {
+      const label = normalizeResponsible(raw);
+      if (!label) continue;
+      const value = label.toLocaleLowerCase("ru-RU");
+      if (!seen.has(value)) seen.set(value, label);
+    }
+  }
+  return Array.from(seen.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], "ru-RU"))
+    .map(([value, label]) => ({ value, label }));
+}
+
 function applyExportViewFilter(events: any[], view: string): any[] {
   if (view === "vks") return events.filter((e) => (e.visible ?? true) && e.vks === "Да");
   if (view === "broadcasts") return events.filter((e) => (e.visible ?? true) && e.translation === "Да");
@@ -85,6 +100,7 @@ export default async function ExportTildaTab({
       .filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k))
   );
   const visibleDayKeys = programDayKeys.filter((k) => !hiddenDayKeys.has(k));
+  const responsibleOptions = view === "responsibles" ? collectResponsibleOptions(filteredForView as any[]) : [];
 
   return (
     <div className="card" style={{ padding: 12 }}>
@@ -113,7 +129,12 @@ export default async function ExportTildaTab({
         </b>.
       </div>
       <div style={{ height: 12 }} />
-      <TildaSnippetClient projectId={project.id} visibleDayKeys={visibleDayKeys} view={view} />
+      <TildaSnippetClient
+        projectId={project.id}
+        visibleDayKeys={visibleDayKeys}
+        view={view}
+        responsibleOptions={responsibleOptions}
+      />
     </div>
   );
 }
