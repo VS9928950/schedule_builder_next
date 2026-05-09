@@ -464,10 +464,17 @@ export function PrintWorkspaceClient({
                         if (bIsTimed) return 1;
                         return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
                       });
+                      const timedOnly = ordered.filter((x): x is TimedRoomEvent => "start" in x);
+                      const first = timedOnly[0];
+                      const last = timedOnly[timedOnly.length - 1];
                       return (
                         <div key={`${entry.key}-${dk}`}>
                           <div style={{ fontWeight: 700, fontSize: 12 }}>
-                            {headingFor(dk)} ({ordered.length} событий)
+                            {!isSingleDay ? `${headingFor(dk)}. ` : ""}
+                            Количество мероприятий: {ordered.length}
+                            {first && last
+                              ? ` · Старт мероприятий: ${formatHm(first.start)} · Окончание мероприятий: ${formatHm(last.end)}`
+                              : ""}
                           </div>
                           <div className="grid" style={{ gap: 4, marginTop: 4 }}>
                             {ordered.map((ev, idx) => {

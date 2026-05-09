@@ -485,7 +485,13 @@ ${rootSel} .sb-day{font-weight:700;color:var(--sb-text)}
                 if (bIsTimed) return 1;
                 return (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9);
               });
-              html += `<div class="sb-line"><span class="sb-day">${esc(formatDayHuman(dk))}</span> (${ordered.length} событий)</div>\n`;
+              const timedOnly = ordered.filter((x): x is RoomTimedEvent => "start" in x);
+              const first = timedOnly[0];
+              const last = timedOnly[timedOnly.length - 1];
+              const isSingleDay = selectedDayKeys.size === 1;
+              html += `<div class="sb-line">${isSingleDay ? "" : `<span class="sb-day">${esc(formatDayHuman(dk))}. </span>`}Количество мероприятий: ${ordered.length}${
+                first && last ? ` · Старт мероприятий: ${esc(formatTime(first.start))} · Окончание мероприятий: ${esc(formatTime(last.end))}` : ""
+              }</div>\n`;
               for (const ev of ordered) {
                 if ("start" in ev) {
                   html += `<div class="sb-line">${esc(formatTime(ev.start))}-${esc(formatTime(ev.end))} — ${esc(ev.title)}</div>\n`;
