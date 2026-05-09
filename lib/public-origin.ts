@@ -9,6 +9,15 @@ export function resolvePublicOrigin(req: Request) {
   return url.origin;
 }
 
+export function resolveMailOrigin(req: Request) {
+  const fromEnv = (process.env.APP_BASE_URL || "").trim();
+  if (fromEnv) return fromEnv.replace(/\/+$/, "");
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("APP_BASE_URL must be configured in production for email links");
+  }
+  return resolvePublicOrigin(req);
+}
+
 export function toPublicUrl(req: Request, pathname: string) {
   return new URL(pathname, resolvePublicOrigin(req));
 }

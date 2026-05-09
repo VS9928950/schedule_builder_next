@@ -2,20 +2,28 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { SmartCaptchaWidget } from "@/app/components/SmartCaptchaWidget";
 
 export default function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const siteKey = (process.env.NEXT_PUBLIC_YANDEX_SMARTCAPTCHA_SITE_KEY || "").trim();
+  const captchaEnabled = Boolean(siteKey);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (captchaEnabled && !captchaToken) {
+      setError("Подтвердите капчу перед входом");
+      return;
+    }
     const resp = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password, captchaToken })
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
@@ -49,6 +57,9 @@ export default function LoginForm() {
             </div>
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
           </div>
+          {captchaEnabled ? (
+            <SmartCaptchaWidget siteKey={siteKey} onTokenChange={setCaptchaToken} />
+          ) : null}
           <div className="row">
             <button type="submit">Войти</button>
             <a className="muted" href="/register">

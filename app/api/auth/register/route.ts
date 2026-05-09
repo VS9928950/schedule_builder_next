@@ -5,11 +5,13 @@ import { issueAuthToken } from "@/lib/auth-tokens";
 import { isMailerConfigured, sendEmail } from "@/lib/mailer";
 import { consumeRateLimit, extractClientIp } from "@/lib/rate-limit";
 import { getSession } from "@/lib/session";
-import { resolvePublicOrigin } from "@/lib/public-origin";
+import { resolveMailOrigin } from "@/lib/public-origin";
+import { isSmartCaptchaEnabled, verifySmartCaptchaToken } from "@/lib/smartcaptcha";
 
 const Schema = z.object({
   email: z.string().email(),
-  password: z.string().min(6)
+  password: z.string().min(8),
+  captchaToken: z.string().optional()
 });
 
 export async function POST(req: Request) {
@@ -31,6 +33,12 @@ export async function POST(req: Request) {
     }
     const email = parsed.data.email.trim().toLowerCase();
     const password = parsed.data.password;
+    if (isSmartCaptchaEnabled()) {
+      const captchaCheck = await verifySmartCaptchaToken(req, parsed.data.captchaToken ?? "");
+      if (!captchaCheck.ok) {
+        return NextResponse.json({ error: captchaCheck.error || "Captcha verification failed" }, { status: 400 });
+      }
+    }
 
     if (findUserByEmail(email)) return NextResponse.json({ error: "Email already exists" }, { status: 400 });
     const user = createUser(email, password);
@@ -48,7 +56,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email service is not configured" }, { status: 500 });
     }
     const token = issueAuthToken(user.id, "verify_email", 24 * 60);
-    const baseUrl = resolvePublicOrigin(req);
+    const baseUrl = resolveMailOrigin(req);
     const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
     await sendEmail({
       to: email,

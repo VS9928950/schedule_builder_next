@@ -1,21 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { SmartCaptchaWidget } from "@/app/components/SmartCaptchaWidget";
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string>("");
+  const siteKey = (process.env.NEXT_PUBLIC_YANDEX_SMARTCAPTCHA_SITE_KEY || "").trim();
+  const captchaEnabled = Boolean(siteKey);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setMessage("");
+    if (captchaEnabled && !captchaToken) {
+      setError("Подтвердите капчу перед регистрацией");
+      return;
+    }
     const resp = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password, captchaToken })
     });
     const data = await resp.json().catch(() => null);
     if (!resp.ok) {
@@ -64,16 +72,19 @@ export default function RegisterForm() {
           </div>
           <div>
             <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-              Пароль (мин. 6 символов)
+              Пароль (мин. 8 символов)
             </div>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              minLength={6}
+              minLength={8}
               required
             />
           </div>
+          {captchaEnabled ? (
+            <SmartCaptchaWidget siteKey={siteKey} onTokenChange={setCaptchaToken} />
+          ) : null}
           <div className="row">
             <button type="submit">Создать аккаунт</button>
             <a className="muted" href="/sign-in">

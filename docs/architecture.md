@@ -55,7 +55,7 @@
 - **`/app/p/[id]/excel/import-url`** — импорт Google Sheets по ссылке (сервер скачивает `.xlsx`)
 - **`/app/p/[id]/uploads`** — POST (form): удаление загрузки и файла на диске, редирект на `…/excel`
 - **`/app/p/[id]/builds`**, **`builds/events`**, **`builds/timeline`**, **`builds/timeline-layout`**, **`builds/timeline-style`** — версии сборок и снимки событий/раскладки/стилей
-- **`/app/admin/users/create`**, **`/app/admin/users/password`**, **`/app/admin/users/delete`** — операции администратора над пользователями
+- **`/app/admin/users/create`**, **`/app/admin/users/password`**, **`/app/admin/users/delete`**, **`/app/admin/users/invite`** — операции администратора над пользователями
 - **`/app/p/[id]/export/tilda/data`** — JSON с полями `html` и `css`
 - **`/app/p/[id]/export/tilda/snippet`** — `text/plain` сниппет для копирования в Тильду
 - **`/api/export/tilda/data`**, **`/api/export/tilda/snippet`** — стабильные API-маршруты экспорта Тильда через query `projectId`
@@ -69,7 +69,10 @@
 - Для `admin` доступна вкладка/раздел `Администрирование` (`/app/admin`) с действиями:
   - добавление пользователя (с выбором роли),
   - смена пароля пользователя,
-  - удаление пользователя (нельзя удалить самого себя и последнего администратора).
+  - удаление пользователя (нельзя удалить самого себя и последнего администратора),
+  - отправка приглашения на регистрацию по email (ссылка на `/register`).
+- Для операций администратора (`create/password/delete/invite`) применяется server-side rate-limit.
+- Минимальная длина пароля: 8 символов (регистрация, сброс, админ-создание и админ-смена).
 - Для `user` поведение приложения сохраняется прежним, без доступа к `/app/admin`.
 
 ## Поведение вкладок (May 2026 update)
@@ -185,7 +188,7 @@
 
 - **`data/store.json`** — пользователи, проекты, массив **сборок** (`builds`), ссылки на активный документ и активную сборку, кэш разобранного Excel в полях проекта.
 - **`data/auth_tokens.json`** — служебные токены подтверждения email и сброса пароля (хранятся в виде hash, не в открытом виде).
-- **`data/rate_limits.json`** — состояние rate-limit для auth-эндпоинтов.
+- **`data/rate_limits.json`** — состояние rate-limit для auth и admin-операций.
 
 Загруженные файлы:
 

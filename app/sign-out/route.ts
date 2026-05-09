@@ -8,10 +8,6 @@ async function doLogout(req: Request) {
   return NextResponse.redirect(toPublicUrl(req, "/sign-in"), 303);
 }
 
-export async function GET(req: Request) {
-  return doLogout(req);
-}
-
 export async function POST(req: Request) {
   return doLogout(req);
 }

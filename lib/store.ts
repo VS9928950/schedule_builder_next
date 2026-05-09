@@ -206,6 +206,7 @@ export function findUserById(userId: number): StoredUser | null {
 }
 
 export function createUser(email: string, password: string, role?: UserRole): StoredUser {
+  if (password.length < 8) throw new Error("Password must be at least 8 characters");
   const st = ensureStore();
   const exists = st.users.some((u) => u.email === email);
   if (exists) throw new Error("Email already exists");
@@ -247,6 +248,7 @@ export function createUserByAdmin(email: string, password: string, role: UserRol
 }
 
 export function setUserPassword(userId: number, password: string) {
+  if (password.length < 8) throw new Error("Password must be at least 8 characters");
   const st = ensureStore();
   const u = st.users.find((x) => x.id === userId);
   if (!u) throw new Error("User not found");

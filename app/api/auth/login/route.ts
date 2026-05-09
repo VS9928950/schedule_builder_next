@@ -3,10 +3,12 @@ import { z } from "zod";
 import { authenticate } from "@/lib/store";
 import { getSession } from "@/lib/session";
 import { consumeRateLimit, extractClientIp } from "@/lib/rate-limit";
+import { isSmartCaptchaEnabled, verifySmartCaptchaToken } from "@/lib/smartcaptcha";
 
 const Schema = z.object({
   email: z.string().email(),
-  password: z.string().min(1)
+  password: z.string().min(1),
+  captchaToken: z.string().optional()
 });
 
 export async function POST(req: Request) {
@@ -23,6 +25,12 @@ export async function POST(req: Request) {
 
   const email = parsed.data.email.trim().toLowerCase();
   const password = parsed.data.password;
+  if (isSmartCaptchaEnabled()) {
+    const captchaCheck = await verifySmartCaptchaToken(req, parsed.data.captchaToken ?? "");
+    if (!captchaCheck.ok) {
+      return NextResponse.json({ error: captchaCheck.error || "Captcha verification failed" }, { status: 400 });
+    }
+  }
   const emailRate = consumeRateLimit({ scope: "login:email-ip", key: `${email}|${ip}`, limit: 10, windowMs: 15 * 60 * 1000 });
   if (!emailRate.ok) {
     return NextResponse.json({ error: `Too many login attempts. Retry in ${emailRate.retryAfterSec}s` }, { status: 429 });
