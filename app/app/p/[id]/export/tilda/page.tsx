@@ -5,6 +5,34 @@ import { collectSortedProgramDayKeysFromIso, parseScheduleAllFromExcelRows } fro
 import { redirect } from "next/navigation";
 import { TildaSnippetClient } from "./TildaSnippetClient";
 
+function normalizeResponsible(v: unknown): string {
+  const s = String(v ?? "").replace(/\s+/g, " ").trim();
+  if (s === "-" || s === "—") return "";
+  return s;
+}
+
+function applyExportViewFilter(events: any[], view: string): any[] {
+  if (view === "vks") return events.filter((e) => (e.visible ?? true) && e.vks === "Да");
+  if (view === "broadcasts") return events.filter((e) => (e.visible ?? true) && e.translation === "Да");
+  if (view === "interpretation") return events.filter((e) => (e.visible ?? true) && e.simultaneousInterpretation === "Да");
+  if (view === "volunteers") {
+    return events.filter((e) => (e.visible ?? true) && typeof e.volunteersCount === "number" && Number.isFinite(e.volunteersCount) && e.volunteersCount > 0);
+  }
+  if (view === "responsibles") {
+    return events.filter(
+      (e) =>
+        (e.visible ?? true) &&
+        [e.responsible1, e.responsible2, e.responsible3, e.responsible4, e.responsible5, e.responsible6]
+          .map((x) => normalizeResponsible(x))
+          .filter(Boolean).length > 0
+    );
+  }
+  if (view === "rooms") {
+    return events.filter((e) => (e.visible ?? true) && String(e.room ?? "").trim() !== "");
+  }
+  return events.filter((e) => e.visible ?? true);
+}
+
 export default async function ExportTildaTab({
   params,
   searchParams
@@ -44,8 +72,9 @@ export default async function ExportTildaTab({
             ...parsed.timed.map((e) => ({ ...e, kind: "timed", start: e.start.toISOString(), end: e.end.toISOString() }))
           ];
         })();
+  const filteredForView = applyExportViewFilter(eventsIsoForExport as any[], view);
   const programDayKeys =
-    eventsIsoForExport.length > 0 ? collectSortedProgramDayKeysFromIso(eventsIsoForExport as any[]) : [];
+    filteredForView.length > 0 ? collectSortedProgramDayKeysFromIso(filteredForView as any[]) : [];
   const hiddenDayKeysRaw = isTechView
     ? (activeBuild as any)?.tech_timeline_layout?.hidden_day_keys
     : (activeBuild as any)?.timeline_layout?.hidden_day_keys;

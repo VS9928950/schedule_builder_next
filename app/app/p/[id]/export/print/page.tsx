@@ -6,6 +6,34 @@ import { parseScheduleAllFromExcelRows, collectSortedProgramDayKeysFromIso } fro
 import { rowsFromProjectExcelJson } from "@/lib/excel";
 import { PrintWorkspaceClient } from "./PrintWorkspaceClient";
 
+function normalizeResponsible(v: unknown): string {
+  const s = String(v ?? "").replace(/\s+/g, " ").trim();
+  if (s === "-" || s === "—") return "";
+  return s;
+}
+
+function applyExportViewFilter(events: any[], view: string): any[] {
+  if (view === "vks") return events.filter((e) => (e.visible ?? true) && e.vks === "Да");
+  if (view === "broadcasts") return events.filter((e) => (e.visible ?? true) && e.translation === "Да");
+  if (view === "interpretation") return events.filter((e) => (e.visible ?? true) && e.simultaneousInterpretation === "Да");
+  if (view === "volunteers") {
+    return events.filter((e) => (e.visible ?? true) && typeof e.volunteersCount === "number" && Number.isFinite(e.volunteersCount) && e.volunteersCount > 0);
+  }
+  if (view === "responsibles") {
+    return events.filter(
+      (e) =>
+        (e.visible ?? true) &&
+        [e.responsible1, e.responsible2, e.responsible3, e.responsible4, e.responsible5, e.responsible6]
+          .map((x) => normalizeResponsible(x))
+          .filter(Boolean).length > 0
+    );
+  }
+  if (view === "rooms") {
+    return events.filter((e) => (e.visible ?? true) && String(e.room ?? "").trim() !== "");
+  }
+  return events.filter((e) => e.visible ?? true);
+}
+
 export default async function ExportPrintTab({
   params,
   searchParams
@@ -48,7 +76,8 @@ export default async function ExportPrintTab({
           ];
         })();
 
-  const programDayKeys = collectSortedProgramDayKeysFromIso(eventsIso as any[]);
+  const filteredForView = applyExportViewFilter(eventsIso as any[], view);
+  const programDayKeys = collectSortedProgramDayKeysFromIso(filteredForView as any[]);
 
   return (
     <div className="card print-export-page-host" style={{ padding: 12 }}>
@@ -57,7 +86,7 @@ export default async function ExportPrintTab({
           <PrintWorkspaceClient
             projectId={project.id}
             activeBuildId={activeBuild ? activeBuild.id : null}
-            events={eventsIso as any[]}
+            events={filteredForView as any[]}
             marks={isTechView ? (activeBuild as any)?.tech_timeline_marks ?? null : (activeBuild as any)?.timeline_marks ?? null}
             style={isTechView ? (activeBuild as any)?.tech_timeline_style ?? null : (activeBuild as any)?.timeline_style ?? null}
             layout={isTechView ? (activeBuild as any)?.tech_timeline_layout ?? null : (activeBuild as any)?.timeline_layout ?? null}

@@ -130,6 +130,32 @@ function normToken(v: unknown): string {
   return t;
 }
 
+function normalizeResponsible(v: unknown): string {
+  const s = String(v ?? "").replace(/\s+/g, " ").trim();
+  if (s === "-" || s === "—") return "";
+  return s;
+}
+
+function applyExportViewFilter(events: IsoEvent[], view?: string | null): IsoEvent[] {
+  if (view === "vks") return events.filter((e) => (e.visible ?? true) && e.vks === "Да");
+  if (view === "broadcasts") return events.filter((e) => (e.visible ?? true) && e.translation === "Да");
+  if (view === "interpretation") return events.filter((e) => (e.visible ?? true) && e.simultaneousInterpretation === "Да");
+  if (view === "volunteers") {
+    return events.filter((e) => (e.visible ?? true) && typeof e.volunteersCount === "number" && Number.isFinite(e.volunteersCount) && e.volunteersCount > 0);
+  }
+  if (view === "responsibles") {
+    return events.filter(
+      (e) =>
+        (e.visible ?? true) &&
+        [e.responsible1, e.responsible2, e.responsible3, e.responsible4, e.responsible5, e.responsible6]
+          .map((x) => normalizeResponsible(x))
+          .filter(Boolean).length > 0
+    );
+  }
+  if (view === "rooms") return events.filter((e) => (e.visible ?? true) && normToken(e.room));
+  return events.filter((e) => e.visible ?? true);
+}
+
 function roomKeyFrom(building: unknown, room: unknown): string {
   const b = normToken(building);
   const r = normToken(room);
@@ -331,11 +357,12 @@ export function buildTildaSnippet(args: {
   fontMode?: "inherit" | "tilda-sans";
 }) {
   const { projectName, events, marksByDay, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode, view, roomsMode } = args;
+  const filteredEvents = applyExportViewFilter(events, view);
   const layout = timelineLayout ?? {};
   const eventOverrides = layout.event_overrides ?? {};
 
-  const timed = events
-    .filter((e) => (e.visible ?? true) && (e.kind ?? "timed") === "timed" && e.start && e.end)
+  const timed = filteredEvents
+    .filter((e) => (e.kind ?? "timed") === "timed" && e.start && e.end)
     .map((e) => ({ ...e, startD: new Date(e.start!), endD: new Date(e.end!) }))
     .filter((e) => Number.isFinite(e.startD.getTime()) && Number.isFinite(e.endD.getTime()) && e.endD > e.startD);
 
@@ -360,8 +387,8 @@ export function buildTildaSnippet(args: {
   const rootSel = `${sc}.sb-wrap[data-sb-scope="${internalScopeId}"]`;
 
   if (view === "rooms") {
-    const timedForDays = events
-      .filter((e) => (e.visible ?? true) && (e.kind ?? "timed") === "timed" && e.start && e.end)
+    const timedForDays = filteredEvents
+      .filter((e) => (e.kind ?? "timed") === "timed" && e.start && e.end)
       .map((e) => ({ ...e, startD: new Date(e.start!), endD: new Date(e.end!) }))
       .filter((e) => Number.isFinite(e.startD.getTime()) && Number.isFinite(e.endD.getTime()) && e.endD > e.startD);
 
@@ -373,15 +400,15 @@ export function buildTildaSnippet(args: {
     const allDayKeys = Array.from(
       new Set([
         ...timedForDays.map((e) => dayKeyFromDate(e.startD)),
-        ...events
-          .filter((e) => (e.visible ?? true) && (e.kind ?? "timed") === "untimed" && e.day)
+        ...filteredEvents
+          .filter((e) => (e.kind ?? "timed") === "untimed" && e.day)
           .map((e) => String(e.day).slice(0, 10))
       ])
     )
       .sort()
       .filter((d) => !hiddenDay.has(d));
     const selectedDayKeys = new Set(onlyDayKey ? allDayKeys.filter((d) => d === onlyDayKey) : allDayKeys);
-    const entries = buildRoomsEntries(events, selectedDayKeys);
+    const entries = buildRoomsEntries(filteredEvents, selectedDayKeys);
     const groups = groupRoomsByBuilding(entries);
     const mode = roomsMode === "events" ? "events" : "occupancy";
 
