@@ -54,6 +54,8 @@ export type ProjectBuild = {
     days_per_pack?: number;
     /** Local calendar days YYYY-MM-DD hidden in grid (events unchanged). */
     hidden_day_keys?: string[];
+    /** Display height of the whole schedule board (px), per day. */
+    board_height_px?: Record<string, number>;
   };
   tech_timeline_layout?: {
     row_heights?: Record<string, Record<string, number>>;
@@ -75,6 +77,7 @@ export type ProjectBuild = {
     >;
     days_per_pack?: number;
     hidden_day_keys?: string[];
+    board_height_px?: Record<string, number>;
   };
   timeline_style?: {
     // Section titles
@@ -85,6 +88,7 @@ export type ProjectBuild = {
     timeFontPx?: number;
     formatFontPx?: number;
     placeFontPx?: number;
+    descFontPx?: number;
 
     // Typography (per-entity)
     titleWeight?: number;
@@ -95,6 +99,9 @@ export type ProjectBuild = {
     formatItalic?: boolean;
     placeWeight?: number;
     placeItalic?: boolean;
+    descWeight?: number;
+    descItalic?: boolean;
+    descColor?: string;
 
     // Colors via picker+alpha (preferred)
     eventBgColor?: string; // #rrggbb
@@ -117,6 +124,7 @@ export type ProjectBuild = {
     timeFontPx?: number;
     formatFontPx?: number;
     placeFontPx?: number;
+    descFontPx?: number;
     titleWeight?: number;
     titleItalic?: boolean;
     timeWeight?: number;
@@ -125,6 +133,9 @@ export type ProjectBuild = {
     formatItalic?: boolean;
     placeWeight?: number;
     placeItalic?: boolean;
+    descWeight?: number;
+    descItalic?: boolean;
+    descColor?: string;
     eventBgColor?: string;
     eventBgAlpha?: number;
     eventBorderColor?: string;

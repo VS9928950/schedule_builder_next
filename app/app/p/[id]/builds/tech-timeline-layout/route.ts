@@ -26,7 +26,8 @@ const Schema = z.object({
       )
       .optional(),
     days_per_pack: z.number().int().min(1).max(10).optional(),
-    hidden_day_keys: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(500).optional()
+    hidden_day_keys: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(500).optional(),
+    board_height_px: z.record(z.string(), z.number().finite().min(120).max(4000)).optional()
   })
 });
 

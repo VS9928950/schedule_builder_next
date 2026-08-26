@@ -78,6 +78,7 @@ export function TimelineViewer({
     timeFontPx?: number;
     formatFontPx?: number;
     placeFontPx?: number;
+    descFontPx?: number;
 
     titleWeight?: number;
     titleItalic?: boolean;
@@ -91,6 +92,9 @@ export function TimelineViewer({
     placeWeight?: number;
     placeItalic?: boolean;
     placeColor?: string;
+    descWeight?: number;
+    descItalic?: boolean;
+    descColor?: string;
     teamLeadFontPx?: number;
     teamLeadColor?: string;
     teamLeadWeight?: number;
@@ -147,6 +151,7 @@ export function TimelineViewer({
     >;
     days_per_pack?: number;
     hidden_day_keys?: string[];
+    board_height_px?: Record<string, number>;
   } | null;
   hideControls?: boolean;
   /** When set, show only this calendar day (YYYY-MM-DD); pack UI omitted if `hidePackChrome`. */
@@ -174,6 +179,7 @@ export function TimelineViewer({
     timeFontPx: number;
     formatFontPx: number;
     placeFontPx: number;
+    descFontPx: number;
 
     titleWeight: number;
     titleItalic: boolean;
@@ -187,6 +193,9 @@ export function TimelineViewer({
     placeWeight: number;
     placeItalic: boolean;
     placeColor: string;
+    descWeight: number;
+    descItalic: boolean;
+    descColor: string;
     teamLeadFontPx: number;
     teamLeadColor: string;
     teamLeadWeight: number;
@@ -229,6 +238,7 @@ export function TimelineViewer({
     timeFontPx: 11,
     formatFontPx: 11,
     placeFontPx: 11,
+    descFontPx: 12,
 
     titleWeight: 700,
     titleItalic: false,
@@ -242,6 +252,9 @@ export function TimelineViewer({
     placeWeight: 400,
     placeItalic: false,
     placeColor: "#64748b",
+    descWeight: 400,
+    descItalic: false,
+    descColor: "#0f172a",
     teamLeadFontPx: 11,
     teamLeadColor: "#475569",
     teamLeadWeight: 500,
@@ -291,6 +304,7 @@ export function TimelineViewer({
     >;
     days_per_pack: number;
     hidden_day_keys: string[];
+    board_height_px: Record<string, number>;
   }>({
     row_heights: initialLayout?.row_heights ?? {},
     col_width_px: initialLayout?.col_width_px ?? {},
@@ -302,7 +316,8 @@ export function TimelineViewer({
         : 5,
     hidden_day_keys: Array.isArray(initialLayout?.hidden_day_keys)
       ? (initialLayout!.hidden_day_keys as string[]).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k))
-      : []
+      : [],
+    board_height_px: initialLayout?.board_height_px ?? {}
   });
   const [layoutEdit, setLayoutEdit] = useState(false);
   const [savingLayout, setSavingLayout] = useState(false);
@@ -312,6 +327,7 @@ export function TimelineViewer({
   const layoutAutoSaveTimerRef = useRef<number | null>(null);
   const layoutHasHydratedRef = useRef(false);
   const [dragRow, setDragRow] = useState<null | { dayKey: string; anchorLabel: string; startY: number; startH: number }>(null);
+  const [dragBoard, setDragBoard] = useState<null | { dayKey: string; startY: number; startH: number }>(null);
   const [dragTile, setDragTile] = useState<
     null | {
       dayKey: string;
@@ -355,6 +371,28 @@ export function TimelineViewer({
       window.removeEventListener("mouseup", onUp);
     };
   }, [dragRow]);
+
+  useEffect(() => {
+    if (!dragBoard) return;
+    const SNAP = 10;
+    const onMove = (ev: MouseEvent) => {
+      const dy = ev.clientY - dragBoard.startY;
+      const raw = dragBoard.startH + dy;
+      const snapped = Math.round(raw / SNAP) * SNAP;
+      const nextH = Math.max(120, Math.min(4000, snapped));
+      setLayoutDraft((prev) => ({
+        ...prev,
+        board_height_px: { ...(prev.board_height_px ?? {}), [dragBoard.dayKey]: nextH }
+      }));
+    };
+    const onUp = () => setDragBoard(null);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp, { once: true });
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [dragBoard]);
 
   useEffect(() => {
     if (!dragTile) return;
@@ -453,6 +491,7 @@ export function TimelineViewer({
       timeFontPx: typeof initialStyle.timeFontPx === "number" ? initialStyle.timeFontPx : prev.timeFontPx,
       formatFontPx: typeof initialStyle.formatFontPx === "number" ? initialStyle.formatFontPx : prev.formatFontPx,
       placeFontPx: typeof initialStyle.placeFontPx === "number" ? initialStyle.placeFontPx : prev.placeFontPx,
+      descFontPx: typeof initialStyle.descFontPx === "number" ? initialStyle.descFontPx : prev.descFontPx,
 
       titleWeight: typeof initialStyle.titleWeight === "number" ? initialStyle.titleWeight : prev.titleWeight,
       titleItalic: typeof initialStyle.titleItalic === "boolean" ? initialStyle.titleItalic : prev.titleItalic,
@@ -466,6 +505,9 @@ export function TimelineViewer({
       placeWeight: typeof initialStyle.placeWeight === "number" ? initialStyle.placeWeight : prev.placeWeight,
       placeItalic: typeof initialStyle.placeItalic === "boolean" ? initialStyle.placeItalic : prev.placeItalic,
       placeColor: typeof initialStyle.placeColor === "string" ? initialStyle.placeColor : prev.placeColor,
+      descWeight: typeof initialStyle.descWeight === "number" ? initialStyle.descWeight : prev.descWeight,
+      descItalic: typeof initialStyle.descItalic === "boolean" ? initialStyle.descItalic : prev.descItalic,
+      descColor: typeof initialStyle.descColor === "string" ? initialStyle.descColor : prev.descColor,
       teamLeadFontPx:
         typeof initialStyle.teamLeadFontPx === "number" ? initialStyle.teamLeadFontPx : prev.teamLeadFontPx,
       teamLeadColor: typeof initialStyle.teamLeadColor === "string" ? initialStyle.teamLeadColor : prev.teamLeadColor,
@@ -598,7 +640,8 @@ export function TimelineViewer({
           : 5,
       hidden_day_keys: Array.isArray(initialLayout.hidden_day_keys)
         ? (initialLayout.hidden_day_keys as string[]).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k))
-        : []
+        : [],
+      board_height_px: initialLayout.board_height_px ?? {}
     });
   }, [initialLayout]);
 
@@ -691,6 +734,7 @@ export function TimelineViewer({
             timeFontPx: styleDraft.timeFontPx,
             formatFontPx: styleDraft.formatFontPx,
             placeFontPx: styleDraft.placeFontPx,
+            descFontPx: styleDraft.descFontPx,
 
             titleWeight: styleDraft.titleWeight,
             titleItalic: styleDraft.titleItalic,
@@ -704,6 +748,9 @@ export function TimelineViewer({
             placeWeight: styleDraft.placeWeight,
             placeItalic: styleDraft.placeItalic,
             placeColor: styleDraft.placeColor,
+            descWeight: styleDraft.descWeight,
+            descItalic: styleDraft.descItalic,
+            descColor: styleDraft.descColor,
             teamLeadFontPx: styleDraft.teamLeadFontPx,
             teamLeadColor: styleDraft.teamLeadColor,
             teamLeadWeight: styleDraft.teamLeadWeight,
@@ -860,6 +907,29 @@ export function TimelineViewer({
     const mm = Number(m[2]);
     if (!Number.isFinite(hh) || !Number.isFinite(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
     return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  }
+
+  function labelFromMinutes(absMin: number) {
+    const wrapped = ((absMin % (24 * 60)) + 24 * 60) % (24 * 60);
+    const hh = String(Math.floor(wrapped / 60)).padStart(2, "0");
+    const mm = String(wrapped % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  function nextFreeMarkLabel(taken: Set<string>, preferred = "12:30") {
+    const pref = normalizeTime(preferred) ?? "12:30";
+    if (!taken.has(pref)) return pref;
+    const [ph, pm] = pref.split(":").map(Number);
+    const startMin = (ph ?? 12) * 60 + (pm ?? 30);
+    for (let i = 1; i <= 48; i++) {
+      const label = labelFromMinutes(startMin + i * 30);
+      if (!taken.has(label)) return label;
+    }
+    for (let min = 0; min < 24 * 60; min += 5) {
+      const label = labelFromMinutes(min);
+      if (!taken.has(label)) return label;
+    }
+    return null;
   }
 
 const HIDDEN_BASE_MARK_PREFIX = "!";
@@ -1099,6 +1169,7 @@ function parseDayMarkTokens(tokens: string[]) {
         ["--tl-time-font-px" as any]: `${styleDraft.timeFontPx}px`,
         ["--tl-format-font-px" as any]: `${styleDraft.formatFontPx}px`,
         ["--tl-place-font-px" as any]: `${styleDraft.placeFontPx}px`,
+        ["--tl-desc-font-px" as any]: `${styleDraft.descFontPx}px`,
 
         ["--tl-title-font-weight" as any]: String(styleDraft.titleWeight),
         ["--tl-title-font-style" as any]: styleDraft.titleItalic ? "italic" : "normal",
@@ -1112,6 +1183,9 @@ function parseDayMarkTokens(tokens: string[]) {
         ["--tl-place-font-weight" as any]: String(styleDraft.placeWeight),
         ["--tl-place-font-style" as any]: styleDraft.placeItalic ? "italic" : "normal",
         ["--tl-place-color" as any]: styleDraft.placeColor,
+        ["--tl-desc-font-weight" as any]: String(styleDraft.descWeight),
+        ["--tl-desc-font-style" as any]: styleDraft.descItalic ? "italic" : "normal",
+        ["--tl-desc-color" as any]: styleDraft.descColor,
         ["--tl-teamlead-font-px" as any]: `${styleDraft.teamLeadFontPx}px`,
         ["--tl-teamlead-color" as any]: styleDraft.teamLeadColor,
         ["--tl-teamlead-font-weight" as any]: String(styleDraft.teamLeadWeight),
@@ -1410,12 +1484,15 @@ function parseDayMarkTokens(tokens: string[]) {
           // Grid row heights: start from a small baseline and expand as needed.
           const anchorHeights = anchors.map(() => MIN_ANCHOR_PX);
 
-          // Ensure mandatory parts (title/time/place) fit for the row.
+          // Row height follows the card, including description — otherwise the board
+          // clips the bottom of the last events (overflow-y: hidden on .lanes).
           for (let i = 0; i < anchorHeights.length; i++) {
             const row = boxesAligned.filter((b: any) => b.anchorIdx === i);
             if (!row.length) continue;
             const rowForSizing = row.some((b: any) => !b.isFood) ? row.filter((b: any) => !b.isFood) : row;
-            const maxNeed = Math.max(...rowForSizing.map((b: any) => Number(b.minNoDescH) || 0));
+            const maxNeed = Math.max(
+              ...rowForSizing.map((b: any) => Number(b.height) || Number(b.minNoDescH) || 0)
+            );
             anchorHeights[i] = Math.max(anchorHeights[i] ?? 0, maxNeed + ANCHOR_PAD_PX);
           }
 
@@ -1435,10 +1512,9 @@ function parseDayMarkTokens(tokens: string[]) {
           for (let i = 0; i < anchorHeights.length; i++) {
             const row = boxesAligned.filter((b) => b.anchorIdx === i);
             if (!row.length) continue;
-            // By default, keep row heights time-based for consistent print layout.
-            // Only auto-expand rows for the NIR final synthetic block (must show full list).
             const hasNirFinal = row.some((b) => String((b.it.event as any)?.title ?? "") === "Финал конкурса НИР");
-            if (!hasNirFinal) continue;
+            const hasStackingFull = row.some((b) => b.isFullWidth && b.stackOthersBelow);
+            if (!hasNirFinal && !hasStackingFull) continue;
             // Do not expand the row just because of food blocks.
             const rowForSizing = row.some((b) => !b.isFood) ? row.filter((b) => !b.isFood) : row;
             const full = rowForSizing.filter((b) => b.isFullWidth);
@@ -1454,7 +1530,12 @@ function parseDayMarkTokens(tokens: string[]) {
           }
 
           const heightPx = anchorHeights.reduce((a, x) => a + (x ?? 0), 0);
-          const heightWithInset = Math.max(120, heightPx) + INSET_Y * 2;
+          const heightWithInset = Math.max(120, heightPx) + INSET_Y * 2 + 12;
+          const manualBoardH = !hideControls && dayKey ? layoutDraft.board_height_px?.[dayKey] : undefined;
+          const boardDisplayH =
+            typeof manualBoardH === "number" && Number.isFinite(manualBoardH)
+              ? Math.max(120, Math.min(4000, Math.floor(manualBoardH)))
+              : heightWithInset;
 
           const yForLabel = (label: string) => {
             const idx = anchors.indexOf(label);
@@ -1668,6 +1749,7 @@ function parseDayMarkTokens(tokens: string[]) {
                     <div className="muted" style={{ fontSize: 12, marginTop: 8, whiteSpace: "pre-line" }}>
                       {"В режиме редактирования можно:\n" +
                         "• тянуть горизонтальные линии, чтобы менять высоту строк;\n" +
+                        "• тянуть нижний край сетки, чтобы менять высоту всей области расписания;\n" +
                         "• перетаскивать карточки между строками и колонками;\n" +
                         "• растягивать карточки по высоте и ширине;\n" +
                         "• скрывать дни и отдельные карточки только из отображения."}
@@ -1754,6 +1836,69 @@ function parseDayMarkTokens(tokens: string[]) {
                           авто
                         </button>
                       ) : null}
+
+                      <div style={{ width: 1, height: 34, background: "rgba(15,23,42,.14)", margin: "0 6px" }} />
+
+                      <label className="muted" style={{ fontSize: 12, display: "grid", gap: 6 }}>
+                        Высота области (px)
+                        <input
+                          type="number"
+                          min={120}
+                          max={4000}
+                          value={
+                            dayKey
+                              ? Math.floor(layoutDraft.board_height_px?.[dayKey] ?? heightWithInset)
+                              : heightWithInset
+                          }
+                          onChange={(e) => {
+                            if (!dayKey) return;
+                            const v = Math.max(120, Math.min(4000, Number(e.target.value)));
+                            setLayoutDraft((p) => ({
+                              ...p,
+                              board_height_px: { ...(p.board_height_px ?? {}), [dayKey]: v }
+                            }));
+                          }}
+                          style={{ width: 160 }}
+                        />
+                      </label>
+                      <input
+                        type="range"
+                        min={120}
+                        max={1200}
+                        step={10}
+                        value={
+                          dayKey
+                            ? Math.min(1200, Math.floor(layoutDraft.board_height_px?.[dayKey] ?? heightWithInset))
+                            : Math.min(1200, heightWithInset)
+                        }
+                        onChange={(e) => {
+                          if (!dayKey) return;
+                          const v = Math.max(120, Math.min(4000, Number(e.target.value)));
+                          setLayoutDraft((p) => ({
+                            ...p,
+                            board_height_px: { ...(p.board_height_px ?? {}), [dayKey]: v }
+                          }));
+                        }}
+                        style={{ width: 220 }}
+                        disabled={!dayKey}
+                        title="Высота всей области расписания на этом дне"
+                      />
+                      {dayKey && layoutDraft.board_height_px?.[dayKey] != null ? (
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() =>
+                            setLayoutDraft((p) => {
+                              const next = { ...(p.board_height_px ?? {}) };
+                              delete (next as any)[dayKey];
+                              return { ...p, board_height_px: next };
+                            })
+                          }
+                          title="Вернуть высоту по содержимому"
+                        >
+                          авто
+                        </button>
+                      ) : null}
                     </div>
                   </div>
 
@@ -1813,17 +1958,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.titleWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, titleWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[400, 500, 600, 700, 800, 900].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -1860,17 +2002,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.timeWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, timeWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -1907,17 +2046,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.formatWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, formatWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -1954,23 +2090,64 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.placeWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, placeWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
                             type="checkbox"
                             checked={styleDraft.placeItalic}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, placeItalic: e.target.checked }))}
+                            style={{ width: 16, marginRight: 8 }}
+                          />
+                          Курсив
+                        </label>
+                      </div>
+
+                      <div className="row tl-style-line">
+                        <div style={{ minWidth: 120, fontWeight: 600 }}>Описание</div>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Размер
+                          <input
+                            type="number"
+                            min={9}
+                            max={22}
+                            value={styleDraft.descFontPx}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, descFontPx: Number(e.target.value) }))}
+                            style={{ width: 110 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Цвет
+                          <input
+                            type="color"
+                            value={styleDraft.descColor}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, descColor: e.target.value }))}
+                            style={{ width: 58, padding: 0, height: 36 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          Насыщенность
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
+                            value={styleDraft.descWeight}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, descWeight: Number(e.target.value) }))}
+                            style={{ width: 88 }}
+                          />
+                        </label>
+                        <label className="muted" style={{ fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={styleDraft.descItalic}
+                            onChange={(e) => setStyleDraft((p) => ({ ...p, descItalic: e.target.checked }))}
                             style={{ width: 16, marginRight: 8 }}
                           />
                           Курсив
@@ -2004,17 +2181,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.teamLeadWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, teamLeadWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -2051,17 +2225,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.responsiblesWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, responsiblesWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -2098,17 +2269,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.vksWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, vksWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -2145,17 +2313,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.translationWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, translationWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -2192,17 +2357,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.interpretationWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, interpretationWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -2239,17 +2401,14 @@ function parseDayMarkTokens(tokens: string[]) {
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           Насыщенность
-                          <select
+                          <input
+                            type="number"
+                            min={100}
+                            max={900}
                             value={styleDraft.volunteersWeight}
                             onChange={(e) => setStyleDraft((p) => ({ ...p, volunteersWeight: Number(e.target.value) }))}
-                            style={{ width: 120 }}
-                          >
-                            {[300, 400, 500, 600, 700].map((w) => (
-                              <option key={w} value={w}>
-                                {w}
-                              </option>
-                            ))}
-                          </select>
+                            style={{ width: 88 }}
+                          />
                         </label>
                         <label className="muted" style={{ fontSize: 12 }}>
                           <input
@@ -2385,12 +2544,35 @@ function parseDayMarkTokens(tokens: string[]) {
 
                     return (
                       <div className="grid" style={{ gap: 8 }}>
-                        <div className="row" style={{ gap: 8 }}>
+                        <div className="row" style={{ gap: 8, alignItems: "center" }}>
                           {anchors.map((m) => {
                             const isManual = marksManual.includes(m);
                             return (
-                              <span key={`mark-visible-${dayKey}-${m}`} className="chip">
-                                <span>{m}</span>
+                              <span key={`mark-visible-${dayKey}-${m}`} className="chip" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                                {isManual ? (
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="14:30"
+                                    defaultValue={m}
+                                    maxLength={5}
+                                    aria-label={`Добавленная метка ${m}`}
+                                    onBlur={(e) => {
+                                      const next = normalizeTime(e.target.value);
+                                      if (!next || next === m || anchors.includes(next)) {
+                                        e.currentTarget.value = m;
+                                        return;
+                                      }
+                                      updateDayMarks((cur) => cur.map((x) => (normalizeTime(x) === m ? next : x)));
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") e.currentTarget.blur();
+                                    }}
+                                    style={{ width: 72, padding: "4px 8px" }}
+                                  />
+                                ) : (
+                                  <span>{m}</span>
+                                )}
                                 <span className="muted" style={{ fontSize: 12 }}>
                                   {isManual ? "добавленная" : "базовая"}
                                 </span>
@@ -2416,12 +2598,11 @@ function parseDayMarkTokens(tokens: string[]) {
                           <button
                             type="button"
                             className="secondary"
-                            onClick={() =>
-                              updateDayMarks((cur) => {
-                                if (marksManual.includes("12:30")) return cur;
-                                return [...cur, "12:30"];
-                              })
-                            }
+                            onClick={() => {
+                              const label = nextFreeMarkLabel(new Set(anchors));
+                              if (!label) return;
+                              updateDayMarks((cur) => [...cur, label]);
+                            }}
                           >
                             Добавить отметку
                           </button>
@@ -2531,7 +2712,8 @@ function parseDayMarkTokens(tokens: string[]) {
               })()}
 
               {events.length ? (
-                <div className="timelineWrap">
+                <div className="timelineBoard">
+                  <div className="timelineWrap" style={{ height: boardDisplayH, overflow: "auto" }}>
                   <div className="timeCol">
                     {anchors.map((label, i) => {
                       const top = yForLabel(label);
@@ -2820,6 +3002,20 @@ function parseDayMarkTokens(tokens: string[]) {
                     </div>
                   </div>
                 </div>
+                  {!hideControls && dayKey ? (
+                    <div
+                      className="timelineBoardResize"
+                      role="separator"
+                      aria-label="Растянуть область расписания"
+                      title="Тяните вниз или вверх, чтобы изменить высоту всей области расписания"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragBoard({ dayKey, startY: e.clientY, startH: boardDisplayH });
+                      }}
+                    />
+                  ) : null}
+                </div>
               ) : null}
 
               {(() => {
@@ -2855,7 +3051,7 @@ function parseDayMarkTokens(tokens: string[]) {
                             const plain = e.description ? String(e.description) : "";
                             if (!md && !plain) return null;
                             return (
-                              <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                              <div className="eventDesc" style={{ marginTop: 6 }}>
                                 {md ? renderMarkdownLite(md) : <span style={{ whiteSpace: "pre-line" }}>{plain}</span>}
                               </div>
                             );

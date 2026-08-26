@@ -251,7 +251,19 @@ button.secondary { background: rgba(15,23,42,.04); }
   padding: 8px 10px;
 }
 
-.timelineWrap { display:flex; gap:6px; }
+.timelineBoard { position: relative; }
+.timelineBoardResize {
+  height: 14px;
+  margin-top: 4px;
+  cursor: ns-resize;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.28);
+}
+.timelineBoardResize:hover {
+  background: rgba(37, 99, 235, 0.14);
+}
+.timelineWrap { display:flex; gap:6px; min-height: 0; }
 .timeCol { width: 40px; flex: 0 0 40px; }
 .timeTick { height: 120px; position: relative; border-top: 1px dashed rgba(255,255,255,.10); }
 .timeLabel {
@@ -267,7 +279,7 @@ button.secondary { background: rgba(15,23,42,.04); }
   position: relative;
   border: 1px solid rgba(15,23,42,.12);
   border-radius: 14px;
-  overflow-y: hidden;
+  overflow-y: auto;
   overflow-x: auto;
   background: var(--tl-lanes-bg, rgba(15,23,42,.02));
 }
@@ -321,7 +333,15 @@ button.secondary { background: rgba(15,23,42,.04); }
   font-style: var(--tl-time-font-style, normal);
   color: var(--tl-time-color, var(--muted));
 }
-.eventDesc { margin-top: 6px; font-size: 12px; line-height: 1.25; opacity: .92; }
+.eventDesc {
+  margin-top: 6px;
+  font-size: var(--tl-desc-font-px, 12px);
+  font-weight: var(--tl-desc-font-weight, 400);
+  font-style: var(--tl-desc-font-style, normal);
+  color: var(--tl-desc-color, var(--text));
+  line-height: 1.25;
+  opacity: .92;
+}
 .eventExtra {
   margin-top: 4px;
   line-height: 1.3;
