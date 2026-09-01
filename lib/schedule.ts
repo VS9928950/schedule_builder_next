@@ -144,24 +144,25 @@ function normalizeKeys(row: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
-// Excel serial date (1900 system). We use 1899-12-30 baseline (common in JS libs).
+// Excel serial (1900 system): 25569 = days between 1899-12-30 and 1970-01-01.
+// The clock in the cell is naive (18:30 means 18:30), not a city timezone.
 function excelSerialToDate(serial: number): Date {
-  const ms = Math.round((serial - 25569) * 86400 * 1000); // 25569 = days between 1899-12-30 and 1970-01-01
+  const ms = Math.round((serial - 25569) * 86400 * 1000);
   return new Date(ms);
 }
 
 function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
 function addDays(d: Date, days: number): Date {
-  const out = new Date(d);
-  out.setDate(out.getDate() + days);
+  const out = new Date(d.getTime());
+  out.setUTCDate(out.getUTCDate() + days);
   return out;
 }
 
 function minutesSinceDayStart(d: Date): number {
-  return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+  return d.getUTCHours() * 60 + d.getUTCMinutes() + d.getUTCSeconds() / 60;
 }
 
 function roundDownTo(n: number, step: number) {
@@ -554,31 +555,39 @@ export function layoutDayLanes(day: Date, events: ScheduleEvent[]): DayLayout {
 }
 
 export function formatTime(d: Date): string {
-  return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
 }
 
 export function formatDay(d: Date): string {
-  return d.toLocaleDateString("ru-RU", { weekday: "short", day: "2-digit", month: "2-digit" });
+  return d.toLocaleDateString("ru-RU", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" });
 }
 
 export function formatDayFull(d: Date): string {
-  const s = d.toLocaleDateString("ru-RU", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+  const s = d.toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC"
+  });
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
-/** Local calendar day key YYYY-MM-DD (no UTC shift). */
+/** Calendar day key YYYY-MM-DD from the spreadsheet clock (not the browser timezone). */
 export function dayKeyLocalFromDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
 
-/** Parse YYYY-MM-DD as local calendar date (noon avoids DST edge cases). */
+/** Parse YYYY-MM-DD as that calendar date at noon UTC. */
 export function localDateFromDayKey(dayKey: string): Date {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dayKey ?? "").trim());
   if (!m) return new Date(NaN);
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0);
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0));
 }
 
 /** Unique sorted day keys from timed events plus untimed-only days. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { normalizeHttpUrl } from "@/lib/schedule";
+import { dayKeyLocalFromDate, formatTime, normalizeHttpUrl } from "@/lib/schedule";
 
 export type EditableEvent = {
   id: string;
@@ -84,34 +84,36 @@ export type UntimedEditableEvent = {
 function fmtRange(ev: EditableEvent) {
   const s = new Date(ev.start);
   const e = new Date(ev.end);
-  const day = s.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
-  const st = s.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
-  const en = e.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
-  return `${day} ${st}–${en}`;
+  const day = `${String(s.getUTCDate()).padStart(2, "0")}.${String(s.getUTCMonth() + 1).padStart(2, "0")}`;
+  return `${day} ${formatTime(s)}–${formatTime(e)}`;
 }
 
 function dayKey(iso: string) {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return dayKeyLocalFromDate(new Date(iso));
 }
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
-  const s = d.toLocaleDateString("ru-RU", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+  const s = d.toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC"
+  });
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
 function toLocalInputValue(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
 function fromLocalInputValue(v: string) {
-  // interpret as local time
-  const d = new Date(v);
-  return d.toISOString();
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(v);
+  if (!m) return new Date(v).toISOString();
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]))).toISOString();
 }
 
 const YES_NO_UNKNOWN: Array<"Да" | "Нет" | "Не указано"> = ["Да", "Нет", "Не указано"];
