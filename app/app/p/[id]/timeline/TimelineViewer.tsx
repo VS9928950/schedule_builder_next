@@ -9,6 +9,7 @@ import {
   formatTime,
   layoutDayLanes,
   localDateFromDayKey,
+  mergeFinalNirSameTime,
   normalizeHttpUrl
 } from "@/lib/schedule";
 import { renderMarkdownLite } from "@/lib/markdown-lite";
@@ -980,56 +981,12 @@ function parseDayMarkTokens(tokens: string[]) {
           .filter((e) => Number.isFinite(e.start.getTime()) && Number.isFinite(e.end.getTime()) && e.end > e.start)
           .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-        // Presentation-only aggregation for NIR finals:
-        // - group parallel events by (day, start, end) when format === "Финал конкурса НИР"
-        // - render a single synthetic block in the timeline, but keep original events intact for rooms/checks/editing
-        const isFinal = (fmt: unknown) => (fmt == null ? "" : String(fmt).trim()) === "Финал конкурса НИР";
-        const finals = timed.filter((e) => isFinal(e.format));
-        if (finals.length <= 1) return timed;
-
-        const rest = timed.filter((e) => !isFinal(e.format));
-        const groups = new Map<string, typeof finals>();
-        for (const ev of finals) {
-          const dayKey = `${ev.start.getFullYear()}-${ev.start.getMonth() + 1}-${ev.start.getDate()}`;
-          const key = `${dayKey}|${ev.start.toISOString()}|${ev.end.toISOString()}`;
-          const arr = groups.get(key) ?? [];
-          arr.push(ev);
-          groups.set(key, arr as any);
-        }
-
-        const out: any[] = [...rest];
-        for (const arr of groups.values()) {
-          if (arr.length === 1) {
-            out.push(arr[0]!);
-            continue;
-          }
-          const first = arr[0]!;
-          const lines = arr
-            .slice()
-            .sort((a, b) => ((a as any).orderNo ?? 1e9) - ((b as any).orderNo ?? 1e9))
-            .map((e) => {
-              const placeParts = [e.building ? String(e.building).trim() : null, e.room ? String(e.room).trim() : null].filter(Boolean);
-              const place = placeParts.length ? ` (${placeParts.join(", ")})` : "";
-              return `- ${String(e.title ?? "")}${place}`;
-            });
-          out.push({
-            id: `final-nir-${first.start.toISOString()}-${first.end.toISOString()}`,
-            title: "Финал конкурса НИР",
-            description: lines.join("\n"),
-            description_md: undefined,
-            format: undefined,
-            building: undefined,
-            room: undefined,
-            orderNo: Math.min(...arr.map((x: any) => x.orderNo ?? 1e9)),
-            visible: true,
-            kind: "timed",
-            start: first.start,
-            end: first.end
-          });
-        }
-
-        out.sort((a, b) => a.start.getTime() - b.start.getTime());
-        return out;
+        // Presentation-only aggregation for NIR finals (same helper as Tilda export).
+        return mergeFinalNirSameTime(timed as any).map((e) =>
+          String(e.id).startsWith("final-nir-")
+            ? { ...e, kind: "timed" as const, description_md: undefined }
+            : e
+        );
       })(),
     [events]
   );

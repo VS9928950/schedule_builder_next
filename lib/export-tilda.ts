@@ -62,7 +62,7 @@ type TimelineLayout = {
   hidden_day_keys?: string[];
 };
 
-import { layoutDayLanes, normalizeHttpUrl } from "@/lib/schedule";
+import { layoutDayLanes, mergeFinalNirSameTime, normalizeHttpUrl } from "@/lib/schedule";
 
 function esc(s: unknown) {
   return String(s ?? "")
@@ -320,6 +320,34 @@ function shouldShowFormat(fmt: unknown) {
   return s !== "Питание";
 }
 
+function estimateMinHeightPx(
+  e: { title?: unknown; format?: unknown; building?: unknown; room?: unknown; description?: unknown; description_md?: unknown },
+  widthPx: number
+) {
+  const innerW = Math.max(80, widthPx - 20);
+  const charsPerLine = Math.max(10, Math.floor(innerW / 6));
+  const linesFor = (s: string) => Math.max(1, Math.ceil((s || "").length / charsPerLine));
+
+  const titleLines = linesFor(String(e.title ?? ""));
+  const formatLines = shouldShowFormat(e.format) ? linesFor(String(e.format)) : 0;
+  const timeLines = 1;
+  const placeLines = e.building || e.room ? 1 : 0;
+
+  let descLines = 0;
+  const descSrc = String(e.description_md ?? e.description ?? "");
+  if (String(e.title ?? "") === "Финал конкурса НИР" && descSrc) {
+    descLines = descSrc.split("\n").filter(Boolean).length;
+  } else if (descSrc) {
+    descLines = Math.max(linesFor(descSrc), descSrc.split("\n").filter(Boolean).length);
+  }
+
+  const totalLines = titleLines + formatLines + timeLines + placeLines + descLines;
+  const lineH = 16;
+  const padding = 28;
+  const borders = 6;
+  return padding + totalLines * lineH + borders + 18;
+}
+
 function estimateMinHeightNoDescPx(e: { title?: unknown; format?: unknown; building?: unknown; room?: unknown }, widthPx: number) {
   const innerW = Math.max(80, widthPx - 20);
   const charsPerLine = Math.max(10, Math.floor(innerW / 6));
@@ -335,6 +363,10 @@ function estimateMinHeightNoDescPx(e: { title?: unknown; format?: unknown; build
   const padding = 28;
   const borders = 6;
   return padding + totalLines * lineH + borders + 12;
+}
+
+function utcMinutesSinceDayStart(d: Date) {
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
 
 function yForAnchor(idx: number, heights: number[]) {
@@ -783,19 +815,23 @@ ${rootSel} .sb-desc{margin-top:6px;font-size:12px;line-height:1.3;opacity:.92;wh
     }
 
     // Build layout like Timeline does (so columns are distributed, not all col=0).
-    const scheduleEvents = dayEvents.map((e) => ({
-      id: String(e.id),
-      title: String(e.title ?? ""),
-      description: e.description != null ? String(e.description) : undefined,
-      description_md: e.description_md != null ? String(e.description_md) : undefined,
-      building: e.building != null ? String(e.building) : undefined,
-      room: e.room != null ? String(e.room) : undefined,
-      format: e.format != null ? String(e.format) : undefined,
-      orderNo: (e as any).orderNo,
-      visible: e.visible ?? true,
-      start: e.startD,
-      end: e.endD
-    }));
+    // Same NIR-final grouping as Architecture: one card titled «Финал конкурса НИР»
+    // with original titles listed in the description.
+    const scheduleEvents = mergeFinalNirSameTime(
+      dayEvents.map((e) => ({
+        id: String(e.id),
+        title: String(e.title ?? ""),
+        description: e.description != null ? String(e.description) : undefined,
+        description_md: e.description_md != null ? String(e.description_md) : undefined,
+        building: e.building != null ? String(e.building) : undefined,
+        room: e.room != null ? String(e.room) : undefined,
+        format: e.format != null ? String(e.format) : undefined,
+        orderNo: (e as any).orderNo,
+        visible: e.visible ?? true,
+        start: e.startD,
+        end: e.endD
+      })) as any
+    );
     const dayDate = new Date(dayKey + "T00:00:00.000Z");
     const dayLayout = layoutDayLanes(dayDate, scheduleEvents as any);
 
@@ -837,12 +873,29 @@ ${rootSel} .sb-desc{margin-top:6px;font-size:12px;line-height:1.3;opacity:.92;wh
       const colDefault = Number.isFinite(it.clusterIndex)
         ? Math.max(0, Math.min(cols - 1, Math.floor(it.clusterIndex)))
         : 0;
-      const desiredCol = Math.max(0, Math.min(cols - 1, Math.floor(ov.col ?? colDefault)));
-      const desiredColSpan = Math.max(1, Math.min(cols, Math.floor(ov.colSpan ?? 1)));
+
+      const isNirFinal = String(ev.title ?? "") === "Финал конкурса НИР";
+      const sMs = startD.getTime();
+      const eMs = endD.getTime();
+      const sameRangePeers = (dayLayout.items as any[]).filter((x) => {
+        const xs = new Date(x.event.start).getTime();
+        const xe = new Date(x.event.end).getTime();
+        return xs === sMs && xe === eMs;
+      }).length;
+      const startMin = utcMinutesSinceDayStart(startD);
+      const sameStartAnchorPeers = (dayLayout.items as any[]).filter(
+        (x) => utcMinutesSinceDayStart(new Date(x.event.start)) === startMin
+      ).length;
+      const autoFullWidth = isNirFinal && sameRangePeers <= 1 && sameStartAnchorPeers <= 1;
+      const isFullWidth = autoFullWidth;
+
+      const desiredCol = isFullWidth ? 0 : Math.max(0, Math.min(cols - 1, Math.floor(ov.col ?? colDefault)));
+      const desiredColSpan = isFullWidth ? cols : Math.max(1, Math.min(cols, Math.floor(ov.colSpan ?? 1)));
       const desiredRowSpan = Math.max(1, Math.min(anchors.length - anchorIdx, Math.floor(ov.rowSpan ?? 1)));
 
       const hidden = !!ov.hidden;
-      const minNoDesc = estimateMinHeightNoDescPx(ev, colPx);
+      const widthForEstimate = isFullWidth ? cols * colPx : colPx;
+      const minNoDesc = isNirFinal ? estimateMinHeightPx(ev, widthForEstimate) : estimateMinHeightNoDescPx(ev, colPx);
       const heightPx = typeof ov.heightPx === "number" && Number.isFinite(ov.heightPx) ? Math.max(30, ov.heightPx) : null;
 
       return {
@@ -861,7 +914,8 @@ ${rootSel} .sb-desc{margin-top:6px;font-size:12px;line-height:1.3;opacity:.92;wh
         colSpan: desiredColSpan,
         rowSpan: desiredRowSpan,
         minNoDesc,
-        heightPx
+        heightPx,
+        isFullWidth
       };
     });
 
@@ -971,8 +1025,9 @@ ${rootSel} .sb-desc{margin-top:6px;font-size:12px;line-height:1.3;opacity:.92;wh
       const hSpan = anchorHeights.slice(aIdx, aIdx + rowSpan).reduce((a, x) => a + (x ?? 0), 0);
       const baseH = Math.max(30, hSpan - 4);
       const h = typeof b.heightPx === "number" && Number.isFinite(b.heightPx) ? Math.max(30, b.heightPx) : baseH;
-      const x = col * colPx + 8;
-      const w = colSpan * colPx - 10;
+      const isFullWidth = !!(b as { isFullWidth?: boolean }).isFullWidth;
+      const x = isFullWidth ? 8 : col * colPx + 8;
+      const w = isFullWidth ? cols * colPx - 10 : colSpan * colPx - 10;
 
       const place = [ev.building ? String(ev.building).trim() : null, ev.room ? String(ev.room).trim() : null].filter(Boolean).join(" · ");
       const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";

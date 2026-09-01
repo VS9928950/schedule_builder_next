@@ -236,18 +236,19 @@ function normalizeTimedEvents(events: ScheduleEvent[]): ScheduleEvent[] {
   return out;
 }
 
-function mergeFinalNirSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
+/** Presentation-only: merge parallel NIR finals into one card, as in Architecture. */
+export function mergeFinalNirSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
   const finals: ScheduleEvent[] = [];
   const rest: ScheduleEvent[] = [];
   for (const ev of events) {
     (isFinalNir(ev.format) ? finals : rest).push(ev);
   }
-  if (finals.length <= 1) return [...rest, ...finals];
+  if (finals.length <= 1) return [...rest, ...finals].sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  // Group by day+time range.
+  // Group by day+time range (spreadsheet clock = UTC components of the stored Date).
   const groups = new Map<string, ScheduleEvent[]>();
   for (const ev of finals) {
-    const dayKey = `${ev.start.getFullYear()}-${ev.start.getMonth() + 1}-${ev.start.getDate()}`;
+    const dayKey = dayKeyLocalFromDate(ev.start);
     const key = `${dayKey}|${ev.start.toISOString()}|${ev.end.toISOString()}`;
     const arr = groups.get(key) ?? [];
     arr.push(ev);
@@ -289,6 +290,7 @@ function mergeFinalNirSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
     });
   }
 
+  out.sort((a, b) => a.start.getTime() - b.start.getTime());
   return out;
 }
 
