@@ -383,12 +383,6 @@ button.secondary { background: rgba(15,23,42,.04); }
   font-style: var(--tl-volunteers-font-style, normal);
   color: var(--tl-volunteers-color, #475569);
 }
-.eventDescClamp {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 .eventPlace {
   margin-top: auto;
   font-size: var(--tl-place-font-px, 11px);

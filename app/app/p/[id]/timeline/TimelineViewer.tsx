@@ -870,8 +870,7 @@ export function TimelineViewer({
     if (e.title === "Финал конкурса НИР" && descSrc) {
       descLines = descSrc.split("\n").filter(Boolean).length;
     } else if (descSrc) {
-      // we clamp visually, but reserve space so meta lines don't get eaten by borders
-      descLines = Math.min(4, linesFor(descSrc));
+      descLines = Math.max(linesFor(descSrc), descSrc.split("\n").filter(Boolean).length);
     }
 
     const totalLines = titleLines + formatLines + timeLines + placeLines + descLines;
@@ -2900,15 +2899,9 @@ function parseDayMarkTokens(tokens: string[]) {
                                 {format ? <div className="eventFormat">{format}</div> : null}
                                 <div className="eventTime">{time}</div>
                                 {descToShow ? (
-                                  it.event.title === "Финал конкурса НИР" ? (
-                                    <div className="eventDesc" style={{ whiteSpace: "pre-line" }}>
-                                      {descToShow}
-                                    </div>
-                                  ) : descMd ? (
-                                    <div className="eventDesc eventDescClamp">{renderMarkdownLite(descMd)}</div>
-                                  ) : (
-                                    <div className="eventDesc eventDescClamp">{descPlain}</div>
-                                  )
+                                  <div className="eventDesc" style={{ whiteSpace: "pre-line" }}>
+                                    {descMd ? renderMarkdownLite(descMd) : descPlain}
+                                  </div>
                                 ) : null}
                                 {place ? <div className="eventPlace">{place}</div> : null}
                                 {extraLines.length ? (
