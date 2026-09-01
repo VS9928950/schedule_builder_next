@@ -188,8 +188,8 @@ export function TildaSnippetClient({
           </a>
         </div>
         <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-          Ссылка открывает <b>только текст сниппета</b> (сначала <code>&lt;style&gt;</code>, затем HTML) — удобно копировать в
-          блок T123 на Тильде.
+          В Тильду вставляйте <b>одним блоком</b> (сначала <code>&lt;style&gt;</code>, затем HTML) в T123. Если вставить только HTML без CSS,
+          Тильда возьмёт свои цвета заголовков и текста.
         </div>
       </div>
 
@@ -304,7 +304,21 @@ export function TildaSnippetClient({
         <>
           <div className="card" style={{ padding: 12 }}>
             <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-              <div style={{ fontWeight: 800 }}>HTML (для вставки в Тильду)</div>
+              <div style={{ fontWeight: 800 }}>Для Тильды (CSS + HTML)</div>
+              <button type="button" className="secondary" onClick={() => copy(fullHtml)}>
+                Скопировать всё
+              </button>
+            </div>
+            <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+              Это основной вариант: цвета заголовка, времени и описания входят в <code>&lt;style&gt;</code> и дублируются на самих элементах.
+            </div>
+            <div style={{ height: 8 }} />
+            <textarea value={fullHtml} readOnly style={{ width: "100%", minHeight: 240, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 12 }} />
+          </div>
+
+          <div className="card" style={{ padding: 12 }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+              <div style={{ fontWeight: 800 }}>Только HTML</div>
               <button type="button" className="secondary" onClick={() => copy(data.html)}>
                 Скопировать HTML
               </button>
@@ -315,24 +329,13 @@ export function TildaSnippetClient({
 
           <div className="card" style={{ padding: 12 }}>
             <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-              <div style={{ fontWeight: 800 }}>CSS</div>
+              <div style={{ fontWeight: 800 }}>Только CSS</div>
               <button type="button" className="secondary" onClick={() => copy(data.css)}>
                 Скопировать CSS
               </button>
             </div>
             <div style={{ height: 8 }} />
             <textarea value={data.css} readOnly style={{ width: "100%", minHeight: 240, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 12 }} />
-          </div>
-
-          <div className="card" style={{ padding: 12 }}>
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-              <div style={{ fontWeight: 800 }}>Вариант одним блоком (HTML + &lt;style&gt;)</div>
-              <button type="button" className="secondary" onClick={() => copy(fullHtml)}>
-                Скопировать всё
-              </button>
-            </div>
-            <div style={{ height: 8 }} />
-            <textarea value={fullHtml} readOnly style={{ width: "100%", minHeight: 240, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 12 }} />
           </div>
         </>
       ) : null}

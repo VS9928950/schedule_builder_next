@@ -798,6 +798,7 @@ export function PrintWorkspaceClient({
               initialStyle={style as any}
               initialLayout={layout as any}
               hideControls
+              showExtraFields={exportView === "tech-schedule"}
               onActiveDayKeyChange={setActiveKey}
             />
           </div>
@@ -854,6 +855,7 @@ export function PrintWorkspaceClient({
                       initialStyle={style as any}
                       initialLayout={layout as any}
                       hideControls
+                      showExtraFields={exportView === "tech-schedule"}
                       pinnedDayKey={activeKey}
                       hidePackChrome
                       omitDayBanner
@@ -876,6 +878,7 @@ export function PrintWorkspaceClient({
                           initialStyle={style as any}
                           initialLayout={layout as any}
                           hideControls
+                          showExtraFields={exportView === "tech-schedule"}
                           pinnedDayKey={k}
                           hidePackChrome
                           omitDayBanner

@@ -286,8 +286,9 @@ export function mergeFinalNirSameTime(events: ScheduleEvent[]): ScheduleEvent[] 
       orderNo: Math.min(...arr.map((x) => x.orderNo ?? 1e9)),
       visible: true,
       start: first.start,
-      end: first.end
-    });
+      end: first.end,
+      sourceIds: arr.map((e) => e.id)
+    } as ScheduleEvent);
   }
 
   out.sort((a, b) => a.start.getTime() - b.start.getTime());
