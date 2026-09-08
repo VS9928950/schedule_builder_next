@@ -224,8 +224,27 @@ export function parseScheduleFromExcelRows(rows: unknown[]): ScheduleEvent[] {
   return normalizeTimedEvents(events);
 }
 
-function isFinalNir(format?: string) {
-  return (format ?? "").trim() === "Финал конкурса НИР";
+const PARALLEL_GROUP_FORMATS = ["Финал конкурса НИР", "Секционное заседание"] as const;
+
+function groupedFormatName(format?: string): string | null {
+  const s = (format ?? "").trim();
+  return PARALLEL_GROUP_FORMATS.includes(s as (typeof PARALLEL_GROUP_FORMATS)[number]) ? s : null;
+}
+
+/** True when this is a synthetic merged card (NIR final or sectional session). */
+export function isParallelGroupCardTitle(title?: unknown) {
+  const t = title == null ? "" : String(title).trim();
+  return t === "Финал конкурса НИР" || t === "Секционное заседание";
+}
+
+export function isParallelGroupCardId(id?: unknown) {
+  const s = String(id ?? "");
+  return s.startsWith("final-nir-") || s.startsWith("sectional-");
+}
+
+function parallelGroupCardId(format: string, start: Date, end: Date) {
+  if (format === "Финал конкурса НИР") return `final-nir-${start.toISOString()}-${end.toISOString()}`;
+  return `sectional-${start.toISOString()}-${end.toISOString()}`;
 }
 
 function normalizeTimedEvents(events: ScheduleEvent[]): ScheduleEvent[] {
@@ -236,49 +255,47 @@ function normalizeTimedEvents(events: ScheduleEvent[]): ScheduleEvent[] {
   return out;
 }
 
-/** Presentation-only: merge parallel NIR finals into one card, as in Architecture. */
-export function mergeFinalNirSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
-  const finals: ScheduleEvent[] = [];
-  const rest: ScheduleEvent[] = [];
-  for (const ev of events) {
-    (isFinalNir(ev.format) ? finals : rest).push(ev);
-  }
-  if (finals.length <= 1) return [...rest, ...finals].sort((a, b) => a.start.getTime() - b.start.getTime());
+function placeSuffix(e: ScheduleEvent) {
+  const placeParts = [
+    e.building != null && String(e.building).trim() ? String(e.building).trim() : null,
+    e.room != null && String(e.room).trim() ? String(e.room).trim() : null
+  ].filter(Boolean);
+  return placeParts.length ? ` (${placeParts.join(", ")})` : "";
+}
 
-  // Group by day+time range (spreadsheet clock = UTC components of the stored Date).
+function durationMs(e: ScheduleEvent) {
+  return e.end.getTime() - e.start.getTime();
+}
+
+/** Inclusive containment: inner start/end lie inside outer start/end. */
+function intervalContains(outer: ScheduleEvent, inner: ScheduleEvent) {
+  return outer.start.getTime() <= inner.start.getTime() && inner.end.getTime() <= outer.end.getTime();
+}
+
+function mergeNirExactSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
+  if (events.length <= 1) return events;
   const groups = new Map<string, ScheduleEvent[]>();
-  for (const ev of finals) {
+  for (const ev of events) {
     const dayKey = dayKeyLocalFromDate(ev.start);
     const key = `${dayKey}|${ev.start.toISOString()}|${ev.end.toISOString()}`;
     const arr = groups.get(key) ?? [];
     arr.push(ev);
     groups.set(key, arr);
   }
-
-  const out: ScheduleEvent[] = [...rest];
+  const out: ScheduleEvent[] = [];
   for (const arr of groups.values()) {
     if (arr.length === 1) {
       out.push(arr[0]!);
       continue;
     }
-
     const first = arr[0]!;
     const lines = arr
       .slice()
       .sort((a, b) => (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9))
-      .map((e) => {
-        const placeParts = [
-          e.building != null && String(e.building).trim() ? String(e.building).trim() : null,
-          e.room != null && String(e.room).trim() ? String(e.room).trim() : null
-        ].filter(Boolean);
-        const place = placeParts.length ? ` (${placeParts.join(", ")})` : "";
-        return `- ${e.title}${place}`;
-      });
-
+      .map((e) => `- ${e.title}${placeSuffix(e)}`);
     out.push({
-      id: `final-nir-${first.start.toISOString()}-${first.end.toISOString()}`,
+      id: parallelGroupCardId("Финал конкурса НИР", first.start, first.end),
       title: "Финал конкурса НИР",
-      // Put original titles as description list, per requested rule.
       description: lines.join("\n"),
       format: undefined,
       building: undefined,
@@ -290,7 +307,83 @@ export function mergeFinalNirSameTime(events: ScheduleEvent[]): ScheduleEvent[] 
       sourceIds: arr.map((e) => e.id)
     } as ScheduleEvent);
   }
+  return out;
+}
 
+/**
+ * Sectionals: merge only when an event's interval is fully inside another event's window.
+ * Nested talks keep their own time in the list. Partial overlap or disjoint slots stay separate.
+ */
+function mergeSectionalContained(events: ScheduleEvent[]): ScheduleEvent[] {
+  if (events.length <= 1) return events;
+  const byDay = new Map<string, ScheduleEvent[]>();
+  for (const ev of events) {
+    const dk = dayKeyLocalFromDate(ev.start);
+    const arr = byDay.get(dk) ?? [];
+    arr.push(ev);
+    byDay.set(dk, arr);
+  }
+  const out: ScheduleEvent[] = [];
+  for (const dayEvents of byDay.values()) {
+    const leftover = [...dayEvents].sort(
+      (a, b) =>
+        durationMs(b) - durationMs(a) ||
+        a.start.getTime() - b.start.getTime() ||
+        (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9)
+    );
+    const used = new Set<string>();
+    for (const host of leftover) {
+      if (used.has(host.id)) continue;
+      const members = leftover.filter((e) => !used.has(e.id) && intervalContains(host, e));
+      if (members.length <= 1) {
+        used.add(host.id);
+        out.push(host);
+        continue;
+      }
+      for (const e of members) used.add(e.id);
+      const winS = host.start.getTime();
+      const winE = host.end.getTime();
+      const lines = members
+        .slice()
+        .sort(
+          (a, b) =>
+            a.start.getTime() - b.start.getTime() || (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9)
+        )
+        .map((e) => {
+          const sameSlot = e.start.getTime() === winS && e.end.getTime() === winE;
+          const time = sameSlot ? "" : ` · ${formatTime(e.start)}–${formatTime(e.end)}`;
+          return `- ${e.title}${placeSuffix(e)}${time}`;
+        });
+      out.push({
+        id: parallelGroupCardId("Секционное заседание", host.start, host.end),
+        title: "Секционное заседание",
+        description: lines.join("\n"),
+        format: undefined,
+        building: undefined,
+        room: undefined,
+        orderNo: Math.min(...members.map((x) => x.orderNo ?? 1e9)),
+        visible: true,
+        start: host.start,
+        end: host.end,
+        sourceIds: members.map((e) => e.id)
+      } as ScheduleEvent);
+    }
+  }
+  return out;
+}
+
+/** Presentation-only: merge parallel NIR finals and nested sectional sessions. */
+export function mergeFinalNirSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
+  const nir: ScheduleEvent[] = [];
+  const sectional: ScheduleEvent[] = [];
+  const rest: ScheduleEvent[] = [];
+  for (const ev of events) {
+    const fmt = groupedFormatName(ev.format);
+    if (fmt === "Финал конкурса НИР") nir.push(ev);
+    else if (fmt === "Секционное заседание") sectional.push(ev);
+    else rest.push(ev);
+  }
+  const out = [...rest, ...mergeNirExactSameTime(nir), ...mergeSectionalContained(sectional)];
   out.sort((a, b) => a.start.getTime() - b.start.getTime());
   return out;
 }

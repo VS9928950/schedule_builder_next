@@ -68,7 +68,7 @@ type TimelineLayout = {
   hidden_day_keys?: string[];
 };
 
-import { layoutDayLanes, mergeFinalNirSameTime, normalizeHttpUrl } from "@/lib/schedule";
+import { layoutDayLanes, mergeFinalNirSameTime, isParallelGroupCardTitle, normalizeHttpUrl } from "@/lib/schedule";
 
 function esc(s: unknown) {
   return String(s ?? "")
@@ -606,7 +606,7 @@ function estimateMinHeightPx(
 
   let descLines = 0;
   const descSrc = String(e.description_md ?? e.description ?? "");
-  if (String(e.title ?? "") === "Финал конкурса НИР" && descSrc) {
+  if (isParallelGroupCardTitle(e.title) && descSrc) {
     descLines = descSrc.split("\n").filter(Boolean).length;
   } else if (descSrc) {
     descLines = Math.max(linesFor(descSrc), descSrc.split("\n").filter(Boolean).length);
@@ -1085,7 +1085,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px !importan
     }
 
     // Build layout like Timeline does (so columns are distributed, not all col=0).
-    // Same NIR-final grouping as Architecture: one card titled «Финал конкурса НИР»
+    // Same grouping as Architecture: NIR finals and sectional sessions become one card
     // with original titles listed in the description.
     const scheduleEvents = mergeFinalNirSameTime(
       dayEvents.map((e) => ({
@@ -1158,7 +1158,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px !importan
         ? Math.max(0, Math.min(cols - 1, Math.floor(it.clusterIndex)))
         : 0;
 
-      const isNirFinal = String(ev.title ?? "") === "Финал конкурса НИР";
+      const isGroupedCard = isParallelGroupCardTitle(ev.title);
       const sMs = startD.getTime();
       const eMs = endD.getTime();
       const sameRangePeers = (dayLayout.items as any[]).filter((x) => {
@@ -1170,7 +1170,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px !importan
       const sameStartAnchorPeers = (dayLayout.items as any[]).filter(
         (x) => utcMinutesSinceDayStart(new Date(x.event.start)) === startMin
       ).length;
-      const autoFullWidth = isNirFinal && sameRangePeers <= 1 && sameStartAnchorPeers <= 1;
+      const autoFullWidth = isGroupedCard && sameRangePeers <= 1 && sameStartAnchorPeers <= 1;
       const isFullWidth = autoFullWidth;
 
       const desiredCol = isFullWidth ? 0 : Math.max(0, Math.min(cols - 1, Math.floor(ov.col ?? colDefault)));

@@ -10,6 +10,8 @@ import {
   layoutDayLanes,
   localDateFromDayKey,
   mergeFinalNirSameTime,
+  isParallelGroupCardTitle,
+  isParallelGroupCardId,
   normalizeHttpUrl
 } from "@/lib/schedule";
 import { renderMarkdownLite } from "@/lib/markdown-lite";
@@ -868,7 +870,7 @@ export function TimelineViewer({
 
     let descLines = 0;
     const descSrc = String(e.description_md ?? e.description ?? "");
-    if (e.title === "Финал конкурса НИР" && descSrc) {
+    if (isParallelGroupCardTitle(e.title) && descSrc) {
       descLines = descSrc.split("\n").filter(Boolean).length;
     } else if (descSrc) {
       descLines = Math.max(linesFor(descSrc), descSrc.split("\n").filter(Boolean).length);
@@ -981,9 +983,9 @@ function parseDayMarkTokens(tokens: string[]) {
           .filter((e) => Number.isFinite(e.start.getTime()) && Number.isFinite(e.end.getTime()) && e.end > e.start)
           .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-        // Presentation-only aggregation for NIR finals (same helper as Tilda export).
+        // Presentation-only aggregation for NIR finals and sectional sessions (same helper as Tilda export).
         return mergeFinalNirSameTime(timed as any).map((e) =>
-          String(e.id).startsWith("final-nir-")
+          isParallelGroupCardId(e.id)
             ? { ...e, kind: "timed" as const, description_md: undefined }
             : e
         );
@@ -1306,10 +1308,8 @@ function parseDayMarkTokens(tokens: string[]) {
             const widthPx = colW;
 
             const ovLayout = (it.event as any).layout_override as { fullWidth?: boolean; stackOthersBelow?: boolean } | undefined;
-            // Auto rule for "Финал конкурса НИР":
-            // - full-width only when it is the only event for that exact time range (same start+end)
-            // - otherwise (peers with same time range exist), keep normal column layout (split the row)
-            const isNirFinal = String((it.event as any).title ?? "") === "Финал конкурса НИР";
+            // Auto full-width for merged NIR / sectional cards when they are alone on that time range.
+            const isGroupedCard = isParallelGroupCardTitle((it.event as any).title);
             const sMs = it.event.start.getTime();
             const eMs = it.event.end.getTime();
             const sameRangePeers = layout.items.filter((x) => x.event.start.getTime() === sMs && x.event.end.getTime() === eMs).length;
@@ -1317,7 +1317,7 @@ function parseDayMarkTokens(tokens: string[]) {
             // do NOT auto full-width — otherwise other cards will be drawn on top of a full-width block.
             const startMin = minutesSinceLocalDayStart(it.event.start);
             const sameStartAnchorPeers = layout.items.filter((x) => minutesSinceLocalDayStart(x.event.start) === startMin).length;
-            const autoFullWidth = isNirFinal && sameRangePeers <= 1 && sameStartAnchorPeers <= 1;
+            const autoFullWidth = isGroupedCard && sameRangePeers <= 1 && sameStartAnchorPeers <= 1;
 
             const isFullWidth = typeof ovLayout?.fullWidth === "boolean" ? ovLayout.fullWidth : autoFullWidth;
             const stackOthersBelow = (ovLayout?.stackOthersBelow ?? true) && isFullWidth;
@@ -1468,9 +1468,9 @@ function parseDayMarkTokens(tokens: string[]) {
           for (let i = 0; i < anchorHeights.length; i++) {
             const row = boxesAligned.filter((b) => b.anchorIdx === i);
             if (!row.length) continue;
-            const hasNirFinal = row.some((b) => String((b.it.event as any)?.title ?? "") === "Финал конкурса НИР");
+            const hasGroupedCard = row.some((b) => isParallelGroupCardTitle((b.it.event as any)?.title));
             const hasStackingFull = row.some((b) => b.isFullWidth && b.stackOthersBelow);
-            if (!hasNirFinal && !hasStackingFull) continue;
+            if (!hasGroupedCard && !hasStackingFull) continue;
             // Do not expand the row just because of food blocks.
             const rowForSizing = row.some((b) => !b.isFood) ? row.filter((b) => !b.isFood) : row;
             const full = rowForSizing.filter((b) => b.isFullWidth);
