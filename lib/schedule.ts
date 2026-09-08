@@ -224,6 +224,19 @@ export function parseScheduleFromExcelRows(rows: unknown[]): ScheduleEvent[] {
   return normalizeTimedEvents(events);
 }
 
+/** Events with this format belong on Tech Schedule only, not Architecture. */
+export const TECH_SCHEDULE_ONLY_FORMAT = "Техническое обеспечение";
+
+export function isTechScheduleOnlyFormat(format?: unknown): boolean {
+  return String(format ?? "").trim() === TECH_SCHEDULE_ONLY_FORMAT;
+}
+
+/** Architecture / public-program export views (`timeline` or empty). */
+export function isArchitectureProgramView(view?: string | null): boolean {
+  const v = String(view ?? "").trim();
+  return v === "" || v === "timeline" || v === "architecture";
+}
+
 const PARALLEL_GROUP_FORMATS = ["Финал конкурса НИР", "Секционное заседание"] as const;
 
 function groupedFormatName(format?: string): string | null {

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getSessionUser } from "@/lib/session";
 import { getProject } from "@/lib/store";
 import { redirect } from "next/navigation";
-import { parseScheduleAllFromExcelRows, collectSortedProgramDayKeysFromIso } from "@/lib/schedule";
+import { parseScheduleAllFromExcelRows, collectSortedProgramDayKeysFromIso, isArchitectureProgramView, isTechScheduleOnlyFormat } from "@/lib/schedule";
 import { rowsFromProjectExcelJson } from "@/lib/excel";
 import { PrintWorkspaceClient } from "./PrintWorkspaceClient";
 
@@ -31,7 +31,9 @@ function applyExportViewFilter(events: any[], view: string): any[] {
   if (view === "rooms") {
     return events.filter((e) => (e.visible ?? true) && String(e.room ?? "").trim() !== "");
   }
-  return events.filter((e) => e.visible ?? true);
+  return events.filter(
+    (e) => (e.visible ?? true) && !(isArchitectureProgramView(view) && isTechScheduleOnlyFormat(e.format))
+  );
 }
 
 export default async function ExportPrintTab({

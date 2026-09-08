@@ -68,7 +68,14 @@ type TimelineLayout = {
   hidden_day_keys?: string[];
 };
 
-import { layoutDayLanes, mergeFinalNirSameTime, isParallelGroupCardTitle, normalizeHttpUrl } from "@/lib/schedule";
+import {
+  layoutDayLanes,
+  mergeFinalNirSameTime,
+  isParallelGroupCardTitle,
+  isArchitectureProgramView,
+  isTechScheduleOnlyFormat,
+  normalizeHttpUrl
+} from "@/lib/schedule";
 
 function esc(s: unknown) {
   return String(s ?? "")
@@ -424,7 +431,9 @@ function applyExportViewFilter(events: IsoEvent[], view?: string | null): IsoEve
     );
   }
   if (view === "rooms") return events.filter((e) => (e.visible ?? true) && normToken(e.room));
-  return events.filter((e) => e.visible ?? true);
+  return events.filter(
+    (e) => (e.visible ?? true) && !(isArchitectureProgramView(view) && isTechScheduleOnlyFormat(e.format))
+  );
 }
 
 function roomKeyFrom(building: unknown, room: unknown): string {

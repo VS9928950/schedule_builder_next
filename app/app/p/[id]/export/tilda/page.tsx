@@ -1,7 +1,7 @@
 import { getSessionUser } from "@/lib/session";
 import { getProject } from "@/lib/store";
 import { rowsFromProjectExcelJson } from "@/lib/excel";
-import { collectSortedProgramDayKeysFromIso, parseScheduleAllFromExcelRows } from "@/lib/schedule";
+import { collectSortedProgramDayKeysFromIso, isArchitectureProgramView, isTechScheduleOnlyFormat, parseScheduleAllFromExcelRows } from "@/lib/schedule";
 import { redirect } from "next/navigation";
 import { TildaSnippetClient } from "./TildaSnippetClient";
 
@@ -45,7 +45,9 @@ function applyExportViewFilter(events: any[], view: string): any[] {
   if (view === "rooms") {
     return events.filter((e) => (e.visible ?? true) && String(e.room ?? "").trim() !== "");
   }
-  return events.filter((e) => e.visible ?? true);
+  return events.filter(
+    (e) => (e.visible ?? true) && !(isArchitectureProgramView(view) && isTechScheduleOnlyFormat(e.format))
+  );
 }
 
 export default async function ExportTildaTab({

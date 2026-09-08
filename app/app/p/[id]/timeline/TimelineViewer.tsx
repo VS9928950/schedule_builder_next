@@ -12,6 +12,7 @@ import {
   mergeFinalNirSameTime,
   isParallelGroupCardTitle,
   isParallelGroupCardId,
+  isTechScheduleOnlyFormat,
   normalizeHttpUrl
 } from "@/lib/schedule";
 import { renderMarkdownLite } from "@/lib/markdown-lite";
@@ -974,7 +975,14 @@ function parseDayMarkTokens(tokens: string[]) {
     () =>
       (() => {
         const timed = events
-          .filter((e) => (e.visible ?? true) && (e.kind ?? "timed") === "timed" && !!e.start && !!e.end)
+          .filter(
+            (e) =>
+              (e.visible ?? true) &&
+              (showExtraFields || !isTechScheduleOnlyFormat(e.format)) &&
+              (e.kind ?? "timed") === "timed" &&
+              !!e.start &&
+              !!e.end
+          )
           .map((e) => ({
             ...e,
             start: new Date(e.start!),
@@ -990,13 +998,14 @@ function parseDayMarkTokens(tokens: string[]) {
             : e
         );
       })(),
-    [events]
+    [events, showExtraFields]
   );
 
   const untimedByDay = useMemo(() => {
     const map = new Map<string, IsoEvent[]>();
     for (const e of events) {
       if (!(e.visible ?? true) || (e.kind ?? "timed") !== "untimed" || !e.day) continue;
+      if (!showExtraFields && isTechScheduleOnlyFormat(e.format)) continue;
       const key = e.day.slice(0, 10);
       const arr = map.get(key) ?? [];
       arr.push(e);
@@ -1007,7 +1016,7 @@ function parseDayMarkTokens(tokens: string[]) {
       map.set(k, arr);
     }
     return map;
-  }, [events]);
+  }, [events, showExtraFields]);
 
   const hiddenDaySet = useMemo(
     () =>
