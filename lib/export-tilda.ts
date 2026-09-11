@@ -79,6 +79,7 @@ import {
   shouldShowDescription,
   highlightPlaceInLine,
   groupedCardIntro,
+  formatPlaceLabel,
   normalizeHttpUrl
 } from "@/lib/schedule";
 
@@ -417,11 +418,7 @@ function formatTimeRange(start: Date, end: Date) {
 }
 
 function placeLabel(building?: unknown, room?: unknown) {
-  const clean = (v: unknown) => {
-    const s = v != null ? String(v).trim() : "";
-    return !s || s === "-" ? "" : s;
-  };
-  return [clean(building), clean(room)].filter(Boolean).join(", ");
+  return formatPlaceLabel(building, room);
 }
 
 function renderHighlightedLineHtml(line: string) {
@@ -641,7 +638,7 @@ function listEventDetails(raw: IsoEvent, view: "responsibles" | "vks" | "broadca
   const lines: string[] = [];
   const fmt = normToken(raw.format);
   if (fmt) lines.push(`Формат: ${fmt}`);
-  const place = [normToken(raw.building), normToken(raw.room)].filter(Boolean).join(" · ");
+  const place = formatPlaceLabel(raw.building, raw.room);
   if (place) lines.push(`Место: ${place}`);
   if (view === "vks") lines.push("ВКС: Да");
   if (view === "broadcasts") lines.push("Трансляция: Да");

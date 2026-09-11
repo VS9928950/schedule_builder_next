@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { applyPrintTimelineScale, clearPrintTimelineScale } from "@/lib/print-timeline-scale";
-import { formatDayFull, localDateFromDayKey } from "@/lib/schedule";
+import { formatDayFull, formatPlaceLabel, localDateFromDayKey } from "@/lib/schedule";
 import { TimelineViewer } from "../../timeline/TimelineViewer";
 import { PrintButton } from "./PrintButton";
 
@@ -258,7 +258,7 @@ function listEventDetails(raw: IsoEv, view: ListExportView): string[] {
   const lines: string[] = [];
   const format = normToken(raw.format);
   if (format) lines.push(`Формат: ${format}`);
-  const place = [normToken(raw.building), normToken(raw.room)].filter(Boolean).join(" · ");
+  const place = formatPlaceLabel(raw.building, raw.room);
   if (place) lines.push(`Место: ${place}`);
   if (view === "vks") lines.push("ВКС: Да");
   if (view === "broadcasts") lines.push("Трансляция: Да");

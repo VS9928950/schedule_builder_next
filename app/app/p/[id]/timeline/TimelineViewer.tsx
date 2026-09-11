@@ -19,6 +19,7 @@ import {
   shouldShowFormat,
   shouldShowDescription,
   highlightPlaceInLine,
+  formatPlaceLabel,
   migrateLegacyStyleColor,
   migrateLegacyStyleNum,
   normalizeHttpUrl
@@ -2708,8 +2709,7 @@ function parseDayMarkTokens(tokens: string[]) {
                           <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
                             {[
                               shouldShowFormat(e.format) ? String(e.format).trim() : null,
-                              e.building ? String(e.building).trim() : null,
-                              e.room ? String(e.room).trim() : null
+                              formatPlaceLabel(e.building, e.room) || null
                             ]
                               .filter(Boolean)
                               .join(" · ")}
@@ -2800,9 +2800,7 @@ function parseDayMarkTokens(tokens: string[]) {
                         const rawFormat = it.event.format ?? "";
                         const format = shouldShowFormat(rawFormat) ? String(rawFormat).trim() : "";
                         const time = formatTimeRange(it.event.start, it.event.end);
-                        const place = [it.event.building ? String(it.event.building).trim() : null, it.event.room ? String(it.event.room).trim() : null]
-                          .filter(Boolean)
-                          .join(", ");
+                        const place = formatPlaceLabel(it.event.building, it.event.room);
                         const tooltip = [time, format || null, place || null].filter(Boolean).join(" · ");
                         const ov = (it.event as any).style_override as
                           | { eventBgColor?: string; eventBgAlpha?: number; eventBorderColor?: string; eventBorderAlpha?: number }
@@ -3093,7 +3091,7 @@ function parseDayMarkTokens(tokens: string[]) {
                         <div key={`ev-${e.id}`} className="card" style={{ padding: 10 }}>
                           <div style={{ fontWeight: 800 }}>{e.title}</div>
                           <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                            {[e.building ? String(e.building).trim() : null, e.room ? String(e.room).trim() : null].filter(Boolean).join(" · ")}
+                            {formatPlaceLabel(e.building, e.room)}
                           </div>
                           {showExtraFields && extraFieldLines(e).length ? (
                             <div style={{ marginTop: 6 }}>

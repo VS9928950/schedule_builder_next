@@ -299,12 +299,33 @@ function normalizeTimedEvents(events: ScheduleEvent[]): ScheduleEvent[] {
   return out;
 }
 
+function blankPlaceToken(v: unknown): string {
+  const s = v == null ? "" : String(v).trim();
+  return !s || s === "-" ? "" : s;
+}
+
+/** True when the cell is a room number (Excel number or numeric text), not a place name. */
+function isBareRoomNumber(s: string): boolean {
+  const compact = s.replace(/\s+/g, "");
+  return /^\d+[а-яёa-z]{0,2}$/i.test(compact);
+}
+
+/** Prefix `ауд.` only when the room is a bare number and not already a written place. */
+export function formatRoomLabel(room?: unknown): string {
+  const raw = blankPlaceToken(room);
+  if (!raw) return "";
+  if (/^ауд(?:итор(?:ия)?)?\.?\s*/i.test(raw)) return raw.replace(/\s+/g, " ").trim();
+  if (isBareRoomNumber(raw)) return `ауд. ${raw.replace(/\s+/g, "")}`;
+  return raw;
+}
+
+export function formatPlaceLabel(building?: unknown, room?: unknown): string {
+  return [blankPlaceToken(building), formatRoomLabel(room)].filter(Boolean).join(", ");
+}
+
 function placeSuffix(e: ScheduleEvent) {
-  const placeParts = [
-    e.building != null && String(e.building).trim() ? String(e.building).trim() : null,
-    e.room != null && String(e.room).trim() ? String(e.room).trim() : null
-  ].filter(Boolean);
-  return placeParts.length ? ` (${placeParts.join(", ")})` : "";
+  const place = formatPlaceLabel(e.building, e.room);
+  return place ? ` (${place})` : "";
 }
 
 export type PlaceHighlightPart = { kind: "text" | "place"; text: string };
