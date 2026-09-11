@@ -872,7 +872,7 @@ export function TimelineViewer({
     const placeLines = e.building || e.room ? 1 : 0;
 
     let descLines = 0;
-    const descSrc = String(e.description_md ?? e.description ?? "");
+    const descSrc = shouldShowDescription(e.format) ? String(e.description_md ?? e.description ?? "") : "";
     if (isParallelGroupCardTitle(e.title) && descSrc) {
       descLines = descSrc.split("\n").filter(Boolean).length;
       if (groupedCardIntro(e.id)) descLines += 1;
@@ -1494,14 +1494,18 @@ function parseDayMarkTokens(tokens: string[]) {
 
           // Row height follows the card, including description — otherwise the board
           // clips the bottom of the last events (overflow-y: hidden on .lanes).
-          for (let i = 0; i < anchorHeights.length; i++) {
-            const row = boxesAligned.filter((b: any) => b.anchorIdx === i);
-            if (!row.length) continue;
-            const rowForSizing = row.some((b: any) => !b.isFood) ? row.filter((b: any) => !b.isFood) : row;
-            const maxNeed = Math.max(
-              ...rowForSizing.map((b: any) => Number(b.height) || Number(b.minNoDescH) || 0)
-            );
-            anchorHeights[i] = Math.max(anchorHeights[i] ?? 0, maxNeed + ANCHOR_PAD_PX);
+          for (const b of boxesAligned as any[]) {
+            if ((b as any).hidden) continue;
+            const span = Math.max(1, Math.floor(Number(b.rowSpan) || 1));
+            const h = Number(b.height) || Number(b.minNoDescH) || 0;
+            if (b.isFood && (boxesAligned as any[]).some((x) => x.anchorIdx === b.anchorIdx && !x.isFood)) continue;
+            const share = (span > 1 ? h / span : h) + ANCHOR_PAD_PX;
+            const start = Math.max(0, Number(b.anchorIdx) || 0);
+            for (let k = 0; k < span; k++) {
+              const idx = start + k;
+              if (idx >= anchorHeights.length) break;
+              anchorHeights[idx] = Math.max(anchorHeights[idx] ?? 0, share);
+            }
           }
 
           // Apply manual overrides (detached/presentation adjustments).
@@ -1518,6 +1522,8 @@ function parseDayMarkTokens(tokens: string[]) {
 
           const GAP_PX = 10;
           for (let i = 0; i < anchorHeights.length; i++) {
+            const manualH = dayRowHeights?.[anchors[i] ?? ""];
+            if (typeof manualH === "number" && Number.isFinite(manualH) && manualH > 0) continue;
             const row = boxesAligned.filter((b) => b.anchorIdx === i);
             if (!row.length) continue;
             const hasGroupedCard = row.some((b) => isParallelGroupCardTitle((b.it.event as any)?.title));
@@ -1527,8 +1533,13 @@ function parseDayMarkTokens(tokens: string[]) {
             const rowForSizing = row.some((b) => !b.isFood) ? row.filter((b) => !b.isFood) : row;
             const full = rowForSizing.filter((b) => b.isFullWidth);
             const others = rowForSizing.filter((b) => !b.isFullWidth);
-            const fullStack = full.length ? full.reduce((sum, b) => sum + b.height, 0) + GAP_PX * Math.max(0, full.length - 1) : 0;
-            const othersMax = others.length ? Math.max(...others.map((b) => b.height)) : 0;
+            const rowShare = (b: any) => {
+              const span = Math.max(1, Math.floor(Number(b.rowSpan) || 1));
+              const h = Number(b.height) || 0;
+              return span > 1 ? h / span : h;
+            };
+            const fullStack = full.length ? full.reduce((sum, b) => sum + rowShare(b), 0) + GAP_PX * Math.max(0, full.length - 1) : 0;
+            const othersMax = others.length ? Math.max(...others.map((b) => rowShare(b))) : 0;
             const anyStackingFull = full.some((b) => b.stackOthersBelow);
             const needed =
               anyStackingFull && fullStack
@@ -2737,13 +2748,8 @@ function parseDayMarkTokens(tokens: string[]) {
 
                   <div ref={lanesRef} className="lanes" style={{ height: heightWithInset }}>
                     <div className="lanesInner" style={{ height: heightWithInset, width: gridMinWidth + INSET_X }}>
-                      {anchors.map((label, i) => {
+                      {anchors.map((label) => {
                         const top = yForLabel(label);
-                        // Dragging the boundary at this line adjusts the row ABOVE it (like a spreadsheet),
-                        // i.e. the row that starts at anchors[i-1].
-                        const targetIdx = Math.max(0, i - 1);
-                        const targetLabel = anchors[targetIdx] ?? label;
-                        const h = anchorHeights[targetIdx] ?? 0;
                         return (
                           <div
                             key={label}
@@ -2757,27 +2763,6 @@ function parseDayMarkTokens(tokens: string[]) {
                             }}
                           >
                             <div className="laneGridLine" style={{ top: top + INSET_Y, left: INSET_X, width: gridMinWidth }} />
-                            {layoutEdit && i > 0 ? (
-                              <div
-                                role="separator"
-                                aria-label={`resize-row-${targetLabel}`}
-                                onMouseDown={beginRowDrag(targetLabel, h)}
-                                title="Тяните вверх/вниз, чтобы изменить высоту строки (шаг 10px)"
-                                style={{
-                                  position: "absolute",
-                                  left: INSET_X,
-                                  top: top + INSET_Y - 8,
-                                  width: gridMinWidth,
-                                  height: 16,
-                                  cursor: "row-resize",
-                                  zIndex: 5,
-                                  pointerEvents: "auto",
-                                  background: "rgba(37, 99, 235, 0.08)",
-                                  borderTop: "1px solid rgba(37, 99, 235, 0.35)",
-                                  borderBottom: "1px solid rgba(37, 99, 235, 0.15)"
-                                }}
-                              />
-                            ) : null}
                           </div>
                         );
                       })}
@@ -2807,7 +2792,10 @@ function parseDayMarkTokens(tokens: string[]) {
                           typeof rowSpan === "number" && rowSpan > 1
                             ? anchorHeights.slice(anchorIdx, anchorIdx + rowSpan).reduce((a, x) => a + (x ?? 0), 0)
                             : null;
-                        const heightRender = spanH != null && Number.isFinite(spanH) ? Math.max(height, spanH - 4) : height;
+                        // Spanned tiles follow the rows, otherwise the card stays content-tall and
+                        // swallows the first-row resize handle (and row-height edits look like a no-op).
+                        const heightRender =
+                          spanH != null && Number.isFinite(spanH) ? Math.max(30, spanH - 4) : height;
                         const isTiny = height < 54;
                         const rawFormat = it.event.format ?? "";
                         const format = shouldShowFormat(rawFormat) ? String(rawFormat).trim() : "";
@@ -2855,6 +2843,8 @@ function parseDayMarkTokens(tokens: string[]) {
                             style={{
                               top: top + extraTop,
                               height: heightRender,
+                              zIndex: 1,
+                              pointerEvents: "auto",
                               left: isFullWidth ? INSET_X : INSET_X + leftPx + GUTTER_PX / 2,
                               width: isFullWidth
                                 ? Math.max(10, gridMinWidth - GUTTER_PX)
@@ -3036,6 +3026,37 @@ function parseDayMarkTokens(tokens: string[]) {
                           </div>
                         );
                       })}
+                      {layoutEdit
+                        ? anchors.map((label, i) => {
+                            if (i === 0) return null;
+                            const top = yForLabel(label);
+                            const targetIdx = i - 1;
+                            const targetLabel = anchors[targetIdx] ?? label;
+                            const h = anchorHeights[targetIdx] ?? 0;
+                            return (
+                              <div
+                                key={`row-resize-${label}`}
+                                role="separator"
+                                aria-label={`resize-row-${targetLabel}`}
+                                onMouseDown={beginRowDrag(targetLabel, h)}
+                                title="Тяните вверх/вниз, чтобы изменить высоту строки (шаг 10px)"
+                                style={{
+                                  position: "absolute",
+                                  left: INSET_X,
+                                  top: top + INSET_Y - 8,
+                                  width: gridMinWidth,
+                                  height: 16,
+                                  cursor: "row-resize",
+                                  zIndex: 8,
+                                  pointerEvents: "auto",
+                                  background: "rgba(37, 99, 235, 0.08)",
+                                  borderTop: "1px solid rgba(37, 99, 235, 0.35)",
+                                  borderBottom: "1px solid rgba(37, 99, 235, 0.15)"
+                                }}
+                              />
+                            );
+                          })
+                        : null}
                     </div>
                   </div>
                 </div>

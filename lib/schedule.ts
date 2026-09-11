@@ -738,12 +738,13 @@ export function migrateLegacyStyleNum(v: unknown, legacy: number, next: number):
 export function shouldShowFormat(fmt: unknown): boolean {
   const s = fmt == null ? "" : String(fmt).trim();
   if (!s) return false;
-  return s !== "Питание" && s !== "Регистрация";
+  return s !== "Питание" && s !== "Регистрация" && s !== "Встреча по приглашениям";
 }
 
-/** Food cards show time/title/place only — no description body. */
+/** Food and registration cards show time/title/place only — no description body. */
 export function shouldShowDescription(fmt: unknown): boolean {
-  return String(fmt ?? "").trim() !== "Питание";
+  const s = String(fmt ?? "").trim();
+  return s !== "Питание" && s !== "Регистрация";
 }
 
 export type ProgramCardTone = "accent" | "service" | "default";
