@@ -762,10 +762,10 @@ export function shouldShowFormat(fmt: unknown): boolean {
   return s !== "Питание" && s !== "Регистрация" && s !== "Встреча по приглашениям";
 }
 
-/** Food and registration cards show time/title/place only — no description body. */
+/** Food, registration, and invitation meetings show time/title/place only. */
 export function shouldShowDescription(fmt: unknown): boolean {
   const s = String(fmt ?? "").trim();
-  return s !== "Питание" && s !== "Регистрация";
+  return s !== "Питание" && s !== "Регистрация" && s !== "Встреча по приглашениям";
 }
 
 export type ProgramCardTone = "accent" | "service" | "default";

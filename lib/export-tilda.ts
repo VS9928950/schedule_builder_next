@@ -1053,19 +1053,26 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     startD: Date;
     endD: Date;
     col: number;
+    colSpan: number;
+    slotMin: number;
     hidden: boolean;
   };
 
+  function slotMinutes(startD: Date, ov: EventLayoutOverride): number {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(ov.anchor ?? "").trim());
+    if (m) return Number(m[1]) * 60 + Number(m[2]);
+    return startD.getUTCHours() * 60 + startD.getUTCMinutes();
+  }
+
   function slotsFromBoxes(boxes: ProgramBox[]): ProgramBox[][][] {
     const visible = boxes.filter((b) => !b.hidden);
-    const byStart = new Map<number, ProgramBox[]>();
+    const bySlot = new Map<number, ProgramBox[]>();
     for (const box of visible) {
-      const t = box.startD.getTime();
-      const arr = byStart.get(t) ?? [];
+      const arr = bySlot.get(box.slotMin) ?? [];
       arr.push(box);
-      byStart.set(t, arr);
+      bySlot.set(box.slotMin, arr);
     }
-    return Array.from(byStart.entries())
+    return Array.from(bySlot.entries())
       .sort((a, b) => a[0] - b[0])
       .map(([, group]) => {
         const byCol = new Map<number, ProgramBox[]>();
@@ -1153,11 +1160,15 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
       const cluster = Math.max(0, Math.floor(Number.isFinite(it.clusterIndex) ? it.clusterIndex : 0));
       const col =
         typeof ov.col === "number" && Number.isFinite(ov.col) ? Math.max(0, Math.floor(ov.col)) : cluster;
+      const colSpan =
+        typeof ov.colSpan === "number" && Number.isFinite(ov.colSpan) ? Math.max(1, Math.floor(ov.colSpan)) : 1;
       return {
         ev,
         startD: new Date(ev.start),
         endD: new Date(ev.end),
         col,
+        colSpan,
+        slotMin: slotMinutes(new Date(ev.start), ov),
         hidden: !!ov.hidden
       };
     });
@@ -1172,7 +1183,8 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
         const so = (first.ev.style_override ?? {}) as any;
         const bg =
           (so.eventBgColor ? rgbaFrom(String(so.eventBgColor), Number(so.eventBgAlpha ?? 1)) : null) ?? PROGRAM_CARD_BG[tone];
-        html += `<div class="sb-tile sb-tile--${esc(tone)}" style="background:${esc(bg)}">\n`;
+        const span = Math.max(1, ...col.map((b) => b.colSpan || 1));
+        html += `<div class="sb-tile sb-tile--${esc(tone)}" style="background:${esc(bg)};flex:${span} 1 0">\n`;
         for (const box of col) {
           html += renderSession(box.ev, box.startD, box.endD);
         }
