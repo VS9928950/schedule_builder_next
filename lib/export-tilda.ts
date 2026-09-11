@@ -1054,6 +1054,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     endD: Date;
     col: number;
     colSpan: number;
+    rowSpan: number;
     slotMin: number;
     hidden: boolean;
   };
@@ -1072,19 +1073,29 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
       arr.push(box);
       bySlot.set(box.slotMin, arr);
     }
+    const slotMins = Array.from(bySlot.keys()).sort((a, b) => a - b);
+    for (const box of visible.filter((b) => b.rowSpan > 1).sort((a, b) => b.rowSpan - a.rowSpan)) {
+      const startIdx = slotMins.indexOf(box.slotMin);
+      if (startIdx < 0) continue;
+      for (let k = 1; k < box.rowSpan; k++) {
+        const later = slotMins[startIdx + k];
+        if (later == null) break;
+        const moving = bySlot.get(later);
+        if (!moving?.length) continue;
+        const dest = bySlot.get(box.slotMin) ?? [];
+        dest.push(...moving);
+        bySlot.set(box.slotMin, dest);
+        bySlot.delete(later);
+      }
+    }
     return Array.from(bySlot.entries())
       .sort((a, b) => a[0] - b[0])
-      .map(([, group]) => {
-        const byCol = new Map<number, ProgramBox[]>();
-        for (const g of group.sort((a, b) => a.col - b.col)) {
-          const arr = byCol.get(g.col) ?? [];
-          arr.push(g);
-          byCol.set(g.col, arr);
-        }
-        return Array.from(byCol.entries())
-          .sort((a, b) => a[0] - b[0])
-          .map(([, list]) => list);
-      });
+      .map(([, group]) =>
+        group
+          .slice()
+          .sort((a, b) => a.col - b.col || a.startD.getTime() - b.startD.getTime())
+          .map((box) => [box])
+      );
   }
 
   function renderSession(ev: any, startD: Date, endD: Date) {
@@ -1162,12 +1173,15 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
         typeof ov.col === "number" && Number.isFinite(ov.col) ? Math.max(0, Math.floor(ov.col)) : cluster;
       const colSpan =
         typeof ov.colSpan === "number" && Number.isFinite(ov.colSpan) ? Math.max(1, Math.floor(ov.colSpan)) : 1;
+      const rowSpan =
+        typeof ov.rowSpan === "number" && Number.isFinite(ov.rowSpan) ? Math.max(1, Math.floor(ov.rowSpan)) : 1;
       return {
         ev,
         startD: new Date(ev.start),
         endD: new Date(ev.end),
         col,
         colSpan,
+        rowSpan,
         slotMin: slotMinutes(new Date(ev.start), ov),
         hidden: !!ov.hidden
       };

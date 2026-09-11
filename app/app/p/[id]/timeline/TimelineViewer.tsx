@@ -2964,6 +2964,7 @@ function parseDayMarkTokens(tokens: string[]) {
                                   right: 0,
                                   bottom: 0,
                                   height: 10,
+                                  zIndex: 12,
                                   cursor: "ns-resize",
                                   background: "rgba(37,99,235,0.06)"
                                 }}
@@ -2987,6 +2988,7 @@ function parseDayMarkTokens(tokens: string[]) {
                                   bottom: 0,
                                   width: 14,
                                   height: 14,
+                                  zIndex: 13,
                                   cursor: "nwse-resize",
                                   background: "rgba(37,99,235,0.12)",
                                   borderLeft: "1px solid rgba(37,99,235,0.25)",
@@ -3012,6 +3014,7 @@ function parseDayMarkTokens(tokens: string[]) {
                                   right: 0,
                                   width: 14,
                                   height: 34,
+                                  zIndex: 12,
                                   transform: "translateY(-50%)",
                                   cursor: "ew-resize",
                                   background: "rgba(37,99,235,0.10)",
