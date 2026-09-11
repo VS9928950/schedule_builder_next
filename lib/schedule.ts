@@ -669,6 +669,53 @@ export function formatTime(d: Date): string {
   return `${hh}:${mm}`;
 }
 
+/** Public program range, e.g. `10:00 – 11:45`. */
+export function formatTimeRange(start: Date, end: Date): string {
+  return `${formatTime(start)} – ${formatTime(end)}`;
+}
+
+export function migrateLegacyStyleColor(v: unknown, legacy: string, next: string): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const s = v.trim();
+  if (!s || s.toLowerCase() === legacy.toLowerCase()) return next;
+  return s;
+}
+
+export function migrateLegacyStyleNum(v: unknown, legacy: number, next: number): number | undefined {
+  if (typeof v !== "number" || !Number.isFinite(v)) return undefined;
+  return v === legacy ? next : v;
+}
+
+export type ProgramCardTone = "accent" | "service" | "default";
+
+export const PROGRAM_CARD_BG: Record<ProgramCardTone, string> = {
+  accent: "#FFECF1",
+  service: "#E7DBEE",
+  default: "#EFF2FB"
+};
+
+/** Pink = NIR / sections, lilac = breaks, pale blue = everything else (sfy-conf.ru program). */
+export function programCardTone(ev: { format?: unknown; title?: unknown }): ProgramCardTone {
+  const format = String(ev.format ?? "").trim();
+  const title = String(ev.title ?? "").trim();
+  if (
+    format === "Финал конкурса НИР" ||
+    format === "Секционное заседание" ||
+    title === "Финал конкурса НИР" ||
+    /заседани[ея] по секциям/i.test(format) ||
+    /заседани[ея] по секциям/i.test(title)
+  ) {
+    return "accent";
+  }
+  if (
+    format === "Питание" ||
+    /^(регистрация|кофе|кофе-брейк|обед)\b/i.test(title)
+  ) {
+    return "service";
+  }
+  return "default";
+}
+
 export function formatDay(d: Date): string {
   return d.toLocaleDateString("ru-RU", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" });
 }

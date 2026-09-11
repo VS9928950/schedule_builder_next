@@ -6,13 +6,17 @@ import {
   collectSortedProgramDayKeys,
   dayKeyLocalFromDate,
   formatDayFull,
-  formatTime,
   layoutDayLanes,
   localDateFromDayKey,
   mergeFinalNirSameTime,
   isParallelGroupCardTitle,
   isParallelGroupCardId,
   isTechScheduleOnlyFormat,
+  formatTimeRange,
+  programCardTone,
+  PROGRAM_CARD_BG,
+  migrateLegacyStyleColor,
+  migrateLegacyStyleNum,
   normalizeHttpUrl
 } from "@/lib/schedule";
 import { renderMarkdownLite } from "@/lib/markdown-lite";
@@ -238,27 +242,27 @@ export function TimelineViewer({
     eventLinkTarget: "_blank" | "_self";
   }>({
     eveningProgramTitle: "Вечерняя программа",
-    titleFontPx: 13,
-    timeFontPx: 11,
-    formatFontPx: 11,
-    placeFontPx: 11,
-    descFontPx: 12,
+    titleFontPx: 20,
+    timeFontPx: 16,
+    formatFontPx: 15,
+    placeFontPx: 16,
+    descFontPx: 15,
 
-    titleWeight: 700,
+    titleWeight: 600,
     titleItalic: false,
-    titleColor: "#0f172a",
-    timeWeight: 400,
+    titleColor: "#041A59",
+    timeWeight: 600,
     timeItalic: false,
-    timeColor: "#64748b",
+    timeColor: "#CA0734",
     formatWeight: 400,
     formatItalic: false,
-    formatColor: "#64748b",
-    placeWeight: 400,
+    formatColor: "#000000",
+    placeWeight: 600,
     placeItalic: false,
-    placeColor: "#64748b",
+    placeColor: "#51226B",
     descWeight: 400,
     descItalic: false,
-    descColor: "#0f172a",
+    descColor: "#000000",
     teamLeadFontPx: 11,
     teamLeadColor: "#475569",
     teamLeadWeight: 500,
@@ -287,12 +291,12 @@ export function TimelineViewer({
     markColor: "#64748b",
     markLineColor: "#cbd5e1",
 
-    eventBgColor: "#60a5fa",
-    eventBgAlpha: 0.1,
-    eventBorderColor: "#ffffff",
-    eventBorderAlpha: 0.14,
-    fieldBgColor: "#0f172a",
-    fieldBgAlpha: 0.02,
+    eventBgColor: "#EFF2FB",
+    eventBgAlpha: 1,
+    eventBorderColor: "#EFF2FB",
+    eventBorderAlpha: 0,
+    fieldBgColor: "#ffffff",
+    fieldBgAlpha: 0,
 
     eventLinkTarget: "_blank"
   });
@@ -491,27 +495,27 @@ export function TimelineViewer({
         typeof initialStyle.eveningProgramTitle === "string" && initialStyle.eveningProgramTitle.trim()
           ? initialStyle.eveningProgramTitle.trim()
           : prev.eveningProgramTitle,
-      titleFontPx: typeof initialStyle.titleFontPx === "number" ? initialStyle.titleFontPx : prev.titleFontPx,
-      timeFontPx: typeof initialStyle.timeFontPx === "number" ? initialStyle.timeFontPx : prev.timeFontPx,
-      formatFontPx: typeof initialStyle.formatFontPx === "number" ? initialStyle.formatFontPx : prev.formatFontPx,
-      placeFontPx: typeof initialStyle.placeFontPx === "number" ? initialStyle.placeFontPx : prev.placeFontPx,
-      descFontPx: typeof initialStyle.descFontPx === "number" ? initialStyle.descFontPx : prev.descFontPx,
+      titleFontPx: migrateLegacyStyleNum(initialStyle.titleFontPx, 13, 20) ?? prev.titleFontPx,
+      timeFontPx: migrateLegacyStyleNum(initialStyle.timeFontPx, 11, 16) ?? prev.timeFontPx,
+      formatFontPx: migrateLegacyStyleNum(initialStyle.formatFontPx, 11, 15) ?? prev.formatFontPx,
+      placeFontPx: migrateLegacyStyleNum(initialStyle.placeFontPx, 11, 16) ?? prev.placeFontPx,
+      descFontPx: migrateLegacyStyleNum(initialStyle.descFontPx, 12, 15) ?? prev.descFontPx,
 
-      titleWeight: typeof initialStyle.titleWeight === "number" ? initialStyle.titleWeight : prev.titleWeight,
+      titleWeight: migrateLegacyStyleNum(initialStyle.titleWeight, 700, 600) ?? prev.titleWeight,
       titleItalic: typeof initialStyle.titleItalic === "boolean" ? initialStyle.titleItalic : prev.titleItalic,
-      titleColor: typeof initialStyle.titleColor === "string" ? initialStyle.titleColor : prev.titleColor,
-      timeWeight: typeof initialStyle.timeWeight === "number" ? initialStyle.timeWeight : prev.timeWeight,
+      titleColor: migrateLegacyStyleColor(initialStyle.titleColor, "#0f172a", "#041A59") ?? prev.titleColor,
+      timeWeight: migrateLegacyStyleNum(initialStyle.timeWeight, 400, 600) ?? prev.timeWeight,
       timeItalic: typeof initialStyle.timeItalic === "boolean" ? initialStyle.timeItalic : prev.timeItalic,
-      timeColor: typeof initialStyle.timeColor === "string" ? initialStyle.timeColor : prev.timeColor,
+      timeColor: migrateLegacyStyleColor(initialStyle.timeColor, "#64748b", "#CA0734") ?? prev.timeColor,
       formatWeight: typeof initialStyle.formatWeight === "number" ? initialStyle.formatWeight : prev.formatWeight,
       formatItalic: typeof initialStyle.formatItalic === "boolean" ? initialStyle.formatItalic : prev.formatItalic,
-      formatColor: typeof initialStyle.formatColor === "string" ? initialStyle.formatColor : prev.formatColor,
-      placeWeight: typeof initialStyle.placeWeight === "number" ? initialStyle.placeWeight : prev.placeWeight,
+      formatColor: migrateLegacyStyleColor(initialStyle.formatColor, "#64748b", "#000000") ?? prev.formatColor,
+      placeWeight: migrateLegacyStyleNum(initialStyle.placeWeight, 400, 600) ?? prev.placeWeight,
       placeItalic: typeof initialStyle.placeItalic === "boolean" ? initialStyle.placeItalic : prev.placeItalic,
-      placeColor: typeof initialStyle.placeColor === "string" ? initialStyle.placeColor : prev.placeColor,
+      placeColor: migrateLegacyStyleColor(initialStyle.placeColor, "#64748b", "#51226B") ?? prev.placeColor,
       descWeight: typeof initialStyle.descWeight === "number" ? initialStyle.descWeight : prev.descWeight,
       descItalic: typeof initialStyle.descItalic === "boolean" ? initialStyle.descItalic : prev.descItalic,
-      descColor: typeof initialStyle.descColor === "string" ? initialStyle.descColor : prev.descColor,
+      descColor: migrateLegacyStyleColor(initialStyle.descColor, "#0f172a", "#000000") ?? prev.descColor,
       teamLeadFontPx:
         typeof initialStyle.teamLeadFontPx === "number" ? initialStyle.teamLeadFontPx : prev.teamLeadFontPx,
       teamLeadColor: typeof initialStyle.teamLeadColor === "string" ? initialStyle.teamLeadColor : prev.teamLeadColor,
@@ -1181,9 +1185,10 @@ function parseDayMarkTokens(tokens: string[]) {
         ["--tl-mark-color" as any]: styleDraft.markColor,
         ["--tl-mark-line-color" as any]: styleDraft.markLineColor,
 
-        ["--tl-event-bg" as any]: rgbaFrom(styleDraft.eventBgColor, styleDraft.eventBgAlpha) ?? "rgba(37,99,235,.08)",
-        ["--tl-event-border" as any]: rgbaFrom(styleDraft.eventBorderColor, styleDraft.eventBorderAlpha) ?? "rgba(37,99,235,.22)",
-        ["--tl-lanes-bg" as any]: rgbaFrom(styleDraft.fieldBgColor, styleDraft.fieldBgAlpha) ?? "rgba(15,23,42,.02)"
+        ["--tl-event-bg" as any]: rgbaFrom(styleDraft.eventBgColor, styleDraft.eventBgAlpha) ?? "#eff2fb",
+        ["--tl-event-border" as any]: rgbaFrom(styleDraft.eventBorderColor, styleDraft.eventBorderAlpha) ?? "transparent",
+        ["--tl-lanes-bg" as any]: rgbaFrom(styleDraft.fieldBgColor, styleDraft.fieldBgAlpha) ?? "transparent",
+        ["--tl-rule-color" as any]: styleDraft.timeColor
       }}
     >
       {!hidePackChrome && currentPack.length ? (
@@ -2768,10 +2773,10 @@ function parseDayMarkTokens(tokens: string[]) {
                         const isTiny = height < 54;
                         const rawFormat = it.event.format ?? "";
                         const format = shouldShowFormat(rawFormat) ? String(rawFormat).trim() : "";
-                        const time = `${formatTime(it.event.start)}–${formatTime(it.event.end)}`;
+                        const time = formatTimeRange(it.event.start, it.event.end);
                         const place = [it.event.building ? String(it.event.building).trim() : null, it.event.room ? String(it.event.room).trim() : null]
                           .filter(Boolean)
-                          .join(" · ");
+                          .join(", ");
                         const tooltip = [time, format || null, place || null].filter(Boolean).join(" · ");
                         const ov = (it.event as any).style_override as
                           | { eventBgColor?: string; eventBgAlpha?: number; eventBorderColor?: string; eventBorderAlpha?: number }
@@ -2784,6 +2789,9 @@ function parseDayMarkTokens(tokens: string[]) {
                         const extraLines = showExtraFields ? extraFieldLines(it.event as any) : [];
                         const evUrl = normalizeHttpUrl((it.event as any).url);
                         const linkT = styleDraft.eventLinkTarget === "_self" ? "_self" : "_blank";
+                        const tone = programCardTone(it.event);
+                        const toneBg = PROGRAM_CARD_BG[tone];
+                        const hasBody = !!(descToShow || extraLines.length);
 
                         // For rows with a full-width event that stacks others below, shift non-full blocks down by full-stack height.
                         let extraTop = 0;
@@ -2801,7 +2809,7 @@ function parseDayMarkTokens(tokens: string[]) {
                         return (
                           <div
                             key={`${it.event.id}-${it.event.start.toISOString()}`}
-                            className={`eventBlock${isTiny ? " tiny" : ""}`}
+                            className={`eventBlock eventBlock--${tone}${isTiny ? " tiny" : ""}`}
                             style={{
                               top: top + extraTop,
                               height: heightRender,
@@ -2809,13 +2817,28 @@ function parseDayMarkTokens(tokens: string[]) {
                               width: isFullWidth
                                 ? Math.max(10, gridMinWidth - GUTTER_PX)
                                 : Math.max(10, widthPx * Math.max(1, Number(colSpan) || 1) - GUTTER_PX),
-                              ...(bg ? { background: bg } : null),
+                              background: bg ?? toneBg,
                               ...(border ? { borderColor: border } : null)
                             }}
                             title={tooltip}
                           >
-                            <div className="row" style={{ justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                            <div className="eventHead">
+                              <div className="eventTime">{time}</div>
+                              {place ? <div className="eventPlace">{place}</div> : null}
                               {layoutEdit ? (
+                                <button
+                                  type="button"
+                                  className="secondary"
+                                  onClick={() => hideTile(String(it.event.id))}
+                                  style={{ padding: "2px 8px", fontSize: 12, lineHeight: 1, flex: "0 0 auto" }}
+                                  title="Скрыть плитку в архитектуре"
+                                >
+                                  ×
+                                </button>
+                              ) : null}
+                            </div>
+                            {isTiny ? (
+                              layoutEdit ? (
                                 <div
                                   className="eventTitle"
                                   style={{ cursor: "grab" }}
@@ -2842,34 +2865,46 @@ function parseDayMarkTokens(tokens: string[]) {
                                   {it.event.title}
                                 </a>
                               ) : (
-                                <div className="eventTitle" style={{ cursor: "default" }}>
-                                  {it.event.title}
-                                </div>
-                              )}
-                              {layoutEdit ? (
-                                <button
-                                  type="button"
-                                  className="secondary"
-                                  onClick={() => hideTile(String(it.event.id))}
-                                  style={{ padding: "2px 8px", fontSize: 12, lineHeight: 1 }}
-                                  title="Скрыть плитку в архитектуре"
-                                >
-                                  ×
-                                </button>
-                              ) : null}
-                            </div>
-                            {isTiny ? (
-                              <div className="eventTime">{time}</div>
+                                <div className="eventTitle">{it.event.title}</div>
+                              )
                             ) : (
                               <>
                                 {format ? <div className="eventFormat">{format}</div> : null}
-                                <div className="eventTime">{time}</div>
+                                {layoutEdit ? (
+                                  <div
+                                    className="eventTitle"
+                                    style={{ cursor: "grab" }}
+                                    onMouseDown={beginTileMove(
+                                      String(it.event.id),
+                                      anchorIdx,
+                                      Math.round(leftPx / Math.max(1, widthPx)),
+                                      heightRender,
+                                      typeof rowSpan === "number" ? rowSpan : 1,
+                                      typeof colSpan === "number" ? colSpan : 1
+                                    )}
+                                  >
+                                    {it.event.title}
+                                  </div>
+                                ) : evUrl ? (
+                                  <a
+                                    className="eventTitle"
+                                    href={evUrl}
+                                    target={linkT === "_blank" ? "_blank" : undefined}
+                                    rel={linkT === "_blank" ? "noopener noreferrer" : undefined}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                  >
+                                    {it.event.title}
+                                  </a>
+                                ) : (
+                                  <div className="eventTitle">{it.event.title}</div>
+                                )}
+                                {hasBody ? <hr className="eventRule" /> : null}
                                 {descToShow ? (
                                   <div className="eventDesc" style={{ whiteSpace: "pre-line" }}>
                                     {descMd ? renderMarkdownLite(descMd) : descPlain}
                                   </div>
                                 ) : null}
-                                {place ? <div className="eventPlace">{place}</div> : null}
                                 {extraLines.length ? (
                                   <div style={{ marginTop: 6 }}>
                                     {extraLines.map((line, idx) => (

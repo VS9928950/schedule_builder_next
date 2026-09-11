@@ -71,9 +71,10 @@ type TimelineLayout = {
 import {
   layoutDayLanes,
   mergeFinalNirSameTime,
-  isParallelGroupCardTitle,
   isArchitectureProgramView,
   isTechScheduleOnlyFormat,
+  programCardTone,
+  PROGRAM_CARD_BG,
   normalizeHttpUrl
 } from "@/lib/schedule";
 
@@ -231,40 +232,52 @@ function boolOr(v: unknown, fallback: boolean) {
   return typeof v === "boolean" ? v : fallback;
 }
 
+function colorOrMigrated(v: unknown, legacy: string, next: string) {
+  const s = typeof v === "string" ? v.trim() : "";
+  if (!s || s.toLowerCase() === legacy.toLowerCase()) return next;
+  return s;
+}
+
+function numOrMigrated(v: unknown, legacy: number, next: number, min: number, max: number) {
+  if (typeof v !== "number" || !Number.isFinite(v)) return clampNum(next, next, min, max);
+  if (v === legacy) return clampNum(next, next, min, max);
+  return clampNum(v, next, min, max);
+}
+
 /** Same defaults as Architecture / Tech schedule style panels. */
 function resolveSnippetStyle(raw: SnippetStyleIn): ResolvedSnippetStyle {
   const s = raw ?? {};
   const tileBg =
     (s.eventBgColor ? rgbaFrom(String(s.eventBgColor), Number(s.eventBgAlpha ?? 1)) : null) ??
     (typeof s.eventBg === "string" && s.eventBg.trim() ? s.eventBg.trim() : null) ??
-    "rgba(37,99,235,.08)";
+    "#EFF2FB";
   const tileBorder =
     (s.eventBorderColor ? rgbaFrom(String(s.eventBorderColor), Number(s.eventBorderAlpha ?? 1)) : null) ??
     (typeof s.eventBorder === "string" && s.eventBorder.trim() ? s.eventBorder.trim() : null) ??
-    "rgba(37,99,235,.18)";
+    "transparent";
   const fieldBg =
-    (s.fieldBgColor ? rgbaFrom(String(s.fieldBgColor), Number(s.fieldBgAlpha ?? 1)) : null) ?? "rgba(15,23,42,.02)";
+    (s.fieldBgColor ? rgbaFrom(String(s.fieldBgColor), Number(s.fieldBgAlpha ?? 1)) : null) ?? "transparent";
   return {
-    titleFontPx: clampNum(s.titleFontPx, 13, 8, 48),
-    timeFontPx: clampNum(s.timeFontPx, 11, 8, 48),
-    formatFontPx: clampNum(s.formatFontPx, 11, 8, 48),
-    placeFontPx: clampNum(s.placeFontPx, 11, 8, 48),
-    descFontPx: clampNum(s.descFontPx, 12, 8, 48),
-    titleWeight: clampWeight(s.titleWeight, 700),
+    titleFontPx: numOrMigrated(s.titleFontPx, 13, 20, 8, 48),
+    timeFontPx: numOrMigrated(s.timeFontPx, 11, 16, 8, 48),
+    formatFontPx: numOrMigrated(s.formatFontPx, 11, 15, 8, 48),
+    placeFontPx: numOrMigrated(s.placeFontPx, 11, 16, 8, 48),
+    descFontPx: numOrMigrated(s.descFontPx, 12, 15, 8, 48),
+    titleWeight: numOrMigrated(s.titleWeight, 700, 600, 100, 900),
     titleItalic: boolOr(s.titleItalic, false),
-    titleColor: strOr(s.titleColor, "#0f172a"),
-    timeWeight: clampWeight(s.timeWeight, 400),
+    titleColor: colorOrMigrated(s.titleColor, "#0f172a", "#041A59"),
+    timeWeight: numOrMigrated(s.timeWeight, 400, 600, 100, 900),
     timeItalic: boolOr(s.timeItalic, false),
-    timeColor: strOr(s.timeColor, "#64748b"),
+    timeColor: colorOrMigrated(s.timeColor, "#64748b", "#CA0734"),
     formatWeight: clampWeight(s.formatWeight, 400),
     formatItalic: boolOr(s.formatItalic, false),
-    formatColor: strOr(s.formatColor, "#64748b"),
-    placeWeight: clampWeight(s.placeWeight, 400),
+    formatColor: colorOrMigrated(s.formatColor, "#64748b", "#000000"),
+    placeWeight: numOrMigrated(s.placeWeight, 400, 600, 100, 900),
     placeItalic: boolOr(s.placeItalic, false),
-    placeColor: strOr(s.placeColor, "#64748b"),
+    placeColor: colorOrMigrated(s.placeColor, "#64748b", "#51226B"),
     descWeight: clampWeight(s.descWeight, 400),
     descItalic: boolOr(s.descItalic, false),
-    descColor: strOr(s.descColor, "#0f172a"),
+    descColor: colorOrMigrated(s.descColor, "#0f172a", "#000000"),
     teamLeadFontPx: clampNum(s.teamLeadFontPx, 11, 8, 48),
     teamLeadColor: strOr(s.teamLeadColor, "#475569"),
     teamLeadWeight: clampWeight(s.teamLeadWeight, 500),
@@ -382,12 +395,6 @@ function hashShort(s: string) {
   return (h >>> 0).toString(36).slice(0, 6);
 }
 
-function normTimeLabelFromDate(d: Date) {
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const mm = String(d.getUTCMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-
 function dayKeyFromDate(d: Date) {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
@@ -399,6 +406,35 @@ function formatTime(d: Date) {
   const hh = String(d.getUTCHours()).padStart(2, "0");
   const mm = String(d.getUTCMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+function formatTimeRange(start: Date, end: Date) {
+  return `${formatTime(start)} – ${formatTime(end)}`;
+}
+
+function placeLabel(building?: unknown, room?: unknown) {
+  return [building != null ? String(building).trim() : "", room != null ? String(room).trim() : ""].filter(Boolean).join(", ");
+}
+
+function emphasizePlaceHtml(escaped: string) {
+  return escaped.replace(/(Корп\.\s*[^<]+)/g, '<span class="sb-placeMark">$1</span>');
+}
+
+function renderCardBodyHtml(desc: string) {
+  const lines = String(desc)
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (!lines.length) return "";
+  const allBullets = lines.every((l) => l.startsWith("- ") || l.startsWith("– ") || l.startsWith("— "));
+  if (allBullets) {
+    const items = lines
+      .map((l) => l.replace(/^[-–—]\s*/, ""))
+      .map((l) => `<li>${emphasizePlaceHtml(esc(l))}</li>`)
+      .join("");
+    return `<ul class="sb-list">${items}</ul>`;
+  }
+  return `<div class="sb-desc">${emphasizePlaceHtml(esc(desc))}</div>`;
 }
 
 function normToken(v: unknown): string {
@@ -600,70 +636,6 @@ function shouldShowFormat(fmt: unknown) {
   return s !== "Питание";
 }
 
-function estimateMinHeightPx(
-  e: { title?: unknown; format?: unknown; building?: unknown; room?: unknown; description?: unknown; description_md?: unknown },
-  widthPx: number
-) {
-  const innerW = Math.max(80, widthPx - 20);
-  const charsPerLine = Math.max(10, Math.floor(innerW / 6));
-  const linesFor = (s: string) => Math.max(1, Math.ceil((s || "").length / charsPerLine));
-
-  const titleLines = linesFor(String(e.title ?? ""));
-  const formatLines = shouldShowFormat(e.format) ? linesFor(String(e.format)) : 0;
-  const timeLines = 1;
-  const placeLines = e.building || e.room ? 1 : 0;
-
-  let descLines = 0;
-  const descSrc = String(e.description_md ?? e.description ?? "");
-  if (isParallelGroupCardTitle(e.title) && descSrc) {
-    descLines = descSrc.split("\n").filter(Boolean).length;
-  } else if (descSrc) {
-    descLines = Math.max(linesFor(descSrc), descSrc.split("\n").filter(Boolean).length);
-  }
-
-  const totalLines = titleLines + formatLines + timeLines + placeLines + descLines;
-  const lineH = 16;
-  const padding = 28;
-  const borders = 6;
-  return padding + totalLines * lineH + borders + 18;
-}
-
-function estimateMinHeightNoDescPx(e: { title?: unknown; format?: unknown; building?: unknown; room?: unknown }, widthPx: number) {
-  const innerW = Math.max(80, widthPx - 20);
-  const charsPerLine = Math.max(10, Math.floor(innerW / 6));
-  const linesFor = (s: string) => Math.max(1, Math.ceil((s || "").length / charsPerLine));
-
-  const titleLines = linesFor(String(e.title ?? ""));
-  const formatLines = shouldShowFormat(e.format) ? linesFor(String(e.format)) : 0;
-  const timeLines = 1;
-  const placeLines = e.building || e.room ? 1 : 0;
-
-  const totalLines = titleLines + formatLines + timeLines + placeLines;
-  const lineH = 16;
-  const padding = 28;
-  const borders = 6;
-  return padding + totalLines * lineH + borders + 12;
-}
-
-function utcMinutesSinceDayStart(d: Date) {
-  return d.getUTCHours() * 60 + d.getUTCMinutes();
-}
-
-function yForAnchor(idx: number, heights: number[]) {
-  let y = 0;
-  for (let i = 0; i < idx; i++) y += heights[i] ?? 0;
-  return y;
-}
-
-function normalizeTimeLabel(s: string) {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(String(s ?? "").trim());
-  if (!m) return null;
-  const hh = Number(m[1]);
-  const mm = Number(m[2]);
-  if (!Number.isFinite(hh) || !Number.isFinite(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
-  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-}
-
 export function buildTildaSnippet(args: {
   projectName: string;
   events: IsoEvent[];
@@ -678,7 +650,7 @@ export function buildTildaSnippet(args: {
   /** Default: inherit site fonts. `tilda-sans` forces Tilda Sans for layout checks. */
   fontMode?: "inherit" | "tilda-sans";
 }) {
-  const { projectName, events, marksByDay, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode, view, roomsMode, responsibleFilter } = args;
+  const { projectName, events, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode, view, roomsMode, responsibleFilter } = args;
   const theme = resolveSnippetStyle(timelineStyle);
   const isTechView = String(view ?? "").trim() === "tech-schedule";
   const filteredEvents = applyExportViewFilter(events, view);
@@ -1014,88 +986,137 @@ ${rootSel} .sb-day-label{font-weight:${theme.titleWeight} !important;color:${esc
 
   const fontStack =
     fontMode === "tilda-sans"
-      ? `font-family:"Tilda Sans",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;`
-      : `/* font: inherit from Tilda page */`;
+      ? `font-family:"Tilda Sans",Arial,sans-serif;`
+      : `font-family:TildaSans,Arial,sans-serif;`;
 
   const css = `
 /* Tilda snippet: ${esc(projectName)} */
 ${rootSel}{
-  --sb-text:${esc(theme.titleColor)};
-  --sb-muted:${esc(theme.timeColor)};
-  --sb-border:${esc(theme.markLineColor)};
-  --sb-gridBg:${esc(theme.fieldBg)};
-  --sb-tileBorder:${esc(theme.tileBorder)};
-  --sb-tileBg:${esc(theme.tileBg)};
-  --sb-shadow:0 10px 26px rgba(15,23,42,.10);
+  --sb-title:${esc(theme.titleColor)};
+  --sb-time:${esc(theme.timeColor)};
+  --sb-place:${esc(theme.placeColor)};
+  --sb-format:${esc(theme.formatColor)};
+  --sb-desc:${esc(theme.descColor)};
   ${fontStack}
-  color:var(--sb-text);
+  color:var(--sb-desc);
 }
-${rootSel} .sb-day{margin:18px 0 26px}
-${rootSel} .sb-grid{position:relative;border:1px solid var(--sb-border);border-radius:14px;background:var(--sb-gridBg);overflow:hidden;max-width:100%}
-${rootSel} .sb-timeCol{position:absolute;left:0;top:0;bottom:0;width:56px;background:linear-gradient(to right,rgba(255,255,255,.65),rgba(255,255,255,0))}
-${rootSel} .sb-time{position:absolute;left:0;transform:translateY(-50%);font-size:${theme.markFontPx}px;color:${esc(theme.markColor)};width:52px;text-align:right;padding-right:6px;box-sizing:border-box;white-space:nowrap}
-${rootSel} .sb-scroll{position:relative;margin-left:56px;height:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-${rootSel} .sb-inner{position:relative;display:block;width:100%;min-width:0;box-sizing:border-box}
-${rootSel} .sb-line{position:absolute;left:0;right:0;border-top:1px dashed ${esc(theme.markLineColor)};pointer-events:none}
-${rootSel} .sb-tile{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;padding:9px 10px;border-radius:12px;border:1px solid var(--sb-tileBorder);background:var(--sb-tileBg);box-shadow:var(--sb-shadow);overflow:hidden}
-${rootSel} .sb-title{font-weight:${theme.titleWeight} !important;font-style:${theme.titleItalic ? "italic" : "normal"} !important;font-size:${theme.titleFontPx}px !important;line-height:1.22;letter-spacing:.1px;color:${esc(theme.titleColor)} !important}
-${rootSel} a.sb-title{color:inherit !important;text-decoration:none}
+${rootSel} .sb-program{display:flex;flex-direction:column;gap:20px}
+${rootSel} .sb-program + .sb-program{margin-top:12px}
+${rootSel} .sb-slot{display:flex;align-items:stretch;gap:20px}
+${rootSel} .sb-tile{flex:1 1 0;min-width:0;box-sizing:border-box;padding:32px;border-radius:10px;background:${PROGRAM_CARD_BG.default}}
+${rootSel} .sb-tile--accent{background:${PROGRAM_CARD_BG.accent}}
+${rootSel} .sb-tile--service{background:${PROGRAM_CARD_BG.service}}
+${rootSel} .sb-tile--default{background:${PROGRAM_CARD_BG.default}}
+${rootSel} .sb-session + .sb-session{margin-top:18px}
+${rootSel} .sb-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+${rootSel} .sb-time{font-size:${theme.timeFontPx}px;font-weight:${theme.timeWeight};font-style:${theme.timeItalic ? "italic" : "normal"};color:var(--sb-time);line-height:1.4}
+${rootSel} .sb-place{font-size:${theme.placeFontPx}px;font-weight:${theme.placeWeight};font-style:${theme.placeItalic ? "italic" : "normal"};color:var(--sb-place);text-align:right;line-height:1.4}
+${rootSel} .sb-format{margin-top:10px;font-size:${theme.formatFontPx}px;font-weight:${theme.formatWeight};font-style:${theme.formatItalic ? "italic" : "normal"};color:var(--sb-format)}
+${rootSel} .sb-title{margin-top:6px;font-size:${theme.titleFontPx}px;font-weight:${theme.titleWeight};font-style:${theme.titleItalic ? "italic" : "normal"};color:var(--sb-title);line-height:1.35}
+${rootSel} a.sb-title{color:inherit;text-decoration:none}
 ${rootSel} a.sb-title:hover{text-decoration:underline}
-${rootSel} .sb-format{margin-top:6px;font-size:${theme.formatFontPx}px !important;font-weight:${theme.formatWeight} !important;font-style:${theme.formatItalic ? "italic" : "normal"} !important;color:${esc(theme.formatColor)} !important}
-${rootSel} .sb-timeRange{margin-top:6px;font-size:${theme.timeFontPx}px !important;font-weight:${theme.timeWeight} !important;font-style:${theme.timeItalic ? "italic" : "normal"} !important;color:${esc(theme.timeColor)} !important}
-${rootSel} .sb-place{margin-top:6px;font-size:${theme.placeFontPx}px !important;font-weight:${theme.placeWeight} !important;font-style:${theme.placeItalic ? "italic" : "normal"} !important;color:${esc(theme.placeColor)} !important}
-${rootSel} .sb-desc{margin-top:6px;font-size:${theme.descFontPx}px !important;line-height:1.3;font-weight:${theme.descWeight} !important;font-style:${theme.descItalic ? "italic" : "normal"} !important;color:${esc(theme.descColor)} !important;white-space:pre-line}
+${rootSel} .sb-rule{margin:14px 0;border:0;border-top:1px solid var(--sb-time)}
+${rootSel} .sb-tile--accent .sb-rule{border-top-color:var(--sb-place)}
+${rootSel} .sb-desc{font-size:${theme.descFontPx}px;font-weight:${theme.descWeight};font-style:${theme.descItalic ? "italic" : "normal"};color:var(--sb-desc);line-height:1.45;white-space:pre-line}
+${rootSel} .sb-list{margin:0;padding-left:1.15em;font-size:${theme.descFontPx}px;line-height:1.45;color:var(--sb-desc)}
+${rootSel} .sb-list li{margin:0 0 .35em}
+${rootSel} .sb-placeMark{color:var(--sb-place);font-weight:600}
 ${rootSel} .sb-extra{margin-top:4px;line-height:1.3}
-${rootSel} .sb-extra--teamLead{font-size:${theme.teamLeadFontPx}px !important;font-weight:${theme.teamLeadWeight} !important;font-style:${theme.teamLeadItalic ? "italic" : "normal"} !important;color:${esc(theme.teamLeadColor)} !important}
-${rootSel} .sb-extra--responsibles{font-size:${theme.responsiblesFontPx}px !important;font-weight:${theme.responsiblesWeight} !important;font-style:${theme.responsiblesItalic ? "italic" : "normal"} !important;color:${esc(theme.responsiblesColor)} !important}
-${rootSel} .sb-extra--vks{font-size:${theme.vksFontPx}px !important;font-weight:${theme.vksWeight} !important;font-style:${theme.vksItalic ? "italic" : "normal"} !important;color:${esc(theme.vksColor)} !important}
-${rootSel} .sb-extra--translation{font-size:${theme.translationFontPx}px !important;font-weight:${theme.translationWeight} !important;font-style:${theme.translationItalic ? "italic" : "normal"} !important;color:${esc(theme.translationColor)} !important}
-${rootSel} .sb-extra--interpretation{font-size:${theme.interpretationFontPx}px !important;font-weight:${theme.interpretationWeight} !important;font-style:${theme.interpretationItalic ? "italic" : "normal"} !important;color:${esc(theme.interpretationColor)} !important}
-${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px !important;font-weight:${theme.volunteersWeight} !important;font-style:${theme.volunteersItalic ? "italic" : "normal"} !important;color:${esc(theme.volunteersColor)} !important}
+${rootSel} .sb-extra--teamLead{font-size:${theme.teamLeadFontPx}px;font-weight:${theme.teamLeadWeight};font-style:${theme.teamLeadItalic ? "italic" : "normal"};color:${esc(theme.teamLeadColor)}}
+${rootSel} .sb-extra--responsibles{font-size:${theme.responsiblesFontPx}px;font-weight:${theme.responsiblesWeight};font-style:${theme.responsiblesItalic ? "italic" : "normal"};color:${esc(theme.responsiblesColor)}}
+${rootSel} .sb-extra--vks{font-size:${theme.vksFontPx}px;font-weight:${theme.vksWeight};font-style:${theme.vksItalic ? "italic" : "normal"};color:${esc(theme.vksColor)}}
+${rootSel} .sb-extra--translation{font-size:${theme.translationFontPx}px;font-weight:${theme.translationWeight};font-style:${theme.translationItalic ? "italic" : "normal"};color:${esc(theme.translationColor)}}
+${rootSel} .sb-extra--interpretation{font-size:${theme.interpretationFontPx}px;font-weight:${theme.interpretationWeight};font-style:${theme.interpretationItalic ? "italic" : "normal"};color:${esc(theme.interpretationColor)}}
+${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weight:${theme.volunteersWeight};font-style:${theme.volunteersItalic ? "italic" : "normal"};color:${esc(theme.volunteersColor)}}
 @media (max-width: 768px){
-  ${rootSel} .sb-grid{height:auto !important}
-  ${rootSel} .sb-timeCol{display:none}
-  ${rootSel} .sb-scroll{margin-left:0;overflow:visible;height:auto !important}
-  ${rootSel} .sb-inner{height:auto !important;min-width:0 !important;width:100% !important;display:block !important;padding:10px 12px 12px;box-sizing:border-box}
-  ${rootSel} .sb-line{display:none !important}
-  ${rootSel} .sb-tile{position:relative !important;top:auto !important;left:auto !important;width:auto !important;height:auto !important;min-height:52px;margin:0 0 10px}
+  ${rootSel} .sb-slot{flex-direction:column;gap:16px}
+  ${rootSel} .sb-tile{padding:24px;flex:1 1 auto}
 }
 @media print{
-  ${rootSel}{color:${esc(theme.titleColor)}}
-  ${rootSel} .sb-day{break-inside:avoid-page;page-break-inside:avoid}
-  ${rootSel} .sb-grid{box-shadow:none;border-color:${esc(theme.markLineColor)};background:#fff}
-  ${rootSel} .sb-timeCol{background:none}
-  ${rootSel} .sb-scroll{overflow:visible}
-  ${rootSel} .sb-tile{box-shadow:none}
+  ${rootSel} .sb-tile{break-inside:avoid}
 }
 `.trim();
 
-  let html = `<div class="sb-wrap" data-sb-scope="${esc(internalScopeId)}">\n`;
-  // Intentionally no top-level "Export"/project header in the snippet:
-  // Tilda pages usually provide their own headings; we export only the layout block.
+  type ProgramBox = {
+    ev: any;
+    startD: Date;
+    endD: Date;
+    col: number;
+    hidden: boolean;
+  };
 
+  function overlapsMs(a: ProgramBox, b: ProgramBox) {
+    return a.startD.getTime() < b.endD.getTime() && a.endD.getTime() > b.startD.getTime();
+  }
+
+  function slotsFromBoxes(boxes: ProgramBox[]): ProgramBox[][][] {
+    const visible = boxes.filter((b) => !b.hidden).sort((a, b) => a.startD.getTime() - b.startD.getTime() || a.col - b.col);
+    const used = new Set<ProgramBox>();
+    const slots: ProgramBox[][][] = [];
+    for (const box of visible) {
+      if (used.has(box)) continue;
+      const group: ProgramBox[] = [];
+      const queue = [box];
+      used.add(box);
+      while (queue.length) {
+        const cur = queue.pop()!;
+        group.push(cur);
+        for (const other of visible) {
+          if (used.has(other)) continue;
+          if (overlapsMs(cur, other)) {
+            used.add(other);
+            queue.push(other);
+          }
+        }
+      }
+      const byCol = new Map<number, ProgramBox[]>();
+      for (const g of group) {
+        const arr = byCol.get(g.col) ?? [];
+        arr.push(g);
+        byCol.set(g.col, arr);
+      }
+      const cols = Array.from(byCol.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([, list]) => list.sort((a, b) => a.startD.getTime() - b.startD.getTime()));
+      slots.push(cols);
+    }
+    slots.sort((a, b) => a[0]![0]!.startD.getTime() - b[0]![0]!.startD.getTime());
+    return slots;
+  }
+
+  function renderSession(ev: any, startD: Date, endD: Date) {
+    const place = placeLabel(ev.building, ev.room);
+    const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";
+    const desc = String(ev.description_md ?? ev.description ?? "");
+    const extras = isTechView ? extraFieldLines(ev) : [];
+    const hasBody = !!(desc || extras.length);
+    const evUrl = normalizeHttpUrl(ev.url);
+    const titleStyle = typeInline(theme.titleFontPx, theme.titleWeight, theme.titleItalic, theme.titleColor);
+    let inner = `<div class="sb-head"><div class="sb-time">${esc(formatTimeRange(startD, endD))}</div>`;
+    if (place) inner += `<div class="sb-place">${esc(place)}</div>`;
+    inner += `</div>\n`;
+    if (fmt) inner += `<div class="sb-format">${esc(fmt)}</div>\n`;
+    if (evUrl) {
+      const tAttr = linkTarget === "_blank" ? ` target="_blank" rel="noopener noreferrer"` : "";
+      inner += `<a class="sb-title" href="${esc(evUrl)}"${tAttr} style="${titleStyle}">${esc(ev.title)}</a>\n`;
+    } else {
+      inner += `<div class="sb-title" style="${titleStyle}">${esc(ev.title)}</div>\n`;
+    }
+    if (hasBody) inner += `<hr class="sb-rule"/>\n`;
+    if (desc) inner += `${renderCardBodyHtml(desc)}\n`;
+    if (extras.length) {
+      for (const line of extras) {
+        inner += `<div class="sb-extra sb-extra--${esc(line.kind)}" style="${extraTypeInline(theme, line.kind)}">${esc(line.text)}</div>\n`;
+      }
+    }
+    return `<div class="sb-session">${inner}</div>`;
+  }
+
+  let html = `<div class="sb-wrap" data-sb-scope="${esc(internalScopeId)}">\n`;
   const linkTarget = theme.eventLinkTarget;
 
   for (const dayKey of daysToExport) {
     const dayEvents = timed.filter((e) => dayKeyFromDate(e.startD) === dayKey);
-    const markTokens = marksByDay[dayKey] ?? [];
-    const hiddenBaseMarks = new Set<string>();
-    const manualMarks: string[] = [];
-    for (const token of markTokens) {
-      const s = String(token ?? "").trim();
-      if (!s) continue;
-      if (s.startsWith("!")) {
-        const t = normalizeTimeLabel(s.slice(1));
-        if (t) hiddenBaseMarks.add(t);
-        continue;
-      }
-      const t = normalizeTimeLabel(s);
-      if (t) manualMarks.push(t);
-    }
-
-    // Build layout like Timeline does (so columns are distributed, not all col=0).
-    // Same grouping as Architecture: NIR finals and sectional sessions become one card
-    // with original titles listed in the description.
     const scheduleEvents = mergeFinalNirSameTime(
       dayEvents.map((e) => ({
         id: String(e.id),
@@ -1126,249 +1147,40 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px !importan
     );
     const dayDate = new Date(dayKey + "T00:00:00.000Z");
     const dayLayout = layoutDayLanes(dayDate, scheduleEvents as any);
-
-    const labelForAbsMin = (absMin: number) => {
-      const hh = String(Math.floor(absMin / 60)).padStart(2, "0");
-      const mm = String(absMin % 60).padStart(2, "0");
-      return `${hh}:${mm}`;
-    };
-
-    const anchorsSet = new Set<string>();
-    for (const it of dayLayout.items) {
-      const t = labelForAbsMin(dayLayout.dayStartMin + it.topMin);
-      if (!hiddenBaseMarks.has(t)) anchorsSet.add(t);
-    }
-    for (const m of manualMarks) anchorsSet.add(m);
-    const anchors = Array.from(anchorsSet).sort();
-    if (!anchors.length) continue;
-
-    const colPxRaw = Math.floor((layout.col_width_px?.[dayKey] ?? 240) as number);
-    const colsAuto = Math.max(1, Math.min(64, Math.floor((dayLayout.maxCols ?? 1) as number)));
-    const cols = Math.max(1, Math.min(64, Math.floor((layout.col_count?.[dayKey] ?? colsAuto) as number)));
-    const colPx = Math.max(120, Number.isFinite(colPxRaw) ? colPxRaw : 240);
-
-    const MIN_ANCHOR_PX = 18;
-    const ANCHOR_PAD_PX = 18;
-
-    // Build boxes with the same semantics as TimelineViewer (defaults + overrides).
-    const boxesRaw = (dayLayout.items as any[]).map((it) => {
+    const boxes: ProgramBox[] = (dayLayout.items as any[]).map((it) => {
       const ev = it.event as any;
-      const evId = String(ev.id ?? "");
       const ov = resolveEventOverride(eventOverrides?.[dayKey], ev);
-      const startD = new Date(ev.start);
-      const endD = new Date(ev.end);
-      const defaultAnchor = labelForAbsMin(dayLayout.dayStartMin + Number(it.topMin ?? 0));
-      const anchorWanted = (ov.anchor ?? defaultAnchor).trim();
-      const anchorIdxWanted = anchors.indexOf(anchorWanted);
-      const defaultIdx = Math.max(0, anchors.indexOf(defaultAnchor));
-      const anchorIdx = anchorIdxWanted >= 0 ? anchorIdxWanted : defaultIdx;
-
-      const colDefault = Number.isFinite(it.clusterIndex)
-        ? Math.max(0, Math.min(cols - 1, Math.floor(it.clusterIndex)))
-        : 0;
-
-      const isGroupedCard = isParallelGroupCardTitle(ev.title);
-      const sMs = startD.getTime();
-      const eMs = endD.getTime();
-      const sameRangePeers = (dayLayout.items as any[]).filter((x) => {
-        const xs = new Date(x.event.start).getTime();
-        const xe = new Date(x.event.end).getTime();
-        return xs === sMs && xe === eMs;
-      }).length;
-      const startMin = utcMinutesSinceDayStart(startD);
-      const sameStartAnchorPeers = (dayLayout.items as any[]).filter(
-        (x) => utcMinutesSinceDayStart(new Date(x.event.start)) === startMin
-      ).length;
-      const autoFullWidth = isGroupedCard && sameRangePeers <= 1 && sameStartAnchorPeers <= 1;
-      const isFullWidth = autoFullWidth;
-
-      const desiredCol = isFullWidth ? 0 : Math.max(0, Math.min(cols - 1, Math.floor(ov.col ?? colDefault)));
-      const desiredColSpan = isFullWidth ? cols : Math.max(1, Math.min(cols, Math.floor(ov.colSpan ?? 1)));
-      const desiredRowSpan = Math.max(1, Math.min(anchors.length - anchorIdx, Math.floor(ov.rowSpan ?? 1)));
-
-      const hidden = !!ov.hidden;
-      const widthForEstimate = isFullWidth ? Math.max(colPx, cols * colPx) : colPx;
-      const extraH = isTechView ? extraFieldLines(ev).length * 16 : 0;
-      const contentH = estimateMinHeightPx(ev, widthForEstimate) + extraH;
-      const heightPx = typeof ov.heightPx === "number" && Number.isFinite(ov.heightPx) ? Math.max(30, ov.heightPx) : null;
-      const minH = heightPx ?? contentH;
-
       return {
-        it,
         ev,
-        evId,
-        ov,
-        hidden,
-        startD,
-        endD,
-        defaultAnchor,
-        anchorWanted,
-        anchorIdx,
-        desiredCol,
-        col: desiredCol,
-        colSpan: desiredColSpan,
-        rowSpan: desiredRowSpan,
-        minH,
-        heightPx,
-        isFullWidth
+        startD: new Date(ev.start),
+        endD: new Date(ev.end),
+        col: Math.max(0, Math.floor(Number.isFinite(it.clusterIndex) ? it.clusterIndex : 0)),
+        hidden: !!ov.hidden
       };
     });
-
-    // Packing (kanban behavior): within a row (same anchorIdx), if multiple tiles want the same column,
-    // shift later tiles right to the nearest free column, considering colSpan.
-    const boxesPacked = (() => {
-      const byAnchor = new Map<number, typeof boxesRaw>();
-      for (const b of boxesRaw) {
-        if (b.hidden) continue;
-        const arr = byAnchor.get(b.anchorIdx) ?? [];
-        arr.push(b);
-        byAnchor.set(b.anchorIdx, arr as any);
-      }
-      const out = boxesRaw.map((b) => ({ ...b }));
-      for (const [aIdx, arr] of byAnchor.entries()) {
-        const used = new Set<number>();
-        const sorted = arr
-          .slice()
-          .sort(
-            (x, y) =>
-              (Number(x.desiredCol ?? 0) - Number(y.desiredCol ?? 0)) ||
-              String(x.evId ?? "").localeCompare(String(y.evId ?? ""))
-          );
-        for (const b of sorted) {
-          const colsN = Math.max(1, cols);
-          const span = Math.max(1, Math.min(colsN, Number.isFinite(b.colSpan) ? b.colSpan : 1));
-          let c = Math.max(0, Math.min(colsN - 1, Number.isFinite(b.desiredCol) ? b.desiredCol : 0));
-          const fitsAt = (col: number) => {
-            if (col < 0) return false;
-            if (col + span > colsN) return false;
-            for (let k = 0; k < span; k++) if (used.has(col + k)) return false;
-            return true;
-          };
-          while (c < colsN && !fitsAt(c)) c++;
-          if (c >= colsN || !fitsAt(c)) c = Math.max(0, colsN - span);
-          for (let k = 0; k < span; k++) used.add(c + k);
-          const idx = out.findIndex((z) => z.evId === b.evId && z.anchorIdx === aIdx);
-          if (idx >= 0) out[idx] = { ...out[idx], col: c, colSpan: span };
+    const slots = slotsFromBoxes(boxes);
+    if (!slots.length) continue;
+    html += `<div class="sb-program">\n`;
+    for (const cols of slots) {
+      html += `<div class="sb-slot">\n`;
+      for (const col of cols) {
+        const first = col[0]!;
+        const tone = programCardTone(first.ev);
+        const so = (first.ev.style_override ?? {}) as any;
+        const bg =
+          (so.eventBgColor ? rgbaFrom(String(so.eventBgColor), Number(so.eventBgAlpha ?? 1)) : null) ?? PROGRAM_CARD_BG[tone];
+        html += `<div class="sb-tile sb-tile--${esc(tone)}" style="background:${esc(bg)}">\n`;
+        for (const box of col) {
+          html += renderSession(box.ev, box.startD, box.endD);
         }
-      }
-      return out;
-    })();
-
-    // Row heights: baseline + ensure mandatory content fits, then apply manual overrides.
-    let anchorHeights = anchors.map(() => MIN_ANCHOR_PX);
-    for (let i = 0; i < anchorHeights.length; i++) {
-      const row = boxesPacked.filter((b) => !b.hidden && b.anchorIdx === i);
-      if (!row.length) continue;
-      const maxNeed = Math.max(...row.map((b) => Number(b.minH) || 0));
-      anchorHeights[i] = Math.max(anchorHeights[i] ?? 0, maxNeed + ANCHOR_PAD_PX);
-    }
-    const rh = layout.row_heights?.[dayKey];
-    if (rh) {
-      anchorHeights = anchorHeights.map((h, i) => {
-        const ov = rh[anchors[i]!]!;
-        return typeof ov === "number" && Number.isFinite(ov) ? Math.max(MIN_ANCHOR_PX, ov) : h;
-      });
-    }
-
-    // Ensure manual tile height (heightPx) is not clipped: if a tile asks to be taller than its
-    // allocated rowSpan height, expand the involved rows so the bottom fits inside the grid.
-    // This matches the "detached architecture" expectation that resizing height affects export.
-    for (const b of boxesPacked) {
-      if (b.hidden) continue;
-      if (typeof b.heightPx !== "number" || !Number.isFinite(b.heightPx)) continue;
-      const aIdx = Math.max(0, Math.min(anchors.length - 1, Math.floor(b.anchorIdx ?? 0)));
-      const span = Math.max(1, Math.min(anchors.length - aIdx, Math.floor(b.rowSpan ?? 1)));
-      const want = Math.max(30, b.heightPx) + 4;
-      const have = anchorHeights.slice(aIdx, aIdx + span).reduce((sum, x) => sum + (x ?? 0), 0);
-      if (want > have) {
-        const add = want - have;
-        const last = aIdx + span - 1;
-        anchorHeights[last] = Math.max(MIN_ANCHOR_PX, (anchorHeights[last] ?? MIN_ANCHOR_PX) + add);
-      }
-    }
-
-    const gridH = anchorHeights.reduce((a, x) => a + (x ?? 0), 0) + 16;
-
-    html += `<div class="sb-day">\n`;
-    html += `<div class="sb-grid" style="height:${gridH}px">\n`;
-    html += `<div class="sb-timeCol">\n`;
-    for (let i = 0; i < anchors.length; i++) {
-      const y = yForAnchor(i, anchorHeights) + 8;
-      html += `<div class="sb-time" style="top:${y}px;${typeInline(theme.markFontPx, 400, false, theme.markColor)}">${esc(anchors[i]!)}</div>\n`;
-    }
-    html += `</div>\n`; // time col
-    html += `<div class="sb-scroll">\n`;
-    html += `<div class="sb-inner" style="height:${gridH}px;width:100%">\n`;
-    for (let i = 0; i < anchors.length; i++) {
-      const y = yForAnchor(i, anchorHeights) + 8;
-      html += `<div class="sb-line" style="top:${y}px;border-top-color:${esc(theme.markLineColor)}"></div>\n`;
-    }
-
-    // place tiles (no React, static absolute). Use packed boxes for consistent columns.
-    for (const b of boxesPacked) {
-      if (b.hidden) continue;
-      const ev = b.ev;
-      const startD = b.startD;
-      const endD = b.endD;
-      const aIdx = Math.max(0, Math.min(anchors.length - 1, Math.floor(b.anchorIdx ?? 0)));
-      const col = Math.max(0, Math.min(cols - 1, Math.floor(b.col ?? 0)));
-      const colSpan = Math.max(1, Math.min(cols - col, Math.floor(b.colSpan ?? 1)));
-      const rowSpan = Math.max(1, Math.min(anchors.length - aIdx, Math.floor(b.rowSpan ?? 1)));
-
-      const y = yForAnchor(aIdx, anchorHeights) + 8;
-      const hSpan = anchorHeights.slice(aIdx, aIdx + rowSpan).reduce((a, x) => a + (x ?? 0), 0);
-      const baseH = Math.max(30, hSpan - 4);
-      // Same as Architecture: heightPx / content on one row; only fill the grid
-      // when the card is explicitly set to span 2+ rows.
-      const contentH =
-        typeof b.heightPx === "number" && Number.isFinite(b.heightPx)
-          ? Math.max(30, b.heightPx)
-          : Math.max(30, Number(b.minH) || 30);
-      const h = rowSpan > 1 ? Math.max(contentH, baseH) : contentH;
-      const isFullWidth = !!(b as { isFullWidth?: boolean }).isFullWidth;
-      const leftPct = isFullWidth ? 0 : (col / Math.max(1, cols)) * 100;
-      const widthPct = isFullWidth ? 100 : (colSpan / Math.max(1, cols)) * 100;
-      const x = `calc(${leftPct}% + 8px)`;
-      const w = `calc(${widthPct}% - 10px)`;
-
-      const place = [ev.building ? String(ev.building).trim() : null, ev.room ? String(ev.room).trim() : null].filter(Boolean).join(" · ");
-      const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";
-      const timeRange = `${formatTime(startD)}–${formatTime(endD)}`;
-      const desc = String(ev.description_md ?? ev.description ?? "");
-
-      const so = (ev.style_override ?? {}) as any;
-      const bg =
-        (so.eventBgColor ? rgbaFrom(String(so.eventBgColor), Number(so.eventBgAlpha ?? 1)) : null) ?? null;
-      const border =
-        (so.eventBorderColor ? rgbaFrom(String(so.eventBorderColor), Number(so.eventBorderAlpha ?? 1)) : null) ?? null;
-      const extraStyle = `${bg ? `background:${esc(bg)};` : ""}${border ? `border-color:${esc(border)};` : ""}`;
-
-      html += `<div class="sb-tile" style="top:${y}px;left:${x};width:${w};height:${h}px;${extraStyle}">\n`;
-      const evUrl = normalizeHttpUrl((ev as any).url);
-      const titleStyle = typeInline(theme.titleFontPx, theme.titleWeight, theme.titleItalic, theme.titleColor);
-      if (evUrl) {
-        const tAttr = linkTarget === "_blank" ? ` target="_blank" rel="noopener noreferrer"` : "";
-        html += `<a class="sb-title" href="${esc(evUrl)}"${tAttr} style="${titleStyle}">${esc(ev.title)}</a>\n`;
-      } else {
-        html += `<div class="sb-title" style="${titleStyle}">${esc(ev.title)}</div>\n`;
-      }
-      if (fmt) html += `<div class="sb-format" style="${typeInline(theme.formatFontPx, theme.formatWeight, theme.formatItalic, theme.formatColor)}">${esc(fmt)}</div>\n`;
-      html += `<div class="sb-timeRange" style="${typeInline(theme.timeFontPx, theme.timeWeight, theme.timeItalic, theme.timeColor)}">${esc(timeRange)}</div>\n`;
-      if (desc) html += `<div class="sb-desc" style="${typeInline(theme.descFontPx, theme.descWeight, theme.descItalic, theme.descColor)}">${esc(desc)}</div>\n`;
-      if (place) html += `<div class="sb-place" style="${typeInline(theme.placeFontPx, theme.placeWeight, theme.placeItalic, theme.placeColor)}">${esc(place)}</div>\n`;
-      if (isTechView) {
-        for (const line of extraFieldLines(ev)) {
-          html += `<div class="sb-extra sb-extra--${esc(line.kind)}" style="${extraTypeInline(theme, line.kind)}">${esc(line.text)}</div>\n`;
-        }
+        html += `</div>\n`;
       }
       html += `</div>\n`;
     }
-
-    html += `</div>\n</div>\n</div>\n</div>\n`; // inner, scroll, grid, day
+    html += `</div>\n`;
   }
 
   html += `</div>`;
 
   return { html, css };
 }
-
