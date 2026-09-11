@@ -237,17 +237,28 @@ export function isArchitectureProgramView(view?: string | null): boolean {
   return v === "" || v === "timeline" || v === "architecture";
 }
 
-const PARALLEL_GROUP_FORMATS = ["Финал конкурса НИР", "Секционное заседание"] as const;
+const NIR_FORMAT = "Финал конкурса НИР";
+const SECTIONAL_FORMAT = "Заседания научных секций";
+/** Previous table format — still grouped until the sheet is re-imported. */
+const LEGACY_SECTIONAL_FORMAT = "Секционное заседание";
+const SECTIONAL_GROUP_TITLE = "Доклады ученых";
 
-function groupedFormatName(format?: string): string | null {
+function isSectionalFormat(format?: unknown): boolean {
+  const s = String(format ?? "").trim();
+  return s === SECTIONAL_FORMAT || s === LEGACY_SECTIONAL_FORMAT;
+}
+
+function groupedFormatKind(format?: string): "nir" | "sectional" | null {
   const s = (format ?? "").trim();
-  return PARALLEL_GROUP_FORMATS.includes(s as (typeof PARALLEL_GROUP_FORMATS)[number]) ? s : null;
+  if (s === NIR_FORMAT) return "nir";
+  if (isSectionalFormat(s)) return "sectional";
+  return null;
 }
 
 /** True when this is a synthetic merged card (NIR final or sectional session). */
 export function isParallelGroupCardTitle(title?: unknown) {
   const t = title == null ? "" : String(title).trim();
-  return t === "Финал конкурса НИР" || t === "Секционное заседание";
+  return t === NIR_FORMAT || t === SECTIONAL_GROUP_TITLE || t === LEGACY_SECTIONAL_FORMAT;
 }
 
 export function isParallelGroupCardId(id?: unknown) {
@@ -255,8 +266,28 @@ export function isParallelGroupCardId(id?: unknown) {
   return s.startsWith("final-nir-") || s.startsWith("sectional-");
 }
 
-function parallelGroupCardId(format: string, start: Date, end: Date) {
-  if (format === "Финал конкурса НИР") return `final-nir-${start.toISOString()}-${end.toISOString()}`;
+export function isFinalNirGroupCardId(id?: unknown) {
+  return String(id ?? "").startsWith("final-nir-");
+}
+
+export function isSectionalGroupCardId(id?: unknown) {
+  return String(id ?? "").startsWith("sectional-");
+}
+
+/** Intro above the grouped NIR talk list (public program wording). */
+export const FINAL_NIR_GROUP_INTRO = "Устные доклады (10 параллельных секций):";
+
+/** Intro above the grouped scientific-session talk list. */
+export const SECTIONAL_GROUP_INTRO = "Параллельные секции:";
+
+export function groupedCardIntro(id?: unknown): string | null {
+  if (isFinalNirGroupCardId(id)) return FINAL_NIR_GROUP_INTRO;
+  if (isSectionalGroupCardId(id)) return SECTIONAL_GROUP_INTRO;
+  return null;
+}
+
+function parallelGroupCardId(kind: "nir" | "sectional", start: Date, end: Date) {
+  if (kind === "nir") return `final-nir-${start.toISOString()}-${end.toISOString()}`;
   return `sectional-${start.toISOString()}-${end.toISOString()}`;
 }
 
@@ -274,6 +305,23 @@ function placeSuffix(e: ScheduleEvent) {
     e.room != null && String(e.room).trim() ? String(e.room).trim() : null
   ].filter(Boolean);
   return placeParts.length ? ` (${placeParts.join(", ")})` : "";
+}
+
+export type PlaceHighlightPart = { kind: "text" | "place"; text: string };
+
+/** Split a grouped-card line so the trailing `(place)` can use the place color. */
+export function highlightPlaceInLine(raw: string): PlaceHighlightPart[] {
+  const line = String(raw ?? "")
+    .replace(/^[-–—]\s*/, "")
+    .trim();
+  if (!line) return [];
+  const m = /^(.*)(\s\([^)]+\))(\s·\s\d{1,2}:\d{2}[–-]\d{1,2}:\d{2})?$/.exec(line);
+  if (!m?.[2]) return [{ kind: "text", text: line }];
+  const parts: PlaceHighlightPart[] = [];
+  if (m[1]) parts.push({ kind: "text", text: m[1] });
+  parts.push({ kind: "place", text: m[2].trim() });
+  if (m[3]) parts.push({ kind: "text", text: m[3] });
+  return parts;
 }
 
 function durationMs(e: ScheduleEvent) {
@@ -307,8 +355,8 @@ function mergeNirExactSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
       .sort((a, b) => (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9))
       .map((e) => `- ${e.title}${placeSuffix(e)}`);
     out.push({
-      id: parallelGroupCardId("Финал конкурса НИР", first.start, first.end),
-      title: "Финал конкурса НИР",
+      id: parallelGroupCardId("nir", first.start, first.end),
+      title: NIR_FORMAT,
       description: lines.join("\n"),
       format: undefined,
       building: undefined,
@@ -368,8 +416,8 @@ function mergeSectionalContained(events: ScheduleEvent[]): ScheduleEvent[] {
           return `- ${e.title}${placeSuffix(e)}${time}`;
         });
       out.push({
-        id: parallelGroupCardId("Секционное заседание", host.start, host.end),
-        title: "Секционное заседание",
+        id: parallelGroupCardId("sectional", host.start, host.end),
+        title: SECTIONAL_GROUP_TITLE,
         description: lines.join("\n"),
         format: undefined,
         building: undefined,
@@ -391,9 +439,9 @@ export function mergeFinalNirSameTime(events: ScheduleEvent[]): ScheduleEvent[] 
   const sectional: ScheduleEvent[] = [];
   const rest: ScheduleEvent[] = [];
   for (const ev of events) {
-    const fmt = groupedFormatName(ev.format);
-    if (fmt === "Финал конкурса НИР") nir.push(ev);
-    else if (fmt === "Секционное заседание") sectional.push(ev);
+    const kind = groupedFormatKind(ev.format);
+    if (kind === "nir") nir.push(ev);
+    else if (kind === "sectional") sectional.push(ev);
     else rest.push(ev);
   }
   const out = [...rest, ...mergeNirExactSameTime(nir), ...mergeSectionalContained(sectional)];
@@ -686,6 +734,18 @@ export function migrateLegacyStyleNum(v: unknown, legacy: number, next: number):
   return v === legacy ? next : v;
 }
 
+/** Hide format label on public cards for these values. */
+export function shouldShowFormat(fmt: unknown): boolean {
+  const s = fmt == null ? "" : String(fmt).trim();
+  if (!s) return false;
+  return s !== "Питание" && s !== "Регистрация";
+}
+
+/** Food cards show time/title/place only — no description body. */
+export function shouldShowDescription(fmt: unknown): boolean {
+  return String(fmt ?? "").trim() !== "Питание";
+}
+
 export type ProgramCardTone = "accent" | "service" | "default";
 
 export const PROGRAM_CARD_BG: Record<ProgramCardTone, string> = {
@@ -699,9 +759,11 @@ export function programCardTone(ev: { format?: unknown; title?: unknown }): Prog
   const format = String(ev.format ?? "").trim();
   const title = String(ev.title ?? "").trim();
   if (
-    format === "Финал конкурса НИР" ||
-    format === "Секционное заседание" ||
-    title === "Финал конкурса НИР" ||
+    format === NIR_FORMAT ||
+    isSectionalFormat(format) ||
+    title === NIR_FORMAT ||
+    title === SECTIONAL_GROUP_TITLE ||
+    title === LEGACY_SECTIONAL_FORMAT ||
     /заседани[ея] по секциям/i.test(format) ||
     /заседани[ея] по секциям/i.test(title)
   ) {
@@ -709,6 +771,7 @@ export function programCardTone(ev: { format?: unknown; title?: unknown }): Prog
   }
   if (
     format === "Питание" ||
+    format === "Регистрация" ||
     /^(регистрация|кофе|кофе-брейк|обед)\b/i.test(title)
   ) {
     return "service";

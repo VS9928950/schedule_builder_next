@@ -75,6 +75,10 @@ import {
   isTechScheduleOnlyFormat,
   programCardTone,
   PROGRAM_CARD_BG,
+  shouldShowFormat,
+  shouldShowDescription,
+  highlightPlaceInLine,
+  groupedCardIntro,
   normalizeHttpUrl
 } from "@/lib/schedule";
 
@@ -416,6 +420,20 @@ function placeLabel(building?: unknown, room?: unknown) {
   return [building != null ? String(building).trim() : "", room != null ? String(room).trim() : ""].filter(Boolean).join(", ");
 }
 
+function renderHighlightedLineHtml(line: string) {
+  const parts = highlightPlaceInLine(line);
+  if (!parts.length) return esc(line);
+  return parts
+    .map((p, i) => {
+      if (p.kind === "place") {
+        const gap = i > 0 ? " " : "";
+        return `${gap}<span class="sb-placeMark">${esc(p.text)}</span>`;
+      }
+      return esc(p.text);
+    })
+    .join("");
+}
+
 function emphasizePlaceHtml(escaped: string) {
   return escaped.replace(/(Корп\.\s*[^<]+)/g, '<span class="sb-placeMark">$1</span>');
 }
@@ -428,10 +446,7 @@ function renderCardBodyHtml(desc: string) {
   if (!lines.length) return "";
   const allBullets = lines.every((l) => l.startsWith("- ") || l.startsWith("– ") || l.startsWith("— "));
   if (allBullets) {
-    const items = lines
-      .map((l) => l.replace(/^[-–—]\s*/, ""))
-      .map((l) => `<li>${emphasizePlaceHtml(esc(l))}</li>`)
-      .join("");
+    const items = lines.map((l) => `<li>${renderHighlightedLineHtml(l)}</li>`).join("");
     return `<ul class="sb-list">${items}</ul>`;
   }
   return `<div class="sb-desc">${emphasizePlaceHtml(esc(desc))}</div>`;
@@ -628,12 +643,6 @@ function listEventDetails(raw: IsoEvent, view: "responsibles" | "vks" | "broadca
   if (view === "broadcasts") lines.push("Трансляция: Да");
   if (view === "interpretation") lines.push("Перевод: Да");
   return lines;
-}
-
-function shouldShowFormat(fmt: unknown) {
-  const s = fmt == null ? "" : String(fmt).trim();
-  if (!s) return false;
-  return s !== "Питание";
 }
 
 export function buildTildaSnippet(args: {
@@ -1017,6 +1026,7 @@ ${rootSel} a.sb-title{color:inherit;text-decoration:none}
 ${rootSel} a.sb-title:hover{text-decoration:underline}
 ${rootSel} .sb-rule{margin:14px 0;border:0;border-top:1px solid var(--sb-time)}
 ${rootSel} .sb-tile--accent .sb-rule{border-top-color:var(--sb-place)}
+${rootSel} .sb-lead{margin:0 0 8px;font-size:${theme.descFontPx}px;font-weight:${theme.descWeight};font-style:${theme.descItalic ? "italic" : "normal"};color:var(--sb-desc);line-height:1.45}
 ${rootSel} .sb-desc{font-size:${theme.descFontPx}px;font-weight:${theme.descWeight};font-style:${theme.descItalic ? "italic" : "normal"};color:var(--sb-desc);line-height:1.45;white-space:pre-line}
 ${rootSel} .sb-list{margin:0;padding-left:1.15em;font-size:${theme.descFontPx}px;line-height:1.45;color:var(--sb-desc)}
 ${rootSel} .sb-list li{margin:0 0 .35em}
@@ -1087,7 +1097,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
   function renderSession(ev: any, startD: Date, endD: Date) {
     const place = placeLabel(ev.building, ev.room);
     const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";
-    const desc = String(ev.description_md ?? ev.description ?? "");
+    const desc = shouldShowDescription(ev.format) ? String(ev.description_md ?? ev.description ?? "") : "";
     const extras = isTechView ? extraFieldLines(ev) : [];
     const hasBody = !!(desc || extras.length);
     const evUrl = normalizeHttpUrl(ev.url);
@@ -1103,6 +1113,10 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
       inner += `<div class="sb-title" style="${titleStyle}">${esc(ev.title)}</div>\n`;
     }
     if (hasBody) inner += `<hr class="sb-rule"/>\n`;
+    const lead = groupedCardIntro(ev.id);
+    if (lead && desc) {
+      inner += `<div class="sb-lead">${esc(lead)}</div>\n`;
+    }
     if (desc) inner += `${renderCardBodyHtml(desc)}\n`;
     if (extras.length) {
       for (const line of extras) {

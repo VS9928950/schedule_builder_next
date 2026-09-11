@@ -11,10 +11,14 @@ import {
   mergeFinalNirSameTime,
   isParallelGroupCardTitle,
   isParallelGroupCardId,
+  groupedCardIntro,
   isTechScheduleOnlyFormat,
   formatTimeRange,
   programCardTone,
   PROGRAM_CARD_BG,
+  shouldShowFormat,
+  shouldShowDescription,
+  highlightPlaceInLine,
   migrateLegacyStyleColor,
   migrateLegacyStyleNum,
   normalizeHttpUrl
@@ -829,12 +833,6 @@ export function TimelineViewer({
     return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
   }
 
-  function shouldShowFormat(fmt: unknown) {
-    const s = fmt == null ? "" : String(fmt).trim();
-    if (!s) return false;
-    return s !== "Питание";
-  }
-
   function extraFieldLines(
     ev: IsoEvent
   ): Array<{ kind: "teamLead" | "responsibles" | "vks" | "translation" | "interpretation" | "volunteers"; text: string }> {
@@ -877,6 +875,7 @@ export function TimelineViewer({
     const descSrc = String(e.description_md ?? e.description ?? "");
     if (isParallelGroupCardTitle(e.title) && descSrc) {
       descLines = descSrc.split("\n").filter(Boolean).length;
+      if (groupedCardIntro(e.id)) descLines += 1;
     } else if (descSrc) {
       descLines = Math.max(linesFor(descSrc), descSrc.split("\n").filter(Boolean).length);
     }
@@ -940,6 +939,36 @@ export function TimelineViewer({
   }
 
 const HIDDEN_BASE_MARK_PREFIX = "!";
+
+function renderHighlightedDescription(text: string) {
+  const lines = String(text)
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const allBullets =
+    lines.length > 0 && lines.every((l) => l.startsWith("- ") || l.startsWith("– ") || l.startsWith("— "));
+  if (!allBullets) {
+    return <span style={{ whiteSpace: "pre-line" }}>{text}</span>;
+  }
+  return (
+    <ul className="eventDescList">
+      {lines.map((line, i) => (
+        <li key={`desc-${i}`}>
+          {highlightPlaceInLine(line).map((p, j) =>
+            p.kind === "place" ? (
+              <span key={`p-${j}`}>
+                {j > 0 ? " " : null}
+                <span className="eventPlaceMark">{p.text}</span>
+              </span>
+            ) : (
+              <span key={`t-${j}`}>{p.text}</span>
+            )
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function parseDayMarkTokens(tokens: string[]) {
   const manualSet = new Set<string>();
@@ -1331,9 +1360,24 @@ function parseDayMarkTokens(tokens: string[]) {
             // do NOT auto full-width — otherwise other cards will be drawn on top of a full-width block.
             const startMin = minutesSinceLocalDayStart(it.event.start);
             const sameStartAnchorPeers = layout.items.filter((x) => minutesSinceLocalDayStart(x.event.start) === startMin).length;
-            const autoFullWidth = isGroupedCard && sameRangePeers <= 1 && sameStartAnchorPeers <= 1;
 
-            const isFullWidth = typeof ovLayout?.fullWidth === "boolean" ? ovLayout.fullWidth : autoFullWidth;
+            const absMin = layout.dayStartMin + it.topMin;
+            const hh = String(Math.floor(absMin / 60)).padStart(2, "0");
+            const mm = String(absMin % 60).padStart(2, "0");
+            const label = `${hh}:${mm}`;
+            const evId = String((it.event as any).id ?? "");
+            const ov = dayEventOverrides && evId ? dayEventOverrides[evId] : undefined;
+            const hasColSpanOverride =
+              typeof ov?.colSpan === "number" && Number.isFinite(ov.colSpan) && ov.colSpan >= 1;
+            // A saved width in Architecture must win over auto full-width (otherwise the resize handle is a no-op).
+            const autoFullWidth =
+              isGroupedCard && sameRangePeers <= 1 && sameStartAnchorPeers <= 1 && !hasColSpanOverride;
+
+            const isFullWidth = hasColSpanOverride
+              ? false
+              : typeof ovLayout?.fullWidth === "boolean"
+                ? ovLayout.fullWidth
+                : autoFullWidth;
             const stackOthersBelow = (ovLayout?.stackOthersBelow ?? true) && isFullWidth;
 
             const heightWidthPx = isFullWidth ? gridMinWidth : widthPx;
@@ -1344,18 +1388,12 @@ function parseDayMarkTokens(tokens: string[]) {
             // For food blocks ("Питание") we keep a compact header-only height (no description influence).
             const height = isFood ? Math.max(54, minNoDescH) : minH;
 
-            const absMin = layout.dayStartMin + it.topMin;
-            const hh = String(Math.floor(absMin / 60)).padStart(2, "0");
-            const mm = String(absMin % 60).padStart(2, "0");
-            const label = `${hh}:${mm}`;
-            const evId = String((it.event as any).id ?? "");
-            const ov = dayEventOverrides && evId ? dayEventOverrides[evId] : undefined;
             const anchorLabel = typeof ov?.anchor === "string" && ov.anchor.trim() ? ov.anchor.trim() : label;
             const anchorIdx = Math.max(0, anchors.indexOf(anchorLabel));
             const hidden = !!ov?.hidden;
             const heightFinal = typeof ov?.heightPx === "number" && Number.isFinite(ov.heightPx) ? Math.max(30, ov.heightPx) : height;
             const rowSpan = typeof ov?.rowSpan === "number" && Number.isFinite(ov.rowSpan) ? Math.max(1, Math.floor(ov.rowSpan)) : 1;
-            const colSpan = typeof ov?.colSpan === "number" && Number.isFinite(ov.colSpan) ? Math.max(1, Math.floor(ov.colSpan)) : 1;
+            const colSpan = hasColSpanOverride ? Math.max(1, Math.floor(ov!.colSpan as number)) : 1;
 
             // Column override (snap to grid cols)
             const colsN = Math.max(1, totalCols);
@@ -2785,13 +2823,17 @@ function parseDayMarkTokens(tokens: string[]) {
                         const border = ov?.eventBorderColor ? rgbaFrom(ov.eventBorderColor, ov.eventBorderAlpha ?? 1) : null;
                         const descMd = (it.event as any).description_md ? String((it.event as any).description_md) : "";
                         const descPlain = it.event.description ? String(it.event.description) : "";
-                        const descToShow = descMd || descPlain;
+                        const descToShow = shouldShowDescription(rawFormat) ? descMd || descPlain : "";
+                        const groupIntro = groupedCardIntro(it.event.id);
                         const extraLines = showExtraFields ? extraFieldLines(it.event as any) : [];
                         const evUrl = normalizeHttpUrl((it.event as any).url);
                         const linkT = styleDraft.eventLinkTarget === "_self" ? "_self" : "_blank";
                         const tone = programCardTone(it.event);
                         const toneBg = PROGRAM_CARD_BG[tone];
                         const hasBody = !!(descToShow || extraLines.length);
+                        const colIdx = Math.round(leftPx / Math.max(1, widthPx));
+                        const editColSpan = isFullWidth ? totalCols : typeof colSpan === "number" ? colSpan : 1;
+                        const editRowSpan = typeof rowSpan === "number" ? rowSpan : 1;
 
                         // For rows with a full-width event that stacks others below, shift non-full blocks down by full-stack height.
                         let extraTop = 0;
@@ -2845,10 +2887,10 @@ function parseDayMarkTokens(tokens: string[]) {
                                   onMouseDown={beginTileMove(
                                     String(it.event.id),
                                     anchorIdx,
-                                    Math.round(leftPx / Math.max(1, widthPx)),
+                                    colIdx,
                                     heightRender,
-                                    typeof rowSpan === "number" ? rowSpan : 1,
-                                    typeof colSpan === "number" ? colSpan : 1
+                                    editRowSpan,
+                                    editColSpan
                                   )}
                                 >
                                   {it.event.title}
@@ -2877,10 +2919,10 @@ function parseDayMarkTokens(tokens: string[]) {
                                     onMouseDown={beginTileMove(
                                       String(it.event.id),
                                       anchorIdx,
-                                      Math.round(leftPx / Math.max(1, widthPx)),
+                                      colIdx,
                                       heightRender,
-                                      typeof rowSpan === "number" ? rowSpan : 1,
-                                      typeof colSpan === "number" ? colSpan : 1
+                                      editRowSpan,
+                                      editColSpan
                                     )}
                                   >
                                     {it.event.title}
@@ -2900,9 +2942,10 @@ function parseDayMarkTokens(tokens: string[]) {
                                   <div className="eventTitle">{it.event.title}</div>
                                 )}
                                 {hasBody ? <hr className="eventRule" /> : null}
+                                {groupIntro && descToShow ? <div className="eventDescLead">{groupIntro}</div> : null}
                                 {descToShow ? (
                                   <div className="eventDesc" style={{ whiteSpace: "pre-line" }}>
-                                    {descMd ? renderMarkdownLite(descMd) : descPlain}
+                                    {descMd ? renderMarkdownLite(descMd) : renderHighlightedDescription(descPlain)}
                                   </div>
                                 ) : null}
                                 {extraLines.length ? (
@@ -2921,10 +2964,10 @@ function parseDayMarkTokens(tokens: string[]) {
                                 onMouseDown={beginTileResizeH(
                                   String(it.event.id),
                                   anchorIdx,
-                                  Math.round(leftPx / Math.max(1, widthPx)),
+                                  colIdx,
                                   heightRender,
-                                  typeof rowSpan === "number" ? rowSpan : 1,
-                                  typeof colSpan === "number" ? colSpan : 1
+                                  editRowSpan,
+                                  editColSpan
                                 )}
                                 title="Тяните вниз/вверх, чтобы изменить высоту плитки"
                                 style={{
@@ -2944,10 +2987,10 @@ function parseDayMarkTokens(tokens: string[]) {
                                 onMouseDown={beginTileResizeRowSpan(
                                   String(it.event.id),
                                   anchorIdx,
-                                  Math.round(leftPx / Math.max(1, widthPx)),
+                                  colIdx,
                                   heightRender,
-                                  typeof rowSpan === "number" ? rowSpan : 1,
-                                  typeof colSpan === "number" ? colSpan : 1
+                                  editRowSpan,
+                                  editColSpan
                                 )}
                                 title="Тяните, чтобы занять больше строк"
                                 style={{
@@ -2964,15 +3007,15 @@ function parseDayMarkTokens(tokens: string[]) {
                               />
                             ) : null}
 
-                            {layoutEdit && !isFullWidth ? (
+                            {layoutEdit ? (
                               <div
                                 onMouseDown={beginTileResizeColSpan(
                                   String(it.event.id),
                                   anchorIdx,
-                                  Math.round(leftPx / Math.max(1, widthPx)),
+                                  colIdx,
                                   heightRender,
-                                  typeof rowSpan === "number" ? rowSpan : 1,
-                                  typeof colSpan === "number" ? colSpan : 1
+                                  editRowSpan,
+                                  editColSpan
                                 )}
                                 title="Тяните вправо/влево, чтобы занять больше колонок"
                                 style={{

@@ -358,6 +358,26 @@ button.secondary { background: rgba(15,23,42,.04); }
   line-height: 1.25;
   opacity: .92;
 }
+.eventDescLead {
+  margin: 0 0 8px;
+  font-size: var(--tl-desc-font-px, 12px);
+  font-weight: var(--tl-desc-font-weight, 400);
+  font-style: var(--tl-desc-font-style, normal);
+  color: var(--tl-desc-color, #000);
+  line-height: 1.35;
+}
+.eventDescList {
+  margin: 0;
+  padding-left: 1.15em;
+}
+.eventDescList li {
+  margin: 0 0 0.35em;
+}
+.eventPlaceMark {
+  color: var(--tl-place-color, #51226b);
+  font-weight: var(--tl-place-font-weight, 600);
+  font-style: var(--tl-place-font-style, normal);
+}
 .eventExtra {
   margin-top: 4px;
   line-height: 1.3;
