@@ -417,7 +417,11 @@ function formatTimeRange(start: Date, end: Date) {
 }
 
 function placeLabel(building?: unknown, room?: unknown) {
-  return [building != null ? String(building).trim() : "", room != null ? String(room).trim() : ""].filter(Boolean).join(", ");
+  const clean = (v: unknown) => {
+    const s = v != null ? String(v).trim() : "";
+    return !s || s === "-" ? "" : s;
+  };
+  return [clean(building), clean(room)].filter(Boolean).join(", ");
 }
 
 function renderHighlightedLineHtml(line: string) {
@@ -1055,43 +1059,28 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     hidden: boolean;
   };
 
-  function overlapsMs(a: ProgramBox, b: ProgramBox) {
-    return a.startD.getTime() < b.endD.getTime() && a.endD.getTime() > b.startD.getTime();
-  }
-
   function slotsFromBoxes(boxes: ProgramBox[]): ProgramBox[][][] {
-    const visible = boxes.filter((b) => !b.hidden).sort((a, b) => a.startD.getTime() - b.startD.getTime() || a.col - b.col);
-    const used = new Set<ProgramBox>();
-    const slots: ProgramBox[][][] = [];
+    const visible = boxes.filter((b) => !b.hidden);
+    const byStart = new Map<number, ProgramBox[]>();
     for (const box of visible) {
-      if (used.has(box)) continue;
-      const group: ProgramBox[] = [];
-      const queue = [box];
-      used.add(box);
-      while (queue.length) {
-        const cur = queue.pop()!;
-        group.push(cur);
-        for (const other of visible) {
-          if (used.has(other)) continue;
-          if (overlapsMs(cur, other)) {
-            used.add(other);
-            queue.push(other);
-          }
-        }
-      }
-      const byCol = new Map<number, ProgramBox[]>();
-      for (const g of group) {
-        const arr = byCol.get(g.col) ?? [];
-        arr.push(g);
-        byCol.set(g.col, arr);
-      }
-      const cols = Array.from(byCol.entries())
-        .sort((a, b) => a[0] - b[0])
-        .map(([, list]) => list.sort((a, b) => a.startD.getTime() - b.startD.getTime()));
-      slots.push(cols);
+      const t = box.startD.getTime();
+      const arr = byStart.get(t) ?? [];
+      arr.push(box);
+      byStart.set(t, arr);
     }
-    slots.sort((a, b) => a[0]![0]!.startD.getTime() - b[0]![0]!.startD.getTime());
-    return slots;
+    return Array.from(byStart.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([, group]) => {
+        const byCol = new Map<number, ProgramBox[]>();
+        for (const g of group.sort((a, b) => a.col - b.col)) {
+          const arr = byCol.get(g.col) ?? [];
+          arr.push(g);
+          byCol.set(g.col, arr);
+        }
+        return Array.from(byCol.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(([, list]) => list);
+      });
   }
 
   function renderSession(ev: any, startD: Date, endD: Date) {
@@ -1164,11 +1153,14 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     const boxes: ProgramBox[] = (dayLayout.items as any[]).map((it) => {
       const ev = it.event as any;
       const ov = resolveEventOverride(eventOverrides?.[dayKey], ev);
+      const cluster = Math.max(0, Math.floor(Number.isFinite(it.clusterIndex) ? it.clusterIndex : 0));
+      const col =
+        typeof ov.col === "number" && Number.isFinite(ov.col) ? Math.max(0, Math.floor(ov.col)) : cluster;
       return {
         ev,
         startD: new Date(ev.start),
         endD: new Date(ev.end),
-        col: Math.max(0, Math.floor(Number.isFinite(it.clusterIndex) ? it.clusterIndex : 0)),
+        col,
         hidden: !!ov.hidden
       };
     });
