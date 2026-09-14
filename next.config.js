@@ -5,6 +5,10 @@ const nextConfig = {
   reactStrictMode: true,
   /** Уменьшает образ Docker: в `.next/standalone` кладётся только нужное для `next start`. */
   output: "standalone",
+  outputFileTracingIncludes: {
+    "/app/p/[id]/export/print/illustrator": ["./lib/fonts/**/*"],
+    "/api/export/illustrator": ["./lib/fonts/**/*"]
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
