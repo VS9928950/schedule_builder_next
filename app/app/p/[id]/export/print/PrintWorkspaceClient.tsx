@@ -412,7 +412,8 @@ export function PrintWorkspaceClient({
           timelineStyle: style as any,
           onlyDayKey: k,
           view: exportView || "timeline",
-          fontMode: "inherit"
+          fontMode: "inherit",
+          fontScale: 0.6
         })
       );
     }

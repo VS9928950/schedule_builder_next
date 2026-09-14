@@ -75,9 +75,9 @@ html, body { height: 100%; background: var(--bg); }
     font-weight: 800;
   }
   .print-tilda-day {
-    margin: 0 0 16px;
+    margin: 0 0 8px;
     text-align: center;
-    font-size: 30px;
+    font-size: 18px;
     font-weight: 600;
     line-height: 1.17;
     color: #ca0734;
@@ -122,7 +122,7 @@ html, body { height: 100%; background: var(--bg); }
   }
   .print-tilda-preview .sb-tile,
   .print-arch-tilda .sb-tile {
-    padding: 32px;
+    padding: inherit;
   }
   .tl-print-screen-scale .lanesInner {
     transform-origin: top left;
@@ -141,9 +141,9 @@ html, body { height: 100%; background: var(--bg); }
     overflow: visible;
   }
   .print-tilda-preview .print-tilda-day {
-    margin: 0 0 16px;
+    margin: 0 0 8px;
     text-align: center;
-    font-size: 30px;
+    font-size: 18px;
     font-weight: 600;
     line-height: 1.17;
     color: #ca0734;
@@ -156,7 +156,7 @@ html, body { height: 100%; background: var(--bg); }
     flex-direction: column !important;
   }
   .print-tilda-preview .sb-tile {
-    padding: 32px;
+    padding: inherit;
   }
 }
 body {

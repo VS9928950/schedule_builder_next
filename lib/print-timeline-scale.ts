@@ -104,7 +104,7 @@ export function clearPrintTimelineScale() {
 
 const PRINT_ONLY_SEL = ".print-workspace-print-only";
 const PRINT_TILDA_SHEET_SEL = ".print-workspace-print-only .print-arch-tilda";
-const MIN_PRINT_SCALE = 0.85;
+const MIN_PRINT_SCALE = 0.7;
 const A4_CONTENT_H_MM = 297 - 16;
 const SNAP_ATTR = "data-print-html";
 

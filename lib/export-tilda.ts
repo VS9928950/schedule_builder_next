@@ -249,6 +249,18 @@ function numOrMigrated(v: unknown, legacy: number, next: number, min: number, ma
   return clampNum(v, next, min, max);
 }
 
+function scaleThemeType(theme: ResolvedSnippetStyle, scale: number): ResolvedSnippetStyle {
+  const next = { ...theme };
+  (Object.keys(next) as Array<keyof ResolvedSnippetStyle>).forEach((key) => {
+    if (!String(key).endsWith("FontPx")) return;
+    const n = next[key];
+    if (typeof n === "number" && Number.isFinite(n)) {
+      (next as Record<string, unknown>)[key as string] = Math.max(8, Math.round(n * scale));
+    }
+  });
+  return next;
+}
+
 /** Same defaults as Architecture / Tech schedule style panels. */
 function resolveSnippetStyle(raw: SnippetStyleIn): ResolvedSnippetStyle {
   const s = raw ?? {};
@@ -659,9 +671,20 @@ export function buildTildaSnippet(args: {
   responsibleFilter?: string | null;
   /** Default: inherit site fonts. `tilda-sans` forces Tilda Sans for layout checks. */
   fontMode?: "inherit" | "tilda-sans";
+  /** Multiply Architecture type sizes (print uses ~0.6 so a day can fit A4). */
+  fontScale?: number;
 }) {
   const { projectName, events, timelineLayout, timelineStyle, scopeSelector, onlyDayKey, fontMode, view, roomsMode, responsibleFilter } = args;
-  const theme = resolveSnippetStyle(timelineStyle);
+  const fontScaleRaw = Number(args.fontScale);
+  const fontScale =
+    Number.isFinite(fontScaleRaw) && fontScaleRaw > 0 ? Math.max(0.4, Math.min(1.2, fontScaleRaw)) : 1;
+  const theme = scaleThemeType(resolveSnippetStyle(timelineStyle), fontScale);
+  const space = fontScale;
+  const programGapPx = Math.max(6, Math.round(20 * space));
+  const tilePadPx = Math.max(8, Math.round(32 * space));
+  const ruleMarginPx = Math.max(6, Math.round(14 * space));
+  const formatTopPx = Math.max(4, Math.round(10 * space));
+  const titleTopPx = Math.max(2, Math.round(6 * space));
   const isTechView = String(view ?? "").trim() === "tech-schedule";
   const filteredEvents = applyExportViewFilter(events, view);
   const layout = timelineLayout ?? {};
@@ -1010,23 +1033,23 @@ ${rootSel}{
   ${fontStack}
   color:var(--sb-desc);
 }
-${rootSel} .sb-program{display:flex;flex-direction:column;gap:20px}
-${rootSel} .sb-program + .sb-program{margin-top:12px}
-${rootSel} .sb-slot{display:flex;align-items:stretch;gap:20px}
-${rootSel} .sb-col{display:flex;flex-direction:column;gap:20px;min-width:0}
-${rootSel} .sb-tile{min-width:0;box-sizing:border-box;padding:32px;border-radius:10px;background:${PROGRAM_CARD_BG.default}}
+${rootSel} .sb-program{display:flex;flex-direction:column;gap:${programGapPx}px}
+${rootSel} .sb-program + .sb-program{margin-top:${Math.max(6, Math.round(12 * space))}px}
+${rootSel} .sb-slot{display:flex;align-items:stretch;gap:${programGapPx}px}
+${rootSel} .sb-col{display:flex;flex-direction:column;gap:${programGapPx}px;min-width:0}
+${rootSel} .sb-tile{min-width:0;box-sizing:border-box;padding:${tilePadPx}px;border-radius:10px;background:${PROGRAM_CARD_BG.default}}
 ${rootSel} .sb-tile--accent{background:${PROGRAM_CARD_BG.accent}}
 ${rootSel} .sb-tile--service{background:${PROGRAM_CARD_BG.service}}
 ${rootSel} .sb-tile--default{background:${PROGRAM_CARD_BG.default}}
-${rootSel} .sb-session + .sb-session{margin-top:18px}
-${rootSel} .sb-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+${rootSel} .sb-session + .sb-session{margin-top:${Math.max(8, Math.round(18 * space))}px}
+${rootSel} .sb-head{display:flex;justify-content:space-between;align-items:baseline;gap:${Math.max(6, Math.round(12 * space))}px}
 ${rootSel} .sb-time{font-size:${theme.timeFontPx}px;font-weight:${theme.timeWeight};font-style:${theme.timeItalic ? "italic" : "normal"};color:var(--sb-time);line-height:1.4}
 ${rootSel} .sb-place{font-size:${theme.placeFontPx}px;font-weight:${theme.placeWeight};font-style:${theme.placeItalic ? "italic" : "normal"};color:var(--sb-place);text-align:right;line-height:1.4}
-${rootSel} .sb-format{margin-top:10px;font-size:${theme.formatFontPx}px;font-weight:${theme.formatWeight};font-style:${theme.formatItalic ? "italic" : "normal"};color:var(--sb-format)}
-${rootSel} .sb-title{margin-top:6px;font-size:${theme.titleFontPx}px;font-weight:${theme.titleWeight};font-style:${theme.titleItalic ? "italic" : "normal"};color:var(--sb-title);line-height:1.35}
+${rootSel} .sb-format{margin-top:${formatTopPx}px;font-size:${theme.formatFontPx}px;font-weight:${theme.formatWeight};font-style:${theme.formatItalic ? "italic" : "normal"};color:var(--sb-format)}
+${rootSel} .sb-title{margin-top:${titleTopPx}px;font-size:${theme.titleFontPx}px;font-weight:${theme.titleWeight};font-style:${theme.titleItalic ? "italic" : "normal"};color:var(--sb-title);line-height:1.35}
 ${rootSel} a.sb-title{color:inherit;text-decoration:none}
 ${rootSel} a.sb-title:hover{text-decoration:underline}
-${rootSel} .sb-rule{margin:14px 0;border:0;border-top:1px solid var(--sb-time)}
+${rootSel} .sb-rule{margin:${ruleMarginPx}px 0;border:0;border-top:1px solid var(--sb-time)}
 ${rootSel} .sb-tile--accent .sb-rule{border-top-color:var(--sb-place)}
 ${rootSel} .sb-lead{margin:0 0 8px;font-size:${theme.descFontPx}px;font-weight:${theme.descWeight};font-style:${theme.descItalic ? "italic" : "normal"};color:var(--sb-desc);line-height:1.45}
 ${rootSel} .sb-desc{font-size:${theme.descFontPx}px;font-weight:${theme.descWeight};font-style:${theme.descItalic ? "italic" : "normal"};color:var(--sb-desc);line-height:1.45;white-space:pre-line}
@@ -1041,9 +1064,9 @@ ${rootSel} .sb-extra--translation{font-size:${theme.translationFontPx}px;font-we
 ${rootSel} .sb-extra--interpretation{font-size:${theme.interpretationFontPx}px;font-weight:${theme.interpretationWeight};font-style:${theme.interpretationItalic ? "italic" : "normal"};color:${esc(theme.interpretationColor)}}
 ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weight:${theme.volunteersWeight};font-style:${theme.volunteersItalic ? "italic" : "normal"};color:${esc(theme.volunteersColor)}}
 @media (max-width: 768px){
-  ${rootSel} .sb-slot{flex-direction:column;gap:16px}
+  ${rootSel} .sb-slot{flex-direction:column;gap:${Math.max(8, Math.round(16 * space))}px}
   ${rootSel} .sb-col{flex:1 1 auto}
-  ${rootSel} .sb-tile{padding:24px;flex:1 1 auto}
+  ${rootSel} .sb-tile{padding:${tilePadPx}px;flex:1 1 auto}
 }
 @media print{
   ${rootSel} .sb-tile{break-inside:avoid}
