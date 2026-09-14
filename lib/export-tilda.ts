@@ -1013,7 +1013,8 @@ ${rootSel}{
 ${rootSel} .sb-program{display:flex;flex-direction:column;gap:20px}
 ${rootSel} .sb-program + .sb-program{margin-top:12px}
 ${rootSel} .sb-slot{display:flex;align-items:stretch;gap:20px}
-${rootSel} .sb-tile{flex:1 1 0;min-width:0;box-sizing:border-box;padding:32px;border-radius:10px;background:${PROGRAM_CARD_BG.default}}
+${rootSel} .sb-col{display:flex;flex-direction:column;gap:20px;min-width:0}
+${rootSel} .sb-tile{min-width:0;box-sizing:border-box;padding:32px;border-radius:10px;background:${PROGRAM_CARD_BG.default}}
 ${rootSel} .sb-tile--accent{background:${PROGRAM_CARD_BG.accent}}
 ${rootSel} .sb-tile--service{background:${PROGRAM_CARD_BG.service}}
 ${rootSel} .sb-tile--default{background:${PROGRAM_CARD_BG.default}}
@@ -1041,6 +1042,7 @@ ${rootSel} .sb-extra--interpretation{font-size:${theme.interpretationFontPx}px;f
 ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weight:${theme.volunteersWeight};font-style:${theme.volunteersItalic ? "italic" : "normal"};color:${esc(theme.volunteersColor)}}
 @media (max-width: 768px){
   ${rootSel} .sb-slot{flex-direction:column;gap:16px}
+  ${rootSel} .sb-col{flex:1 1 auto}
   ${rootSel} .sb-tile{padding:24px;flex:1 1 auto}
 }
 @media print{
@@ -1090,12 +1092,19 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     }
     return Array.from(bySlot.entries())
       .sort((a, b) => a[0] - b[0])
-      .map(([, group]) =>
-        group
-          .slice()
-          .sort((a, b) => a.col - b.col || a.startD.getTime() - b.startD.getTime())
-          .map((box) => [box])
-      );
+      .map(([, group]) => {
+        const byCol = new Map<number, ProgramBox[]>();
+        for (const box of group) {
+          const arr = byCol.get(box.col) ?? [];
+          arr.push(box);
+          byCol.set(box.col, arr);
+        }
+        return Array.from(byCol.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(([, boxes]) =>
+            boxes.slice().sort((a, b) => a.startD.getTime() - b.startD.getTime())
+          );
+      });
   }
 
   function renderSession(ev: any, startD: Date, endD: Date) {
@@ -1192,15 +1201,19 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     for (const cols of slots) {
       html += `<div class="sb-slot">\n`;
       for (const col of cols) {
-        const first = col[0]!;
-        const tone = programCardTone(first.ev);
-        const so = (first.ev.style_override ?? {}) as any;
-        const bg =
-          (so.eventBgColor ? rgbaFrom(String(so.eventBgColor), Number(so.eventBgAlpha ?? 1)) : null) ?? PROGRAM_CARD_BG[tone];
+        const stacked = col.length > 1;
         const span = Math.max(1, ...col.map((b) => b.colSpan || 1));
-        html += `<div class="sb-tile sb-tile--${esc(tone)}" style="background:${esc(bg)};flex:${span} 1 0">\n`;
+        html += `<div class="sb-col" style="flex:${span} 1 0">\n`;
         for (const box of col) {
+          const tone = programCardTone(box.ev);
+          const so = (box.ev.style_override ?? {}) as any;
+          const bg =
+            (so.eventBgColor ? rgbaFrom(String(so.eventBgColor), Number(so.eventBgAlpha ?? 1)) : null) ?? PROGRAM_CARD_BG[tone];
+          const mins = Math.max(1, Math.round((box.endD.getTime() - box.startD.getTime()) / 60000));
+          const tileFlex = stacked ? `${mins} 1 0` : "1 1 auto";
+          html += `<div class="sb-tile sb-tile--${esc(tone)}" style="background:${esc(bg)};flex:${tileFlex}">\n`;
           html += renderSession(box.ev, box.startD, box.endD);
+          html += `</div>\n`;
         }
         html += `</div>\n`;
       }
