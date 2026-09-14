@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/session";
 import { getProject } from "@/lib/store";
-import { buildIllustratorPdf } from "@/lib/export-illustrator-pdf";
+import { buildIllustratorSvg } from "@/lib/export-illustrator-pdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,17 +24,17 @@ export async function GET(req: Request) {
 
   const events = Array.isArray(activeBuild.events_json) ? (activeBuild.events_json as any[]) : [];
   const day = url.searchParams.get("day");
-  const bytes = await buildIllustratorPdf({
+  const svg = buildIllustratorSvg({
     events,
     timelineLayout: ((activeBuild as any).timeline_layout ?? null) as any,
     onlyDayKey: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null,
     view: "timeline"
   });
-  const name = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? `program-${day}.pdf` : "program.pdf";
-  return new NextResponse(Buffer.from(bytes), {
+  const name = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? `program-${day}.svg` : "program.svg";
+  return new NextResponse(svg, {
     status: 200,
     headers: {
-      "Content-Type": "application/pdf",
+      "Content-Type": "image/svg+xml; charset=utf-8",
       "Content-Disposition": `attachment; filename="${name}"`,
       "Cache-Control": "no-store"
     }

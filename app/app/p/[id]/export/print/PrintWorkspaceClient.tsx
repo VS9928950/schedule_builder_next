@@ -740,7 +740,7 @@ export function PrintWorkspaceClient({
             {isArchitectureView ? (
               <a
                 className="chip"
-                download
+                download={mode === "single" && activeKey ? `program-${activeKey}.svg` : "program.svg"}
                 href={`/app/p/${projectId}/export/print/illustrator${
                   mode === "single" && activeKey ? `?day=${encodeURIComponent(activeKey)}` : ""
                 }`}
@@ -756,7 +756,7 @@ export function PrintWorkspaceClient({
         <p className="muted" style={{ fontSize: 13, marginTop: 8, maxWidth: 720 }}>
           A4 книжная: в диалоге печати — «Сохранить как PDF». На бумагу уходит только программа ниже, без меню и панелей.
           {isArchitectureView
-            ? " Карточки как в Тильде; если день не влезает, он слегка уменьшается (не мельче чем до читаемого предела) и только потом делится по рядам. «Для Illustrator» — отдельный векторный PDF с живым текстом (не контурами), без масштабирования браузера."
+            ? " Карточки как в Тильде; если день не влезает, он слегка уменьшается (не мельче чем до читаемого предела) и только потом делится по рядам. «Для Illustrator» скачивает SVG: в Illustrator откройте файл через File → Open — карточки и текст остаются живыми объектами."
             : " При широкой сетке она уменьшается под ширину листа."}{" "}
           Режим «Все дни» — каждый день с новой страницы.
         </p>

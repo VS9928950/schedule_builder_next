@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PDFDocument, PDFFont, PDFPage, rgb, type RGB } from "pdf-lib";
 import fontkitMod from "@pdf-lib/fontkit";
+import type { Font } from "@pdf-lib/fontkit";
 import {
   formatDayProgramTitle,
   formatPlaceLabel,
@@ -18,52 +18,87 @@ import { layoutProgramDays, type ProgramBox, type TimelineLayout } from "@/lib/p
 const A4_W = 595.28;
 const A4_H = 841.89;
 const MARGIN = 22.68;
-const FONT_SCALE = 0.6;
+const FONT_SCALE = 0.85;
 const TITLE_SIZE = 18;
-const TIME_SIZE = Math.max(8, Math.round(16 * FONT_SCALE));
-const FORMAT_SIZE = Math.max(8, Math.round(15 * FONT_SCALE));
-const BODY_SIZE = Math.max(8, Math.round(20 * FONT_SCALE));
-const DESC_SIZE = Math.max(8, Math.round(15 * FONT_SCALE));
-const PAD = Math.max(6, Math.round(32 * FONT_SCALE * 0.6));
-const SLOT_GAP = 8;
-const COL_GAP = 8;
-const STACK_GAP = 6;
-const LINE = 1.25;
+const TIME_SIZE = Math.max(10, Math.round(16 * FONT_SCALE));
+const FORMAT_SIZE = Math.max(10, Math.round(15 * FONT_SCALE));
+const BODY_SIZE = Math.max(11, Math.round(20 * FONT_SCALE));
+const DESC_SIZE = Math.max(10, Math.round(15 * FONT_SCALE));
+const PAD = Math.max(8, Math.round(32 * FONT_SCALE * 0.55));
+const SLOT_GAP = 10;
+const COL_GAP = 10;
+const STACK_GAP = 8;
+const LINE = 1.28;
+const FONT_FAMILY = "Arial";
 
-const DAY_COLOR = rgb(202 / 255, 7 / 255, 52 / 255);
-const TIME_COLOR = rgb(202 / 255, 7 / 255, 52 / 255);
-const TITLE_COLOR = rgb(4 / 255, 26 / 255, 89 / 255);
-const MUTED = rgb(0, 0, 0);
-const PLACE_COLOR = rgb(90 / 255, 40 / 255, 90 / 255);
+const DAY_COLOR = "#CA0734";
+const TIME_COLOR = "#CA0734";
+const TITLE_COLOR = "#041A59";
+const MUTED = "#000000";
+const PLACE_COLOR = "#5A285A";
 
-function hexRgb(hex: string): RGB {
-  const m = /^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/.exec(hex.trim());
-  if (!m) return rgb(0.94, 0.95, 0.98);
-  return rgb(parseInt(m[1]!, 16) / 255, parseInt(m[2]!, 16) / 255, parseInt(m[3]!, 16) / 255);
+type Fonts = { regular: Font; bold: Font };
+
+type TextBlock = { text: string; size: number; bold: boolean; color: string };
+
+function escXml(s: unknown) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
-function wrapText(font: PDFFont, text: string, size: number, maxW: number): string[] {
+function loadFontkit() {
+  return (fontkitMod as { default?: typeof fontkitMod }).default ?? fontkitMod;
+}
+
+function widthOf(font: Font, text: string, size: number) {
+  if (!text) return 0;
+  const glyphs = font.glyphsForString(text);
+  let w = 0;
+  for (const g of glyphs) w += g.advanceWidth;
+  return (w / font.unitsPerEm) * size;
+}
+
+function wrapText(font: Font, text: string, size: number, maxW: number): string[] {
   const raw = String(text ?? "").replace(/\r\n/g, "\n").replace(/\t/g, " ");
-  const paragraphs = raw.split("\n");
-  const lines: string[] = [];
-  for (const para of paragraphs) {
+  const out: string[] = [];
+  for (const para of raw.split("\n")) {
     const words = para.split(/\s+/).filter(Boolean);
     if (!words.length) {
-      lines.push("");
+      out.push("");
       continue;
     }
-    let cur = words[0]!;
-    for (let i = 1; i < words.length; i++) {
-      const next = `${cur} ${words[i]}`;
-      if (font.widthOfTextAtSize(next, size) <= maxW) cur = next;
-      else {
-        lines.push(cur);
-        cur = words[i]!;
+    let cur = "";
+    const flush = () => {
+      if (cur) out.push(cur);
+      cur = "";
+    };
+    for (const word of words) {
+      if (widthOf(font, word, size) > maxW) {
+        flush();
+        let piece = "";
+        for (const ch of word) {
+          const next = piece + ch;
+          if (piece && widthOf(font, next, size) > maxW) {
+            out.push(piece);
+            piece = ch;
+          } else piece = next;
+        }
+        cur = piece;
+        continue;
       }
+      const next = cur ? `${cur} ${word}` : word;
+      if (cur && widthOf(font, next, size) > maxW) {
+        out.push(cur);
+        cur = word;
+      } else cur = next;
     }
-    lines.push(cur);
+    flush();
   }
-  return lines;
+  return out;
 }
 
 function descLines(raw: string): string[] {
@@ -74,9 +109,7 @@ function descLines(raw: string): string[] {
     .filter((ln, i, arr) => ln.length > 0 || (i > 0 && arr[i - 1]));
 }
 
-type Fonts = { regular: PDFFont; bold: PDFFont };
-
-function sessionLines(box: ProgramBox, font: PDFFont, titleFont: PDFFont, maxW: number) {
+function sessionBlocks(box: ProgramBox, fonts: Fonts, maxW: number) {
   const ev = box.ev;
   const place = formatPlaceLabel(ev.building, ev.room);
   const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";
@@ -84,20 +117,24 @@ function sessionLines(box: ProgramBox, font: PDFFont, titleFont: PDFFont, maxW: 
   const lead = groupedCardIntro(ev.id);
   const time = formatTimeRange(box.startD, box.endD);
   const title = String(ev.title ?? "");
-  const inner = Math.max(20, maxW - PAD * 2);
-  const blocks: Array<{ text: string; size: number; font: PDFFont; color: RGB }> = [];
-  blocks.push({ text: time, size: TIME_SIZE, font: titleFont, color: TIME_COLOR });
-  if (place) blocks.push({ text: place, size: TIME_SIZE, font, color: PLACE_COLOR });
-  if (fmt) blocks.push({ text: fmt, size: FORMAT_SIZE, font, color: MUTED });
-  wrapText(titleFont, title, BODY_SIZE, inner).forEach((t) =>
-    blocks.push({ text: t, size: BODY_SIZE, font: titleFont, color: TITLE_COLOR })
+  const inner = Math.max(24, maxW - PAD * 2);
+  const blocks: TextBlock[] = [];
+  blocks.push({ text: time, size: TIME_SIZE, bold: true, color: TIME_COLOR });
+  if (place) blocks.push({ text: place, size: TIME_SIZE, bold: false, color: PLACE_COLOR });
+  if (fmt) blocks.push({ text: fmt, size: FORMAT_SIZE, bold: false, color: MUTED });
+  wrapText(fonts.bold, title, BODY_SIZE, inner).forEach((t) =>
+    blocks.push({ text: t, size: BODY_SIZE, bold: true, color: TITLE_COLOR })
   );
   if (lead && desc) {
-    wrapText(font, lead, DESC_SIZE, inner).forEach((t) => blocks.push({ text: t, size: DESC_SIZE, font, color: MUTED }));
+    wrapText(fonts.regular, lead, DESC_SIZE, inner).forEach((t) =>
+      blocks.push({ text: t, size: DESC_SIZE, bold: false, color: MUTED })
+    );
   }
   if (desc) {
     for (const ln of descLines(desc)) {
-      wrapText(font, ln, DESC_SIZE, inner).forEach((t) => blocks.push({ text: t, size: DESC_SIZE, font, color: MUTED }));
+      wrapText(fonts.regular, ln, DESC_SIZE, inner).forEach((t) =>
+        blocks.push({ text: t, size: DESC_SIZE, bold: false, color: MUTED })
+      );
     }
   }
   let h = PAD * 2;
@@ -105,95 +142,58 @@ function sessionLines(box: ProgramBox, font: PDFFont, titleFont: PDFFont, maxW: 
   return { blocks, height: h, inner };
 }
 
-function slotHeights(cols: ProgramBox[][], fonts: Fonts, contentW: number) {
-  const spans = cols.map((col) => Math.max(1, ...col.map((b) => b.colSpan || 1)));
-  const flex = spans.reduce((a, b) => a + b, 0) || 1;
-  const usable = contentW - COL_GAP * Math.max(0, cols.length - 1);
-  const widths = spans.map((s) => (s / flex) * usable);
-  const colHs: number[] = [];
-  const measured = cols.map((col, i) => {
-    const w = widths[i]!;
-    const tiles = col.map((box) => {
-      const s = sessionLines(box, fonts.regular, fonts.bold, w);
-      const mins = Math.max(1, Math.round((box.endD.getTime() - box.startD.getTime()) / 60000));
-      return { box, ...s, mins };
-    });
-    const stack = tiles.reduce((a, t) => a + t.height, 0) + STACK_GAP * Math.max(0, tiles.length - 1);
-    colHs.push(stack);
-    return { w, tiles, stack };
-  });
-  const slotH = Math.max(...colHs, 24);
-  return { measured, slotH, widths };
-}
-
-function drawTile(
-  page: PDFPage,
-  fonts: Fonts,
-  x: number,
-  yTop: number,
-  w: number,
-  h: number,
-  box: ProgramBox,
-  lines: ReturnType<typeof sessionLines>
-) {
+function tileSvg(x: number, y: number, w: number, h: number, box: ProgramBox, lines: ReturnType<typeof sessionBlocks>) {
   const tone = programCardTone(box.ev);
   const so = (box.ev.style_override ?? {}) as { eventBgColor?: string };
-  const bgHex = so.eventBgColor || PROGRAM_CARD_BG[tone];
-  page.drawRectangle({
-    x,
-    y: yTop - h,
-    width: w,
-    height: h,
-    color: hexRgb(bgHex),
-    borderWidth: 0
-  });
-  let cy = yTop - PAD - TIME_SIZE;
+  const bg = so.eventBgColor || PROGRAM_CARD_BG[tone];
+  let xml = `<g>\n`;
+  xml += `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" rx="8" ry="8" fill="${escXml(bg)}"/>\n`;
+  let cy = y + PAD + TIME_SIZE;
   const textX = x + PAD;
-  const maxW = lines.inner;
   for (const b of lines.blocks) {
-    const t = b.text.length ? b.text : " ";
-    const shown =
-      b.font.widthOfTextAtSize(t, b.size) <= maxW
-        ? t
-        : (() => {
-            let s = t;
-            while (s.length > 1 && b.font.widthOfTextAtSize(`${s}…`, b.size) > maxW) s = s.slice(0, -1);
-            return `${s}…`;
-          })();
-    page.drawText(shown, {
-      x: textX,
-      y: cy,
-      size: b.size,
-      font: b.font,
-      color: b.color
-    });
-    cy -= b.size * LINE;
+    const weight = b.bold ? 700 : 400;
+    xml += `<text x="${textX.toFixed(2)}" y="${cy.toFixed(2)}" font-family="${FONT_FAMILY}" font-size="${b.size}" font-weight="${weight}" fill="${b.color}">${escXml(
+      b.text
+    )}</text>\n`;
+    cy += b.size * LINE;
   }
+  xml += `</g>\n`;
+  return xml;
 }
 
-function packAndDrawDay(
-  doc: PDFDocument,
-  fonts: Fonts,
-  dayKey: string,
-  slots: ProgramBox[][][]
-) {
+function packDayPages(fonts: Fonts, dayKey: string, slots: ProgramBox[][][]) {
   const contentW = A4_W - MARGIN * 2;
   const contentH = A4_H - MARGIN * 2;
   const dayDate = localDateFromDayKey(dayKey);
   const heading = Number.isFinite(dayDate.getTime()) ? formatDayProgramTitle(dayDate) : dayKey;
-  const titleBlock = TITLE_SIZE + 10;
+  const titleBlock = TITLE_SIZE + 12;
 
-  type SlotMeas = ReturnType<typeof slotHeights>;
-  const measuredSlots: SlotMeas[] = slots.map((cols) => slotHeights(cols, fonts, contentW));
+  const measured = slots.map((cols) => {
+    const spans = cols.map((col) => Math.max(1, ...col.map((b) => b.colSpan || 1)));
+    const flex = spans.reduce((a, b) => a + b, 0) || 1;
+    const usable = contentW - COL_GAP * Math.max(0, cols.length - 1);
+    const colMeas = cols.map((col, i) => {
+      const w = (spans[i]! / flex) * usable;
+      const tiles = col.map((box) => {
+        const s = sessionBlocks(box, fonts, w);
+        const mins = Math.max(1, Math.round((box.endD.getTime() - box.startD.getTime()) / 60000));
+        return { box, ...s, mins };
+      });
+      const minStack = tiles.reduce((a, t) => a + t.height, 0) + STACK_GAP * Math.max(0, tiles.length - 1);
+      return { w, tiles, minStack };
+    });
+    const slotH = Math.max(...colMeas.map((c) => c.minStack), 24);
+    return { colMeas, slotH };
+  });
 
-  const pages: number[][] = [];
+  const groups: number[][] = [];
   let cur: number[] = [];
   let used = titleBlock;
-  for (let i = 0; i < measuredSlots.length; i++) {
-    const h = measuredSlots[i]!.slotH;
+  for (let i = 0; i < measured.length; i++) {
+    const h = measured[i]!.slotH;
     const need = (cur.length ? SLOT_GAP : 0) + h;
     if (cur.length && used + need > contentH) {
-      pages.push(cur);
+      groups.push(cur);
       cur = [i];
       used = titleBlock + h;
     } else {
@@ -201,83 +201,78 @@ function packAndDrawDay(
       used += need;
     }
   }
-  if (cur.length) pages.push(cur);
+  if (cur.length) groups.push(cur);
 
-  for (const group of pages) {
-    const page = doc.addPage([A4_W, A4_H]);
-    const titleW = fonts.bold.widthOfTextAtSize(heading, TITLE_SIZE);
-    page.drawText(heading, {
-      x: (A4_W - titleW) / 2,
-      y: A4_H - MARGIN - TITLE_SIZE,
-      size: TITLE_SIZE,
-      font: fonts.bold,
-      color: DAY_COLOR
-    });
-    let y = A4_H - MARGIN - titleBlock;
+  return groups.map((group) => {
+    let xml = `<rect width="${A4_W}" height="${A4_H}" fill="#fff"/>\n`;
+    const titleW = widthOf(fonts.bold, heading, TITLE_SIZE);
+    xml += `<text x="${((A4_W - titleW) / 2).toFixed(2)}" y="${(MARGIN + TITLE_SIZE).toFixed(2)}" font-family="${FONT_FAMILY}" font-size="${TITLE_SIZE}" font-weight="700" fill="${DAY_COLOR}">${escXml(
+      heading
+    )}</text>\n`;
+    let y = MARGIN + titleBlock;
     for (const idx of group) {
-      const slot = measuredSlots[idx]!;
-      const cols = slots[idx]!;
+      const slot = measured[idx]!;
       let x = MARGIN;
-      for (let c = 0; c < slot.measured.length; c++) {
-        const col = slot.measured[c]!;
-        const w = col.w;
+      for (const col of slot.colMeas) {
         const stacked = col.tiles.length > 1;
-        const target = slot.slotH;
         if (!stacked) {
           const tile = col.tiles[0]!;
-          drawTile(page, fonts, x, y, w, target, tile.box, tile);
+          xml += tileSvg(x, y, col.w, slot.slotH, tile.box, tile);
         } else {
+          const minSum = col.tiles.reduce((a, t) => a + t.height, 0);
+          const gaps = STACK_GAP * Math.max(0, col.tiles.length - 1);
+          const extra = Math.max(0, slot.slotH - minSum - gaps);
           const totalMins = col.tiles.reduce((a, t) => a + t.mins, 0) || 1;
           let yy = y;
-          const flexGaps = STACK_GAP * Math.max(0, col.tiles.length - 1);
-          const body = Math.max(1, target - flexGaps);
-          for (let t = 0; t < col.tiles.length; t++) {
-            const tile = col.tiles[t]!;
-            const th = (tile.mins / totalMins) * body;
-            drawTile(page, fonts, x, yy, w, th, tile.box, tile);
-            yy -= th + STACK_GAP;
+          for (const tile of col.tiles) {
+            const th = tile.height + extra * (tile.mins / totalMins);
+            xml += tileSvg(x, yy, col.w, th, tile.box, tile);
+            yy += th + STACK_GAP;
           }
         }
-        x += w + COL_GAP;
+        x += col.w + COL_GAP;
       }
-      y -= slot.slotH + SLOT_GAP;
+      y += slot.slotH + SLOT_GAP;
     }
-  }
+    return xml;
+  });
 }
 
-export async function buildIllustratorPdf(args: {
+export function buildIllustratorSvg(args: {
   events: any[];
   timelineLayout: TimelineLayout | null;
   onlyDayKey?: string | null;
   view?: string | null;
-}): Promise<Uint8Array> {
+}): string {
   const days = layoutProgramDays({
     events: args.events,
     timelineLayout: args.timelineLayout,
     view: args.view ?? "timeline",
     onlyDayKey: args.onlyDayKey
   });
-  const doc = await PDFDocument.create();
-  const fontkit = (fontkitMod as { default?: typeof fontkitMod }).default ?? fontkitMod;
-  doc.registerFontkit(fontkit);
+  const kit = loadFontkit();
   const fontsDir = join(process.cwd(), "lib", "fonts");
-  const regularBytes = readFileSync(join(fontsDir, "LiberationSans-Regular.ttf"));
-  const boldBytes = readFileSync(join(fontsDir, "LiberationSans-Bold.ttf"));
   const fonts: Fonts = {
-    regular: await doc.embedFont(regularBytes, { subset: false }),
-    bold: await doc.embedFont(boldBytes, { subset: false })
+    regular: kit.create(readFileSync(join(fontsDir, "LiberationSans-Regular.ttf"))),
+    bold: kit.create(readFileSync(join(fontsDir, "LiberationSans-Bold.ttf")))
   };
+
+  const pages: string[] = [];
   if (!days.length) {
-    const page = doc.addPage([A4_W, A4_H]);
-    page.drawText("Нет программы для выбранного периода.", {
-      x: MARGIN,
-      y: A4_H - MARGIN - 18,
-      size: 12,
-      font: fonts.regular,
-      color: TITLE_COLOR
-    });
+    pages.push(
+      `<rect width="${A4_W}" height="${A4_H}" fill="#fff"/>\n` +
+        `<text x="${MARGIN}" y="${MARGIN + 18}" font-family="${FONT_FAMILY}" font-size="14" font-weight="400" fill="${TITLE_COLOR}">Нет программы для выбранного периода.</text>\n`
+    );
   } else {
-    for (const day of days) packAndDrawDay(doc, fonts, day.dayKey, day.slots);
+    for (const day of days) pages.push(...packDayPages(fonts, day.dayKey, day.slots));
   }
-  return doc.save({ useObjectStreams: false });
+
+  const height = pages.length * A4_H;
+  let svg = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+  svg += `<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="${(pages.length * 297).toFixed(2)}mm" viewBox="0 0 ${A4_W} ${height.toFixed(2)}">\n`;
+  pages.forEach((page, i) => {
+    svg += `<g transform="translate(0, ${(i * A4_H).toFixed(2)})">\n${page}</g>\n`;
+  });
+  svg += `</svg>\n`;
+  return svg;
 }
