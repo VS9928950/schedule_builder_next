@@ -87,6 +87,7 @@ export default async function ExportPrintTab({
         <Suspense fallback={<div className="muted">Загрузка…</div>}>
           <PrintWorkspaceClient
             projectId={project.id}
+            projectName={project.name}
             activeBuildId={activeBuild ? activeBuild.id : null}
             events={filteredForView as any[]}
             marks={isTechView ? (activeBuild as any)?.tech_timeline_marks ?? null : (activeBuild as any)?.timeline_marks ?? null}

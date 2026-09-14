@@ -101,3 +101,174 @@ export function clearPrintTimelineScale() {
     clearOne(fit, inner);
   });
 }
+
+const PRINT_ONLY_SEL = ".print-workspace-print-only";
+const PRINT_TILDA_SHEET_SEL = ".print-workspace-print-only .print-arch-tilda";
+const MIN_PRINT_SCALE = 0.85;
+const A4_CONTENT_H_MM = 297 - 16;
+const SNAP_ATTR = "data-print-html";
+
+function pageContentHeightPx(sheet: HTMLElement): number {
+  const w = sheet.clientWidth;
+  const widthPx = w > 80 ? w : Math.floor((190 / 25.4) * 96);
+  return Math.max(200, Math.floor(widthPx * (A4_CONTENT_H_MM / 190)));
+}
+
+function programGapPx(program: HTMLElement): number {
+  const g = getComputedStyle(program).rowGap || getComputedStyle(program).gap;
+  const n = Number.parseFloat(g || "");
+  return Number.isFinite(n) ? n : 20;
+}
+
+function applyFitScale(fit: HTMLElement, inner: HTMLElement | null, z: number) {
+  clearOne(fit, inner);
+  if (!Number.isFinite(z) || z >= 0.999) return;
+  if (zoomPropertyShrinksLayout()) {
+    (fit.style as unknown as { zoom?: string }).zoom = String(z);
+    return;
+  }
+  if (!inner) {
+    (fit.style as unknown as { zoom?: string }).zoom = String(z);
+    return;
+  }
+  const naturalH = inner.scrollHeight;
+  const naturalW = inner.scrollWidth;
+  fit.style.overflow = "hidden";
+  fit.style.height = `${Math.ceil(naturalH * z)}px`;
+  inner.style.transformOrigin = "top left";
+  inner.style.width = `${naturalW}px`;
+  inner.style.transform = `scale(${z})`;
+}
+
+function keepSlots(sheet: HTMLElement, keep: Set<number>) {
+  const program = sheet.querySelector(".sb-program");
+  if (!program) return;
+  const slots = Array.from(program.querySelectorAll<HTMLElement>(":scope > .sb-slot"));
+  slots.forEach((el, i) => {
+    if (!keep.has(i)) el.remove();
+  });
+}
+
+function groupSlotPages(heights: number[], gap: number, usable: number): { indices: number[]; scale: number }[] {
+  const n = heights.length;
+  if (!n) return [];
+  const all = Array.from({ length: n }, (_, i) => i);
+  const total = heights.reduce((a, b) => a + b, 0) + gap * Math.max(0, n - 1);
+  if (total <= usable) return [{ indices: all, scale: 1 }];
+  const z = usable / total;
+  if (z >= MIN_PRINT_SCALE) return [{ indices: all, scale: z }];
+
+  const groups: number[][] = [];
+  let cur: number[] = [];
+  let curH = 0;
+  for (let i = 0; i < n; i++) {
+    const h = Math.max(0, heights[i] ?? 0);
+    const next = cur.length ? curH + gap + h : h;
+    if (cur.length && next > usable) {
+      groups.push(cur);
+      cur = [i];
+      curH = h;
+    } else {
+      cur.push(i);
+      curH = next;
+    }
+  }
+  if (cur.length) groups.push(cur);
+  return groups.map((indices) => ({ indices, scale: 1 }));
+}
+
+function paginateTildaSheet(sheet: HTMLElement) {
+  const program = sheet.querySelector<HTMLElement>(".sb-program");
+  const fit = sheet.querySelector<HTMLElement>(".print-tilda-fit");
+  const inner = fit?.querySelector<HTMLElement>(".print-timeline-print-scale-inner") ?? null;
+  if (!program || !fit) return;
+
+  const title = sheet.querySelector<HTMLElement>(".print-tilda-day");
+  const titleH = title ? title.offsetHeight + 16 : 0;
+  const usable = Math.max(120, pageContentHeightPx(sheet) - titleH);
+  const slots = Array.from(program.querySelectorAll<HTMLElement>(":scope > .sb-slot"));
+  const gap = programGapPx(program);
+  const heights = slots.map((el) => el.offsetHeight);
+  const pages = groupSlotPages(heights, gap, usable);
+  if (!pages.length) return;
+
+  const parent = sheet.parentElement;
+  if (!parent) return;
+  const template = sheet.cloneNode(true) as HTMLElement;
+
+  const first = pages[0]!;
+  keepSlots(sheet, new Set(first.indices));
+  if (pages.length > 1) sheet.classList.add("print-page-break-after");
+  applyFitScale(fit, inner, first.scale);
+  if (first.indices.length === 1 && (heights[first.indices[0]!] ?? 0) > usable) {
+    const only = sheet.querySelector<HTMLElement>(".sb-slot");
+    if (only) {
+      only.style.breakInside = "auto";
+      only.style.pageBreakInside = "auto";
+    }
+  }
+
+  let last = sheet;
+  for (let i = 1; i < pages.length; i++) {
+    const page = pages[i]!;
+    const clone = template.cloneNode(true) as HTMLElement;
+    clone.removeAttribute("data-print-day");
+    clone.setAttribute("data-print-clone", "1");
+    keepSlots(clone, new Set(page.indices));
+    const cloneFit = clone.querySelector<HTMLElement>(".print-tilda-fit");
+    const cloneInner = cloneFit?.querySelector<HTMLElement>(".print-timeline-print-scale-inner") ?? null;
+    if (cloneFit) applyFitScale(cloneFit, cloneInner, page.scale);
+    if (i < pages.length - 1) clone.classList.add("print-page-break-after");
+    else clone.classList.remove("print-page-break-after");
+    if (page.indices.length === 1 && (heights[page.indices[0]!] ?? 0) > usable) {
+      const only = clone.querySelector<HTMLElement>(".sb-slot");
+      if (only) {
+        only.style.breakInside = "auto";
+        only.style.pageBreakInside = "auto";
+      }
+    }
+    parent.insertBefore(clone, last.nextSibling);
+    last = clone;
+  }
+}
+
+export function applyPrintTildaLayout() {
+  if (typeof document === "undefined") return;
+  const root = document.querySelector<HTMLElement>(PRINT_ONLY_SEL);
+  if (!root?.querySelector(".print-arch-tilda")) return;
+
+  const snap = root.getAttribute(SNAP_ATTR);
+  if (snap != null) root.innerHTML = snap;
+  else root.setAttribute(SNAP_ATTR, root.innerHTML);
+
+  const origins = Array.from(document.querySelectorAll<HTMLElement>(PRINT_TILDA_SHEET_SEL)).filter(
+    (el) => !el.hasAttribute("data-print-clone")
+  );
+  for (const sheet of origins) paginateTildaSheet(sheet);
+
+  const allSheets = Array.from(document.querySelectorAll<HTMLElement>(PRINT_TILDA_SHEET_SEL));
+  allSheets.forEach((el, i) => {
+    if (i < allSheets.length - 1) el.classList.add("print-page-break-after");
+    else el.classList.remove("print-page-break-after");
+  });
+}
+
+export function clearPrintTildaLayout() {
+  if (typeof document === "undefined") return;
+  const root = document.querySelector<HTMLElement>(PRINT_ONLY_SEL);
+  if (!root) return;
+  const snap = root.getAttribute(SNAP_ATTR);
+  if (snap == null) return;
+  root.innerHTML = snap;
+  root.removeAttribute(SNAP_ATTR);
+}
+
+export function applyPrintForExport() {
+  applyPrintTildaLayout();
+  applyPrintTimelineScale();
+}
+
+export function clearPrintForExport() {
+  clearPrintTildaLayout();
+  clearPrintTimelineScale();
+}

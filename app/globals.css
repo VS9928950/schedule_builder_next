@@ -74,11 +74,22 @@ html, body { height: 100%; background: var(--bg); }
     font-size: 13pt;
     font-weight: 800;
   }
+  .print-tilda-day {
+    margin: 0 0 16px;
+    text-align: center;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.17;
+    color: #ca0734;
+    font-family: TildaSans, Arial, sans-serif;
+  }
   .print-a4-sheet {
     max-width: 190mm;
     margin: 0 auto;
+    overflow: visible;
   }
-  .print-timeline-fit {
+  .print-timeline-fit,
+  .print-tilda-fit {
     max-width: 100%;
     overflow: visible;
   }
@@ -89,6 +100,29 @@ html, body { height: 100%; background: var(--bg); }
   .print-timeline-fit .lanes {
     max-width: 100% !important;
     overflow: visible !important;
+  }
+  .print-arch-tilda .sb-wrap,
+  .print-arch-tilda .sb-program,
+  .print-tilda-preview .sb-wrap,
+  .print-tilda-preview .sb-program {
+    overflow: visible !important;
+  }
+  .print-arch-tilda .sb-slot,
+  .print-arch-tilda .sb-tile {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .print-tilda-preview .sb-slot,
+  .print-arch-tilda .sb-slot {
+    flex-direction: row !important;
+  }
+  .print-tilda-preview .sb-col,
+  .print-arch-tilda .sb-col {
+    flex-direction: column !important;
+  }
+  .print-tilda-preview .sb-tile,
+  .print-arch-tilda .sb-tile {
+    padding: 32px;
   }
   .tl-print-screen-scale .lanesInner {
     transform-origin: top left;
@@ -101,6 +135,28 @@ html, body { height: 100%; background: var(--bg); }
   }
   .tl-print-screen-scale .lanesInner {
     transform-origin: top left;
+  }
+  .print-tilda-preview {
+    max-width: 190mm;
+    overflow: visible;
+  }
+  .print-tilda-preview .print-tilda-day {
+    margin: 0 0 16px;
+    text-align: center;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.17;
+    color: #ca0734;
+    font-family: TildaSans, Arial, sans-serif;
+  }
+  .print-tilda-preview .sb-slot {
+    flex-direction: row !important;
+  }
+  .print-tilda-preview .sb-col {
+    flex-direction: column !important;
+  }
+  .print-tilda-preview .sb-tile {
+    padding: 32px;
   }
 }
 body {

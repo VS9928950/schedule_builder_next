@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { applyPrintTimelineScale, clearPrintTimelineScale } from "@/lib/print-timeline-scale";
-import { formatDayFull, formatPlaceLabel, localDateFromDayKey } from "@/lib/schedule";
+import { applyPrintForExport, clearPrintForExport } from "@/lib/print-timeline-scale";
+import { formatDayFull, formatDayProgramTitle, formatPlaceLabel, localDateFromDayKey } from "@/lib/schedule";
+import { buildTildaSnippet } from "@/lib/export-tilda";
 import { TimelineViewer } from "../../timeline/TimelineViewer";
 import { PrintButton } from "./PrintButton";
 
@@ -268,6 +269,7 @@ function listEventDetails(raw: IsoEv, view: ListExportView): string[] {
 
 export function PrintWorkspaceClient({
   projectId,
+  projectName,
   activeBuildId,
   events,
   marks,
@@ -276,6 +278,7 @@ export function PrintWorkspaceClient({
   programDayKeys
 }: {
   projectId: number;
+  projectName: string;
   activeBuildId: number | null;
   events: IsoEv[];
   marks: Record<string, string[]> | null;
@@ -295,6 +298,7 @@ export function PrintWorkspaceClient({
     exportView === "broadcasts" ||
     exportView === "interpretation" ||
     exportView === "volunteers";
+  const isArchitectureView = !isRoomsView && !isListView && exportView !== "tech-schedule";
   const [activeResponsibleNorm, setActiveResponsibleNorm] = useState("");
   const viewLabel =
     exportView === "tech-schedule"
@@ -343,7 +347,7 @@ export function PrintWorkspaceClient({
     const t = window.setTimeout(() => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          applyPrintTimelineScale();
+          applyPrintForExport();
           window.print();
           try {
             const u = new URL(window.location.href);
@@ -360,26 +364,26 @@ export function PrintWorkspaceClient({
 
   const runPrintScale = () => {
     requestAnimationFrame(() => {
-      applyPrintTimelineScale();
-      requestAnimationFrame(() => applyPrintTimelineScale());
+      applyPrintForExport();
+      requestAnimationFrame(() => applyPrintForExport());
     });
   };
 
   /** Подгонка сетки: `beforeprint` + переход в print (PDF превью иногда без надёжного beforeprint). */
   useEffect(() => {
     window.addEventListener("beforeprint", runPrintScale);
-    window.addEventListener("afterprint", clearPrintTimelineScale);
+    window.addEventListener("afterprint", clearPrintForExport);
 
     const mq = window.matchMedia("(print)");
     const onMq = () => {
       if (mq.matches) runPrintScale();
-      else clearPrintTimelineScale();
+      else clearPrintForExport();
     };
     mq.addEventListener("change", onMq);
 
     return () => {
       window.removeEventListener("beforeprint", runPrintScale);
-      window.removeEventListener("afterprint", clearPrintTimelineScale);
+      window.removeEventListener("afterprint", clearPrintForExport);
       mq.removeEventListener("change", onMq);
     };
   }, [mode, activeKey, visibleKeys]);
@@ -388,6 +392,32 @@ export function PrintWorkspaceClient({
     const d = localDateFromDayKey(k);
     return Number.isFinite(d.getTime()) ? formatDayFull(d) : k;
   };
+
+  const tildaDayTitle = (k: string) => {
+    const d = localDateFromDayKey(k);
+    return Number.isFinite(d.getTime()) ? formatDayProgramTitle(d) : k;
+  };
+
+  const tildaByDay = useMemo(() => {
+    if (!isArchitectureView) return null;
+    const map = new Map<string, { html: string; css: string }>();
+    for (const k of visibleKeys) {
+      map.set(
+        k,
+        buildTildaSnippet({
+          projectName,
+          events: events as any,
+          marksByDay: marks ?? {},
+          timelineLayout: (layout as any) ?? null,
+          timelineStyle: style as any,
+          onlyDayKey: k,
+          view: exportView || "timeline",
+          fontMode: "inherit"
+        })
+      );
+    }
+    return map;
+  }, [isArchitectureView, visibleKeys, projectName, events, marks, layout, style, exportView]);
 
   const selectedRoomsDayKeys = useMemo(() => {
     if (mode === "all") return visibleKeys;
@@ -681,6 +711,24 @@ export function PrintWorkspaceClient({
     );
   };
 
+  const architectureSnippet = (dayKey: string) => tildaByDay?.get(dayKey) ?? null;
+
+  const renderArchitecturePrint = (dayKey: string) => {
+    const snippet = architectureSnippet(dayKey);
+    if (!snippet) return <div className="muted">Нет программы на этот день.</div>;
+    return (
+      <>
+        <h2 className="print-tilda-day">{tildaDayTitle(dayKey)}</h2>
+        <div className="print-tilda-fit">
+          <div className="print-timeline-print-scale-inner">
+            <style dangerouslySetInnerHTML={{ __html: snippet.css }} />
+            <div dangerouslySetInnerHTML={{ __html: snippet.html }} />
+          </div>
+        </div>
+      </>
+    );
+  };
+
   return (
     <>
       <div className="print-workspace-no-print">
@@ -694,9 +742,11 @@ export function PrintWorkspaceClient({
           </div>
         </div>
         <p className="muted" style={{ fontSize: 13, marginTop: 8, maxWidth: 720 }}>
-          A4 книжная: в диалоге печати — «Сохранить как PDF». На бумагу уходят только блоки ниже (без верхнего меню, без
-          вкладок проекта и без панели настроек): заголовок даты один раз и сетка; при широкой сетке она автоматически
-          уменьшается под ширину листа. Режим «Все дни» — каждый день с новой страницы.
+          A4 книжная: в диалоге печати — «Сохранить как PDF». На бумагу уходит только программа ниже, без меню и панелей.
+          {isArchitectureView
+            ? " Карточки как в Тильде; если день не влезает, он слегка уменьшается (не мельче чем до читаемого предела) и только потом делится по рядам."
+            : " При широкой сетке она уменьшается под ширину листа."}{" "}
+          Режим «Все дни» — каждый день с новой страницы.
         </p>
         <div className="row" style={{ gap: 16, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ fontWeight: 700 }}>Область печати</span>
@@ -777,6 +827,20 @@ export function PrintWorkspaceClient({
             ))}
           </div>
         ) : null}
+        {isArchitectureView && mode === "single" && visibleKeys.length ? (
+          <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            {visibleKeys.map((dk) => (
+              <button
+                key={`arch-day-${dk}`}
+                type="button"
+                className={dk === activeKey ? "" : "secondary"}
+                onClick={() => setActiveKey(dk)}
+              >
+                {tildaDayTitle(dk)}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div style={{ height: 14 }} />
         {isRoomsView ? (
           <div className="grid" style={{ gap: 8 }}>
@@ -788,6 +852,17 @@ export function PrintWorkspaceClient({
           </div>
         ) : isListView ? (
           renderListView(selectedListDayKeys)
+        ) : isArchitectureView ? (
+          <div className="print-tilda-preview">
+            {mode === "single" && activeKey ? renderArchitecturePrint(activeKey) : null}
+            {mode === "all"
+              ? visibleKeys.map((k) => (
+                  <div key={`arch-preview-${k}`} style={{ marginBottom: 28 }}>
+                    {renderArchitecturePrint(k)}
+                  </div>
+                ))
+              : null}
+          </div>
         ) : (
           <div className="tl-print-screen-scale">
             <TimelineViewer
@@ -836,6 +911,21 @@ export function PrintWorkspaceClient({
                   <section key={`list-print-${k}`} className="print-a4-sheet print-page-break-after">
                     <h2 className="print-day-heading">{headingFor(k)}</h2>
                     {renderListView([k])}
+                  </section>
+                ))
+              : null}
+          </>
+        ) : isArchitectureView ? (
+          <>
+            {mode === "single" && activeKey ? (
+              <section className="print-a4-sheet print-arch-tilda" data-print-day={activeKey}>
+                {renderArchitecturePrint(activeKey)}
+              </section>
+            ) : null}
+            {mode === "all"
+              ? visibleKeys.map((k) => (
+                  <section key={`arch-print-${k}`} className="print-a4-sheet print-arch-tilda print-page-break-after" data-print-day={k}>
+                    {renderArchitecturePrint(k)}
                   </section>
                 ))
               : null}

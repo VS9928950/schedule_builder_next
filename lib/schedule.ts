@@ -816,6 +816,11 @@ export function formatDayFull(d: Date): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+/** Day title as on the public Tilda program tabs: «25 сентября». */
+export function formatDayProgramTitle(d: Date): string {
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", timeZone: "UTC" });
+}
+
 /** Calendar day key YYYY-MM-DD from the spreadsheet clock (not the browser timezone). */
 export function dayKeyLocalFromDate(d: Date): string {
   const y = d.getUTCFullYear();
