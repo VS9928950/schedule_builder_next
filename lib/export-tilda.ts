@@ -74,7 +74,7 @@ import {
   programCardTone,
   PROGRAM_CARD_BG,
   shouldShowFormat,
-  shouldShowDescription,
+  publicCardDescription,
   highlightPlaceInLine,
   groupedCardIntro,
   formatPlaceLabel,
@@ -1033,7 +1033,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
   function renderSession(ev: any, startD: Date, endD: Date) {
     const place = placeLabel(ev.building, ev.room);
     const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";
-    const desc = shouldShowDescription(ev.format) ? String(ev.description_md ?? ev.description ?? "") : "";
+    const desc = publicCardDescription(ev);
     const extras = isTechView ? extraFieldLines(ev) : [];
     const hasBody = !!(desc || extras.length);
     const evUrl = normalizeHttpUrl(ev.url);

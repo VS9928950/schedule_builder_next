@@ -17,7 +17,8 @@ import {
   programCardTone,
   PROGRAM_CARD_BG,
   shouldShowFormat,
-  shouldShowDescription,
+  publicCardDescription,
+  INVITATION_MEETING_FORMAT,
   highlightPlaceInLine,
   formatPlaceLabel,
   migrateLegacyStyleColor,
@@ -873,7 +874,7 @@ export function TimelineViewer({
     const placeLines = e.building || e.room ? 1 : 0;
 
     let descLines = 0;
-    const descSrc = shouldShowDescription(e.format) ? String(e.description_md ?? e.description ?? "") : "";
+    const descSrc = publicCardDescription(e);
     if (isParallelGroupCardTitle(e.title) && descSrc) {
       descLines = descSrc.split("\n").filter(Boolean).length;
       if (groupedCardIntro(e.id)) descLines += 1;
@@ -2809,7 +2810,7 @@ function parseDayMarkTokens(tokens: string[]) {
                         const border = ov?.eventBorderColor ? rgbaFrom(ov.eventBorderColor, ov.eventBorderAlpha ?? 1) : null;
                         const descMd = (it.event as any).description_md ? String((it.event as any).description_md) : "";
                         const descPlain = it.event.description ? String(it.event.description) : "";
-                        const descToShow = shouldShowDescription(rawFormat) ? descMd || descPlain : "";
+                        const descToShow = publicCardDescription(it.event);
                         const groupIntro = groupedCardIntro(it.event.id);
                         const extraLines = showExtraFields ? extraFieldLines(it.event as any) : [];
                         const evUrl = normalizeHttpUrl((it.event as any).url);
@@ -2933,7 +2934,11 @@ function parseDayMarkTokens(tokens: string[]) {
                                 {groupIntro && descToShow ? <div className="eventDescLead">{groupIntro}</div> : null}
                                 {descToShow ? (
                                   <div className="eventDesc" style={{ whiteSpace: "pre-line" }}>
-                                    {descMd ? renderMarkdownLite(descMd) : renderHighlightedDescription(descPlain)}
+                                    {String(rawFormat).trim() === INVITATION_MEETING_FORMAT
+                                      ? descToShow
+                                      : descMd
+                                        ? renderMarkdownLite(descMd)
+                                        : renderHighlightedDescription(descPlain)}
                                   </div>
                                 ) : null}
                                 {extraLines.length ? (

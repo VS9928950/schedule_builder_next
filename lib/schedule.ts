@@ -755,17 +755,31 @@ export function migrateLegacyStyleNum(v: unknown, legacy: number, next: number):
   return v === legacy ? next : v;
 }
 
+export const INVITATION_MEETING_FORMAT = "Встреча по приглашениям";
+export const INVITATION_MEETING_DESCRIPTION = "(по приглашениям)";
+
 /** Hide format label on public cards for these values. */
 export function shouldShowFormat(fmt: unknown): boolean {
   const s = fmt == null ? "" : String(fmt).trim();
   if (!s) return false;
-  return s !== "Питание" && s !== "Регистрация" && s !== "Встреча по приглашениям";
+  return s !== "Питание" && s !== "Регистрация" && s !== INVITATION_MEETING_FORMAT;
 }
 
-/** Food, registration, and invitation meetings show time/title/place only. */
+/** Food and registration show time/title/place only. Invitation meetings use a fixed line. */
 export function shouldShowDescription(fmt: unknown): boolean {
   const s = String(fmt ?? "").trim();
-  return s !== "Питание" && s !== "Регистрация" && s !== "Встреча по приглашениям";
+  return s !== "Питание" && s !== "Регистрация" && s !== INVITATION_MEETING_FORMAT;
+}
+
+/** Body text on Architecture / Tilda / Illustrator cards. */
+export function publicCardDescription(ev: {
+  format?: unknown;
+  description_md?: unknown;
+  description?: unknown;
+}): string {
+  if (String(ev.format ?? "").trim() === INVITATION_MEETING_FORMAT) return INVITATION_MEETING_DESCRIPTION;
+  if (!shouldShowDescription(ev.format)) return "";
+  return String(ev.description_md ?? ev.description ?? "");
 }
 
 export type ProgramCardTone = "accent" | "service" | "default";

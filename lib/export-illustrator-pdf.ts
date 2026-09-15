@@ -10,7 +10,7 @@ import {
   localDateFromDayKey,
   PROGRAM_CARD_BG,
   programCardTone,
-  shouldShowDescription,
+  publicCardDescription,
   shouldShowFormat
 } from "@/lib/schedule";
 import { layoutProgramDays, type ProgramBox, type TimelineLayout } from "@/lib/program-slots";
@@ -113,7 +113,7 @@ function sessionBlocks(box: ProgramBox, fonts: Fonts, maxW: number) {
   const ev = box.ev;
   const place = formatPlaceLabel(ev.building, ev.room);
   const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";
-  const desc = shouldShowDescription(ev.format) ? String(ev.description_md ?? ev.description ?? "") : "";
+  const desc = publicCardDescription(ev);
   const lead = groupedCardIntro(ev.id);
   const time = formatTimeRange(box.startD, box.endD);
   const title = String(ev.title ?? "");
