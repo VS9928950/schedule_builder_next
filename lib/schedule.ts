@@ -167,11 +167,11 @@ function pickUrlFromRow(row: Record<string, unknown>): string | undefined {
 }
 
 function pickAnnouncementFromRow(row: Record<string, unknown>): string | undefined {
-  return strAny(row["Анонсы"]) ?? strAny(row["Анонс"]) ?? undefined;
+  return meaningfulText(strAny(row["Анонсы"]) ?? strAny(row["Анонс"]));
 }
 
 function pickSpeakersFromRow(row: Record<string, unknown>): string | undefined {
-  return strAny(row["Спикеры"]) ?? strAny(row["Спикер"]) ?? undefined;
+  return meaningfulText(strAny(row["Спикеры"]) ?? strAny(row["Спикер"]));
 }
 
 function pickPopupFromRow(row: Record<string, unknown>): string | undefined {
@@ -244,7 +244,7 @@ export function fillEmptyPopupAndUrl<T extends {
 
 function popupFieldsFromRow(row: Record<string, unknown>, index: number) {
   const id = String(row["id"] ?? row["ID"] ?? row["Id"] ?? index);
-  const speakers = meaningfulText(pickSpeakersFromRow(row));
+  const speakers = pickSpeakersFromRow(row);
   const description = meaningfulText(row["Описание"]);
   const filled = fillEmptyPopupAndUrl({
     id,
@@ -949,7 +949,7 @@ export function publicCardDescription(ev: {
 }): string {
   if (String(ev.format ?? "").trim() === INVITATION_MEETING_FORMAT) return INVITATION_MEETING_DESCRIPTION;
   if (!shouldShowDescription(ev.format)) return "";
-  return String(ev.description_md ?? ev.announcement ?? "");
+  return meaningfulText(ev.description_md) || meaningfulText(ev.announcement) || "";
 }
 
 export type ProgramCardTone = "accent" | "service" | "default";

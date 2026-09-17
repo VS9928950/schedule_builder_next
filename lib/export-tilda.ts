@@ -1202,13 +1202,15 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     var btnHref=a.getAttribute("data-sb-btn-href")||"";
     var foot=m.querySelector(".sb-modal__foot");
     var btn=m.querySelector(".sb-modal__btn");
-    if(btnText && btnHref && foot && btn){
+    if(btnText && btnText!=="-" && btnHref && foot && btn){
       btn.textContent=btnText;
       btn.setAttribute("href",btnHref);
       foot.hidden=false;
+      foot.style.display="flex";
     } else if(foot){
-      if(btn) btn.removeAttribute("href");
+      if(btn) { btn.textContent=""; btn.removeAttribute("href"); }
       foot.hidden=true;
+      foot.style.display="none";
     }
     m.hidden=false;
     document.body.style.overflow="hidden";

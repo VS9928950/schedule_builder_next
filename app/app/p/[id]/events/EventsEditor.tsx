@@ -622,7 +622,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Анонс (столбец «Анонсы», текст на карточке)
+                  Анонс (столбец «Анонсы», текст на карточке; «-» не показывается)
                 </div>
                 <textarea
                   value={editing.announcement ?? ""}
@@ -631,7 +631,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Спикеры (столбец «Спикеры»)
+                  Спикеры (столбец «Спикеры»; «-» не попадает в попап)
                 </div>
                 <textarea
                   value={editing.speakers ?? ""}
@@ -661,7 +661,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Кнопка попапа (столбец «Кнопка»; «-» или пусто — без кнопки)
+                  Кнопка попапа (столбец «Кнопка»; пусто — без кнопки, крестик остаётся)
                 </div>
                 <input
                   value={editing.popupButtonText ?? ""}
@@ -1090,7 +1090,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Анонс (столбец «Анонсы», текст на карточке)
+                  Анонс (столбец «Анонсы», текст на карточке; «-» не показывается)
                 </div>
                 <textarea
                   value={editingUntimed.announcement ?? ""}
@@ -1099,7 +1099,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Спикеры (столбец «Спикеры»)
+                  Спикеры (столбец «Спикеры»; «-» не попадает в попап)
                 </div>
                 <textarea
                   value={editingUntimed.speakers ?? ""}
@@ -1129,7 +1129,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Кнопка попапа (столбец «Кнопка»; «-» или пусто — без кнопки)
+                  Кнопка попапа (столбец «Кнопка»; пусто — без кнопки, крестик остаётся)
                 </div>
                 <input
                   value={editingUntimed.popupButtonText ?? ""}
