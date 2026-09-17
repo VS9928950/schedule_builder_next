@@ -90,6 +90,7 @@ import {
   resolvePopupButton
 } from "@/lib/schedule";
 import { layoutProgramDays } from "@/lib/program-slots";
+import { renderMarkdownLiteHtml } from "@/lib/markdown-lite";
 
 function esc(s: unknown) {
   return String(s ?? "")
@@ -437,17 +438,7 @@ function emphasizePlaceHtml(escaped: string) {
 }
 
 function renderCardBodyHtml(desc: string) {
-  const lines = String(desc)
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (!lines.length) return "";
-  const allBullets = lines.every((l) => l.startsWith("- ") || l.startsWith("– ") || l.startsWith("— "));
-  if (allBullets) {
-    const items = lines.map((l) => `<li>${renderHighlightedLineHtml(l)}</li>`).join("");
-    return `<ul class="sb-list">${items}</ul>`;
-  }
-  return `<div class="sb-desc">${emphasizePlaceHtml(esc(desc))}</div>`;
+  return emphasizePlaceHtml(renderMarkdownLiteHtml(desc));
 }
 
 function normToken(v: unknown): string {
@@ -1022,7 +1013,10 @@ ${rootSel} a.sb-title:hover{text-decoration:underline}
 ${rootSel} .sb-rule{margin:${ruleMarginPx}px 0;border:0;border-top:1px solid var(--sb-time)}
 ${rootSel} .sb-tile--accent .sb-rule{border-top-color:var(--sb-place)}
 ${rootSel} .sb-lead{margin:0 0 8px;font-size:${theme.descFontPx}px;font-weight:${theme.descWeight};font-style:${theme.descItalic ? "italic" : "normal"};color:var(--sb-desc);line-height:1.45}
-${rootSel} .sb-desc{font-size:${theme.descFontPx}px;font-weight:${theme.descWeight};font-style:${theme.descItalic ? "italic" : "normal"};color:var(--sb-desc);line-height:1.45;white-space:pre-line}
+${rootSel} .sb-desc{font-size:${theme.descFontPx}px;font-weight:${theme.descWeight};font-style:${theme.descItalic ? "italic" : "normal"};color:var(--sb-desc);line-height:1.45}
+${rootSel} .sb-desc-gap{height:8px}
+${rootSel} .sb-desc strong,${rootSel} .sb-list strong,${rootSel} .sb-lead strong{font-weight:700}
+${rootSel} .sb-desc em,${rootSel} .sb-list em,${rootSel} .sb-lead em{font-style:italic}
 ${rootSel} .sb-list{margin:0;padding-left:1.15em;font-size:${theme.descFontPx}px;line-height:1.45;color:var(--sb-desc)}
 ${rootSel} .sb-list li{margin:0 0 .35em}
 ${rootSel} .sb-placeMark{color:var(--sb-place);font-weight:600}
@@ -1052,7 +1046,10 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__place{flex:1 1 0;min-width:0;color:${esc(theme.placeColor)};font-weight:${theme.placeWeight};font-size:${theme.placeFontPx}px;text-align:right;white-space:pre-line;overflow-wrap:break-word}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__format{margin-top:8px;color:${esc(theme.formatColor)};font-size:${theme.formatFontPx}px}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__title{margin-top:10px;color:${esc(theme.titleColor)};font-size:${theme.titleFontPx + 6}px;font-weight:${theme.titleWeight};line-height:1.3}
-.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body{margin-top:16px;padding-top:16px;border-top:1px solid ${esc(theme.timeColor)};color:${esc(theme.descColor)};font-size:${theme.descFontPx + 1}px;line-height:1.5;white-space:pre-line}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body{margin-top:16px;padding-top:16px;border-top:1px solid ${esc(theme.timeColor)};color:${esc(theme.descColor)};font-size:${theme.descFontPx + 1}px;line-height:1.5}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body .sb-desc{margin:0 0 8px;font-size:inherit;color:inherit}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body strong{font-weight:700}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body em{font-style:italic}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__foot{margin-top:24px;display:flex;justify-content:flex-end}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__foot[hidden]{display:none !important}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__btn{appearance:none;border:0;cursor:pointer;background:${esc(theme.titleColor)};color:#fff;font:inherit;font-weight:600;font-size:16px;padding:12px 28px;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
@@ -1084,7 +1081,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
       const ourPopup = evUrl.startsWith("#popup:sb");
       const cta = resolvePopupButton(ev.popupButtonText, ev.popupButtonUrl);
       const popupAttrs = ourPopup
-        ? ` data-sb-popup="1" data-sb-time="${escAttr(formatTimeRange(startD, endD))}" data-sb-place="${escAttr(place)}" data-sb-format="${escAttr(fmt)}" data-sb-body="${escAttr(popupBody)}" data-sb-btn="${escAttr(cta?.text ?? "")}" data-sb-btn-href="${escAttr(cta?.href ?? "")}"`
+        ? ` data-sb-popup="1" data-sb-time="${escAttr(formatTimeRange(startD, endD))}" data-sb-place="${escAttr(place)}" data-sb-format="${escAttr(fmt)}" data-sb-body="${escAttr(renderMarkdownLiteHtml(popupBody))}" data-sb-btn="${escAttr(cta?.text ?? "")}" data-sb-btn-href="${escAttr(cta?.href ?? "")}"`
         : "";
       inner += `<a class="sb-title" href="${esc(evUrl)}"${tAttr}${popupAttrs} style="${titleStyle}">${esc(ev.title)}</a>\n`;
     } else {
@@ -1197,7 +1194,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     var fEl=m.querySelector(".sb-modal__format");
     fEl.textContent=fmt;
     fEl.style.display=fmt?"":"none";
-    m.querySelector(".sb-modal__body").textContent=a.getAttribute("data-sb-body")||"";
+    m.querySelector(".sb-modal__body").innerHTML=a.getAttribute("data-sb-body")||"";
     var btnText=a.getAttribute("data-sb-btn")||"";
     var btnHref=a.getAttribute("data-sb-btn-href")||"";
     var foot=m.querySelector(".sb-modal__foot");

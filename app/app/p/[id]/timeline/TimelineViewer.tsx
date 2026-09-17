@@ -26,7 +26,7 @@ import {
   normalizeEventLink,
   resolveEventLinkTarget
 } from "@/lib/schedule";
-import { renderMarkdownLite } from "@/lib/markdown-lite";
+import { parseInline, renderMarkdownLite } from "@/lib/markdown-lite";
 
 type IsoEvent = {
   id: string;
@@ -952,7 +952,7 @@ function renderHighlightedDescription(text: string) {
   const allBullets =
     lines.length > 0 && lines.every((l) => l.startsWith("- ") || l.startsWith("– ") || l.startsWith("— "));
   if (!allBullets) {
-    return <span style={{ whiteSpace: "pre-line" }}>{text}</span>;
+    return renderMarkdownLite(text);
   }
   return (
     <ul className="eventDescList">
@@ -962,10 +962,10 @@ function renderHighlightedDescription(text: string) {
             p.kind === "place" ? (
               <span key={`p-${j}`}>
                 {j > 0 ? " " : null}
-                <span className="eventPlaceMark">{p.text}</span>
+                <span className="eventPlaceMark">{parseInline(p.text)}</span>
               </span>
             ) : (
-              <span key={`t-${j}`}>{p.text}</span>
+              <span key={`t-${j}`}>{parseInline(p.text)}</span>
             )
           )}
         </li>
@@ -2810,7 +2810,6 @@ function parseDayMarkTokens(tokens: string[]) {
                           | undefined;
                         const bg = ov?.eventBgColor ? rgbaFrom(ov.eventBgColor, ov.eventBgAlpha ?? 1) : null;
                         const border = ov?.eventBorderColor ? rgbaFrom(ov.eventBorderColor, ov.eventBorderAlpha ?? 1) : null;
-                        const descMd = (it.event as any).description_md ? String((it.event as any).description_md) : "";
                         const descToShow = publicCardDescription(it.event);
                         const groupIntro = groupedCardIntro(it.event.id);
                         const extraLines = showExtraFields ? extraFieldLines(it.event as any) : [];
@@ -2935,12 +2934,10 @@ function parseDayMarkTokens(tokens: string[]) {
                                 {hasBody ? <hr className="eventRule" /> : null}
                                 {groupIntro && descToShow ? <div className="eventDescLead">{groupIntro}</div> : null}
                                 {descToShow ? (
-                                  <div className="eventDesc" style={{ whiteSpace: "pre-line" }}>
+                                  <div className="eventDesc">
                                     {String(rawFormat).trim() === INVITATION_MEETING_FORMAT
                                       ? descToShow
-                                      : descMd
-                                        ? renderMarkdownLite(descMd)
-                                        : renderHighlightedDescription(descToShow)}
+                                      : renderHighlightedDescription(descToShow)}
                                   </div>
                                 ) : null}
                                 {extraLines.length ? (
@@ -3113,12 +3110,11 @@ function parseDayMarkTokens(tokens: string[]) {
                             </div>
                           ) : null}
                           {(() => {
-                            const md = (e as any).description_md ? String((e as any).description_md) : "";
                             const body = publicCardDescription(e);
                             if (!body) return null;
                             return (
                               <div className="eventDesc" style={{ marginTop: 6 }}>
-                                {md ? renderMarkdownLite(md) : <span style={{ whiteSpace: "pre-line" }}>{body}</span>}
+                                {renderMarkdownLite(body)}
                               </div>
                             );
                           })()}

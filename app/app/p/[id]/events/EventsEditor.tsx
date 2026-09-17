@@ -622,7 +622,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Анонс (столбец «Анонсы», текст на карточке; «-» не показывается)
+                  Анонс (столбец «Анонсы», текст на карточке; «-» не показывается). **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editing.announcement ?? ""}
@@ -631,7 +631,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Спикеры (столбец «Спикеры»; «-» не попадает в попап)
+                  Спикеры (столбец «Спикеры»; «-» не попадает в попап). **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editing.speakers ?? ""}
@@ -641,7 +641,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Описание (столбец «Описание»)
+                  Описание (столбец «Описание»). **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editing.description ?? ""}
@@ -651,7 +651,7 @@ export function EventsEditor({
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Попап (столбец «Попап»; если пусто — спикеры и описание с отступом)
+                  Попап (столбец «Попап»; если пусто — спикеры и описание с отступом). **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editing.popup ?? ""}
@@ -1090,7 +1090,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Анонс (столбец «Анонсы», текст на карточке; «-» не показывается)
+                  Анонс (столбец «Анонсы», текст на карточке; «-» не показывается). **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editingUntimed.announcement ?? ""}
@@ -1099,7 +1099,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Спикеры (столбец «Спикеры»; «-» не попадает в попап)
+                  Спикеры (столбец «Спикеры»; «-» не попадает в попап). **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editingUntimed.speakers ?? ""}
@@ -1109,7 +1109,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Описание (столбец «Описание»)
+                  Описание (столбец «Описание»). **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editingUntimed.description ?? ""}
@@ -1119,7 +1119,7 @@ export function EventsEditor({
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Попап (столбец «Попап»; если пусто — спикеры и описание с отступом)
+                  Попап (столбец «Попап»; если пусто — спикеры и описание с отступом). **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editingUntimed.popup ?? ""}

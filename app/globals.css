@@ -407,14 +407,13 @@ button.secondary { background: rgba(15,23,42,.04); }
   border-top: 1px solid var(--tl-rule-color, #ca0734);
   width: 100%;
 }
-.eventDesc {
-  margin-top: 6px;
-  font-size: var(--tl-desc-font-px, 12px);
-  font-weight: var(--tl-desc-font-weight, 400);
-  font-style: var(--tl-desc-font-style, normal);
-  color: var(--tl-desc-color, #000);
-  line-height: 1.25;
-  opacity: .92;
+.eventDesc strong,
+.eventDescList strong {
+  font-weight: 700;
+}
+.eventDesc em,
+.eventDescList em {
+  font-style: italic;
 }
 .eventDescLead {
   margin: 0 0 8px;
