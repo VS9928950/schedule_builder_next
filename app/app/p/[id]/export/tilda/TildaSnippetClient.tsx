@@ -317,6 +317,19 @@ export function TildaSnippetClient({
           </div>
 
           <div className="card" style={{ padding: 12 }}>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>Превью</div>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+              Клик по названию с якорем <code>#popup:sb…</code> открывает попап. На сайте Тильды он появится после повторной вставки сниппета.
+            </div>
+            <iframe
+              title="Превью сниппета"
+              sandbox="allow-scripts"
+              srcDoc={`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:12px">${fullHtml}</body></html>`}
+              style={{ width: "100%", minHeight: 640, border: "1px solid var(--line)", borderRadius: 12, background: "#fff" }}
+            />
+          </div>
+
+          <div className="card" style={{ padding: 12 }}>
             <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
               <div style={{ fontWeight: 800 }}>Только HTML</div>
               <button type="button" className="secondary" onClick={() => copy(data.html)}>

@@ -34,6 +34,8 @@ type IsoEvent = {
   start?: string; // ISO
   end?: string; // ISO
   url?: string;
+  speakers?: string;
+  popup?: string;
 };
 
 type RoomTimedEvent = { id: string; title: string; start: Date; end: Date; dayKey: string; raw: IsoEvent };
@@ -80,7 +82,8 @@ import {
   groupedCardIntro,
   formatPlaceLabel,
   normalizeEventLink,
-  resolveEventLinkTarget
+  resolveEventLinkTarget,
+  composePopupText
 } from "@/lib/schedule";
 import { layoutProgramDays } from "@/lib/program-slots";
 
@@ -91,6 +94,10 @@ function esc(s: unknown) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function escAttr(s: unknown) {
+  return esc(s).replaceAll("\n", "&#10;").replaceAll("\r", "");
 }
 
 function hexToRgb(hex: string) {
@@ -1003,7 +1010,7 @@ ${rootSel} .sb-tile--default{background:${PROGRAM_CARD_BG.default}}
 ${rootSel} .sb-session + .sb-session{margin-top:${Math.max(8, Math.round(18 * space))}px}
 ${rootSel} .sb-head{display:flex;justify-content:space-between;align-items:baseline;gap:${Math.max(6, Math.round(12 * space))}px}
 ${rootSel} .sb-time{font-size:${theme.timeFontPx}px;font-weight:${theme.timeWeight};font-style:${theme.timeItalic ? "italic" : "normal"};color:var(--sb-time);line-height:1.4}
-${rootSel} .sb-place{font-size:${theme.placeFontPx}px;font-weight:${theme.placeWeight};font-style:${theme.placeItalic ? "italic" : "normal"};color:var(--sb-place);text-align:right;line-height:1.4}
+${rootSel} .sb-place{font-size:${theme.placeFontPx}px;font-weight:${theme.placeWeight};font-style:${theme.placeItalic ? "italic" : "normal"};color:var(--sb-place);text-align:right;line-height:1.4;white-space:pre-line}
 ${rootSel} .sb-format{margin-top:${formatTopPx}px;font-size:${theme.formatFontPx}px;font-weight:${theme.formatWeight};font-style:${theme.formatItalic ? "italic" : "normal"};color:var(--sb-format)}
 ${rootSel} .sb-title{margin-top:${titleTopPx}px;font-size:${theme.titleFontPx}px;font-weight:${theme.titleWeight};font-style:${theme.titleItalic ? "italic" : "normal"};color:var(--sb-title);line-height:1.35}
 ${rootSel} a.sb-title{color:inherit;text-decoration:none}
@@ -1029,6 +1036,25 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
 }
 @media print{
   ${rootSel} .sb-tile{break-inside:avoid}
+  .sb-modal{display:none !important}
+}
+.sb-modal[data-sb-scope="${internalScopeId}"]{position:fixed;inset:0;z-index:10000000;display:flex;align-items:center;justify-content:center;padding:16px;${fontStack}box-sizing:border-box}
+.sb-modal[data-sb-scope="${internalScopeId}"][hidden]{display:none !important}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__backdrop{position:absolute;inset:0;background:rgba(${(hexToRgb(theme.titleColor) ?? { r: 4, g: 26, b: 89 }).r},${(hexToRgb(theme.titleColor) ?? { r: 4, g: 26, b: 89 }).g},${(hexToRgb(theme.titleColor) ?? { r: 4, g: 26, b: 89 }).b},.8)}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__panel{position:relative;z-index:1;width:min(560px,100%);max-height:80vh;overflow:auto;background:#fff;border-radius:16px;padding:28px 28px 20px;box-shadow:0 16px 48px rgba(4,26,89,.25);box-sizing:border-box}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__x{position:absolute;top:8px;right:8px;width:44px;height:44px;border:0;background:transparent;color:${esc(theme.titleColor)};font-size:28px;line-height:1;cursor:pointer;padding:0}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__meta{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding-right:40px}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__time{color:${esc(theme.timeColor)};font-weight:${theme.timeWeight};font-size:${theme.timeFontPx}px}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__place{color:${esc(theme.placeColor)};font-weight:${theme.placeWeight};font-size:${theme.placeFontPx}px;text-align:right;white-space:pre-line}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__format{margin-top:8px;color:${esc(theme.formatColor)};font-size:${theme.formatFontPx}px}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__title{margin-top:10px;color:${esc(theme.titleColor)};font-size:${theme.titleFontPx + 6}px;font-weight:${theme.titleWeight};line-height:1.3}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body{margin-top:16px;padding-top:16px;border-top:1px solid ${esc(theme.timeColor)};color:${esc(theme.descColor)};font-size:${theme.descFontPx + 1}px;line-height:1.5;white-space:pre-line}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__foot{margin-top:24px;display:flex;justify-content:flex-end}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__btn{appearance:none;border:0;cursor:pointer;background:${esc(theme.titleColor)};color:#fff;font:inherit;font-weight:600;font-size:16px;padding:12px 28px;border-radius:10px}
+@media (max-width:768px){
+  .sb-modal[data-sb-scope="${internalScopeId}"]{padding:12px;align-items:flex-end}
+  .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__panel{width:100%;max-height:90vh;border-radius:16px 16px 0 0;padding:24px 20px 16px}
+  .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__btn{width:100%}
 }
 `.trim();
 
@@ -1049,7 +1075,12 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     if (evUrl) {
       const tTarget = resolveEventLinkTarget(evUrl, linkTarget);
       const tAttr = tTarget === "_blank" ? ` target="_blank" rel="noopener noreferrer"` : "";
-      inner += `<a class="sb-title" href="${esc(evUrl)}"${tAttr} style="${titleStyle}">${esc(ev.title)}</a>\n`;
+      const popupBody = String(ev.popup ?? "").trim() || composePopupText(ev.speakers, ev.description) || "";
+      const ourPopup = evUrl.startsWith("#popup:sb");
+      const popupAttrs = ourPopup
+        ? ` data-sb-popup="1" data-sb-time="${escAttr(formatTimeRange(startD, endD))}" data-sb-place="${escAttr(place)}" data-sb-format="${escAttr(fmt)}" data-sb-body="${escAttr(popupBody)}"`
+        : "";
+      inner += `<a class="sb-title" href="${esc(evUrl)}"${tAttr}${popupAttrs} style="${titleStyle}">${esc(ev.title)}</a>\n`;
     } else {
       inner += `<div class="sb-title" style="${titleStyle}">${esc(ev.title)}</div>\n`;
     }
@@ -1102,7 +1133,69 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     html += `</div>\n`;
   }
 
-  html += `</div>`;
+  html += `</div>
+<script>
+(function(){
+  var SCOPE=${JSON.stringify(internalScopeId)};
+  var modal=null;
+  function el(n){ return n && n.nodeType===1 ? n : (n && n.parentElement); }
+  function ensure(){
+    if(modal) return modal;
+    modal=document.createElement("div");
+    modal.className="sb-modal";
+    modal.setAttribute("data-sb-scope",SCOPE);
+    modal.hidden=true;
+    modal.innerHTML='<div class="sb-modal__backdrop" data-sb-close="1"></div><div class="sb-modal__panel" role="dialog" aria-modal="true"><button type="button" class="sb-modal__x" data-sb-close="1" aria-label="Закрыть">×</button><div class="sb-modal__meta"><span class="sb-modal__time"></span><span class="sb-modal__place"></span></div><div class="sb-modal__format"></div><div class="sb-modal__title"></div><div class="sb-modal__body"></div><div class="sb-modal__foot"><button type="button" class="sb-modal__btn" data-sb-close="1">Закрыть</button></div></div>';
+    document.body.appendChild(modal);
+    modal.addEventListener("click",function(e){
+      var t=el(e.target);
+      if(t && t.closest && t.closest("[data-sb-close]")) close();
+    });
+    return modal;
+  }
+  function close(){
+    if(!modal) return;
+    modal.hidden=true;
+    document.body.style.overflow="";
+  }
+  function openFrom(a){
+    var m=ensure();
+    m.querySelector(".sb-modal__title").textContent=(a.textContent||"").replace(/\\s+/g," ").trim();
+    m.querySelector(".sb-modal__time").textContent=a.getAttribute("data-sb-time")||"";
+    m.querySelector(".sb-modal__place").textContent=a.getAttribute("data-sb-place")||"";
+    var fmt=a.getAttribute("data-sb-format")||"";
+    var fEl=m.querySelector(".sb-modal__format");
+    fEl.textContent=fmt;
+    fEl.style.display=fmt?"":"none";
+    m.querySelector(".sb-modal__body").textContent=a.getAttribute("data-sb-body")||"";
+    m.hidden=false;
+    document.body.style.overflow="hidden";
+  }
+  document.addEventListener("click",function(e){
+    var t=el(e.target);
+    var a=t && t.closest ? t.closest("a[data-sb-popup=\\"1\\"]") : null;
+    if(!a || !a.closest('[data-sb-scope="'+SCOPE+'"]')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openFrom(a);
+  },true);
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape" && modal && !modal.hidden) close();
+  });
+  function openHash(){
+    var h=location.hash||"";
+    if(h.indexOf("#popup:sb")!==0) return;
+    var a=document.querySelector('[data-sb-scope="'+SCOPE+'"] a[data-sb-popup="1"][href="'+h.replace(/"/g,"")+'"]');
+    if(a) openFrom(a);
+  }
+  function whenReady(fn){
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",fn);
+    else fn();
+  }
+  whenReady(openHash);
+  setTimeout(openHash,400);
+})();
+</script>`;
 
   return { html, css };
 }

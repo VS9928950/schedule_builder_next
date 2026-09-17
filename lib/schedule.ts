@@ -109,11 +109,15 @@ function strAny(v: unknown): string | null {
   return null;
 }
 
-/** Keep building labels like «Корп. 2» on one line. */
+/** Keep building labels like «Корп. 2» and «пр-кт Гагарина» from wrapping mid-token. */
 export function withNbspSpaces(v: unknown): string | undefined {
   const s = strAny(v);
   if (!s) return undefined;
-  return s.replaceAll(" ", "\u00A0");
+  return protectPlaceWrap(s);
+}
+
+function protectPlaceWrap(s: string): string {
+  return s.replaceAll(" ", "\u00A0").replace(/([A-Za-zА-Яа-яЁё])-([A-Za-zА-Яа-яЁё])/g, "$1\u2011$2");
 }
 
 /** Tilda same-page popup, e.g. `#popup:embedcode1`. */
@@ -415,12 +419,12 @@ export function formatRoomLabel(room?: unknown): string {
   if (!raw) return "";
   if (/^ауд(?:итор(?:ия)?)?\.?\s*/i.test(raw)) return withNbspSpaces(raw.replace(/\s+/g, " ").trim()) ?? "";
   if (isBareRoomNumber(raw)) return `ауд.\u00A0${raw.replace(/\s+/g, "")}`;
-  return raw;
+  return protectPlaceWrap(raw);
 }
 
 export function formatPlaceLabel(building?: unknown, room?: unknown): string {
   const b = blankPlaceToken(building);
-  const buildingPart = b ? b.replaceAll(" ", "\u00A0") : "";
+  const buildingPart = b ? protectPlaceWrap(b) : "";
   const roomPart = formatRoomLabel(room);
   if (buildingPart && roomPart) return `${buildingPart}, ${roomPart}`;
   return buildingPart || roomPart;

@@ -482,6 +482,7 @@ button.secondary { background: rgba(15,23,42,.04); }
   font-style: var(--tl-place-font-style, normal);
   color: var(--tl-place-color, #51226b);
   text-align: right;
+  white-space: pre-line;
   opacity: 1;
 }
 .eventBlock.tiny { padding: 10px 12px; }
