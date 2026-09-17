@@ -27,7 +27,7 @@ export default async function AnnouncementsTab({ params }: { params: Promise<{ i
   const announcementEvents = events.map((e, idx) => ({
     id: String(e.id ?? `${e.kind ?? "timed"}-${idx}`),
     title: e.title,
-    description: e.description,
+    description: e.announcement,
     format: e.format,
     day: e.day,
     start: e.start,

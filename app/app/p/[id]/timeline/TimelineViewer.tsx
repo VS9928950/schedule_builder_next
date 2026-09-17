@@ -23,7 +23,8 @@ import {
   formatPlaceLabel,
   migrateLegacyStyleColor,
   migrateLegacyStyleNum,
-  normalizeHttpUrl
+  normalizeEventLink,
+  resolveEventLinkTarget
 } from "@/lib/schedule";
 import { renderMarkdownLite } from "@/lib/markdown-lite";
 
@@ -32,6 +33,7 @@ type IsoEvent = {
   title: string;
   description?: string;
   description_md?: string;
+  announcement?: string;
   style_override?: {
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -2462,7 +2464,7 @@ function parseDayMarkTokens(tokens: string[]) {
                         </select>
                       </label>
                       <span className="muted" style={{ fontSize: 12 }}>
-                        Работает, если у события задано поле URL (http/https) на вкладке «События» или в Excel.
+                        Работает, если у события задано поле URL (https://… или #popup:… Тильды) на вкладке «События» или в Excel. Попапы открываются в той же вкладке.
                       </span>
                     </div>
 
@@ -2809,12 +2811,12 @@ function parseDayMarkTokens(tokens: string[]) {
                         const bg = ov?.eventBgColor ? rgbaFrom(ov.eventBgColor, ov.eventBgAlpha ?? 1) : null;
                         const border = ov?.eventBorderColor ? rgbaFrom(ov.eventBorderColor, ov.eventBorderAlpha ?? 1) : null;
                         const descMd = (it.event as any).description_md ? String((it.event as any).description_md) : "";
-                        const descPlain = it.event.description ? String(it.event.description) : "";
                         const descToShow = publicCardDescription(it.event);
                         const groupIntro = groupedCardIntro(it.event.id);
                         const extraLines = showExtraFields ? extraFieldLines(it.event as any) : [];
-                        const evUrl = normalizeHttpUrl((it.event as any).url);
-                        const linkT = styleDraft.eventLinkTarget === "_self" ? "_self" : "_blank";
+                        const evUrl = normalizeEventLink((it.event as any).url);
+                        const preferredTarget = styleDraft.eventLinkTarget === "_self" ? "_self" : "_blank";
+                        const linkT = evUrl ? resolveEventLinkTarget(evUrl, preferredTarget) : "_self";
                         const tone = programCardTone(it.event);
                         const toneBg = PROGRAM_CARD_BG[tone];
                         const hasBody = !!(descToShow || extraLines.length);
@@ -2938,7 +2940,7 @@ function parseDayMarkTokens(tokens: string[]) {
                                       ? descToShow
                                       : descMd
                                         ? renderMarkdownLite(descMd)
-                                        : renderHighlightedDescription(descPlain)}
+                                        : renderHighlightedDescription(descToShow)}
                                   </div>
                                 ) : null}
                                 {extraLines.length ? (
@@ -3112,11 +3114,11 @@ function parseDayMarkTokens(tokens: string[]) {
                           ) : null}
                           {(() => {
                             const md = (e as any).description_md ? String((e as any).description_md) : "";
-                            const plain = e.description ? String(e.description) : "";
-                            if (!md && !plain) return null;
+                            const body = publicCardDescription(e);
+                            if (!body) return null;
                             return (
                               <div className="eventDesc" style={{ marginTop: 6 }}>
-                                {md ? renderMarkdownLite(md) : <span style={{ whiteSpace: "pre-line" }}>{plain}</span>}
+                                {md ? renderMarkdownLite(md) : <span style={{ whiteSpace: "pre-line" }}>{body}</span>}
                               </div>
                             );
                           })()}

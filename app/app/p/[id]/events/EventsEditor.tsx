@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { dayKeyLocalFromDate, formatTime, normalizeHttpUrl } from "@/lib/schedule";
+import { dayKeyLocalFromDate, fillEmptyPopupAndUrl, formatTime, withNbspSpaces } from "@/lib/schedule";
 
 export type EditableEvent = {
   id: string;
   title: string;
   description?: string;
   description_md?: string;
+  announcement?: string;
+  speakers?: string;
+  popup?: string;
   style_override?: {
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -47,6 +50,9 @@ export type UntimedEditableEvent = {
   title: string;
   description?: string;
   description_md?: string;
+  announcement?: string;
+  speakers?: string;
+  popup?: string;
   style_override?: {
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -197,8 +203,8 @@ export function EventsEditor({
         body: JSON.stringify({
           buildId: activeBuildId,
           events: [
-            ...untimed.map((e) => ({ ...e, kind: "untimed" })),
-            ...events.map((e) => ({ ...e, kind: "timed" }))
+            ...untimed.map((e) => ({ ...fillEmptyPopupAndUrl(e), kind: "untimed" })),
+            ...events.map((e) => ({ ...fillEmptyPopupAndUrl(e), kind: "timed" }))
           ]
         })
       });
@@ -212,6 +218,20 @@ export function EventsEditor({
     } finally {
       setSaving(false);
     }
+  }
+
+  function popupUrlPatch<T extends { id: string; speakers?: string; description?: string; popup?: string; url?: string }>(e: T) {
+    const filled = fillEmptyPopupAndUrl(e);
+    return { popup: filled.popup ?? "", url: filled.url ?? "" };
+  }
+
+  function fillPopupFields(kind: "timed" | "untimed", id: string) {
+    if (kind === "timed") {
+      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...popupUrlPatch(e) } : e)));
+    } else {
+      setUntimed((prev) => prev.map((e) => (e.id === id ? { ...e, ...popupUrlPatch(e) } : e)));
+    }
+    setDirty(true);
   }
 
   function patchEvent(id: string, patch: Partial<EditableEvent>) {
@@ -272,6 +292,9 @@ export function EventsEditor({
       start: start.toISOString(),
       end: end.toISOString(),
       description_md: "",
+      announcement: "",
+      speakers: "",
+      popup: "",
       description: ""
     };
     setEvents((prev) => [...prev, ev]);
@@ -300,6 +323,9 @@ export function EventsEditor({
       day: fromDateInput(key),
       orderNo: maxNo + 1,
       description_md: "",
+      announcement: "",
+      speakers: "",
+      popup: "",
       description: ""
     };
     setUntimed((prev) => [...prev, ev]);
@@ -400,7 +426,11 @@ export function EventsEditor({
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Корпус
               </div>
-              <input value={editing.building ?? ""} onChange={(e) => patchEvent(editing.id, { building: e.target.value })} />
+              <input
+                value={editing.building ?? ""}
+                onChange={(e) => patchEvent(editing.id, { building: e.target.value })}
+                onBlur={() => patchEvent(editing.id, { building: withNbspSpaces(editing.building) ?? "" })}
+              />
             </div>
             <div>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
@@ -563,16 +593,13 @@ export function EventsEditor({
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Ссылка (http или https, можно пусто)
+                Ссылка (https://… или #popup:… от Тильды, можно пусто)
               </div>
               <input
                 value={editing.url ?? ""}
                 onChange={(e) => patchEvent(editing.id, { url: e.target.value })}
-                onBlur={() => {
-                  const u = normalizeHttpUrl(editing.url);
-                  patchEvent(editing.id, { url: u ?? "" });
-                }}
-                placeholder="https://…"
+                onBlur={() => fillPopupFields("timed", editing.id)}
+                placeholder="https://… или #popup:embedcode1"
               />
             </div>
           </div>
@@ -581,7 +608,7 @@ export function EventsEditor({
             <div className="grid events-editor-form-grid">
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Форматируемое описание
+                  Форматируемый анонс
                 </div>
                 <textarea
                   value={editing.description_md ?? ""}
@@ -591,9 +618,42 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Загруженное описание
+                  Анонс (столбец «Анонсы», текст на карточке)
                 </div>
-                <textarea value={editing.description ?? ""} onChange={(e) => patchEvent(editing.id, { description: e.target.value })} />
+                <textarea
+                  value={editing.announcement ?? ""}
+                  onChange={(e) => patchEvent(editing.id, { announcement: e.target.value })}
+                />
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Спикеры (столбец «Спикеры»)
+                </div>
+                <textarea
+                  value={editing.speakers ?? ""}
+                  onChange={(e) => patchEvent(editing.id, { speakers: e.target.value })}
+                  onBlur={() => fillPopupFields("timed", editing.id)}
+                />
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Описание (столбец «Описание»)
+                </div>
+                <textarea
+                  value={editing.description ?? ""}
+                  onChange={(e) => patchEvent(editing.id, { description: e.target.value })}
+                  onBlur={() => fillPopupFields("timed", editing.id)}
+                />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Попап (столбец «Попап»; если пусто — спикеры и описание с отступом)
+                </div>
+                <textarea
+                  value={editing.popup ?? ""}
+                  onChange={(e) => patchEvent(editing.id, { popup: e.target.value })}
+                  onBlur={() => fillPopupFields("timed", editing.id)}
+                />
               </div>
             </div>
             <div style={{ height: 10 }} />
@@ -790,7 +850,11 @@ export function EventsEditor({
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
                 Корпус
               </div>
-              <input value={editingUntimed.building ?? ""} onChange={(e) => patchUntimed(editingUntimed.id, { building: e.target.value })} />
+              <input
+                value={editingUntimed.building ?? ""}
+                onChange={(e) => patchUntimed(editingUntimed.id, { building: e.target.value })}
+                onBlur={() => patchUntimed(editingUntimed.id, { building: withNbspSpaces(editingUntimed.building) ?? "" })}
+              />
             </div>
             <div>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
@@ -977,16 +1041,13 @@ export function EventsEditor({
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                Ссылка (http или https, можно пусто)
+                Ссылка (https://… или #popup:… от Тильды, можно пусто)
               </div>
               <input
                 value={editingUntimed.url ?? ""}
                 onChange={(e) => patchUntimed(editingUntimed.id, { url: e.target.value })}
-                onBlur={() => {
-                  const u = normalizeHttpUrl(editingUntimed.url);
-                  patchUntimed(editingUntimed.id, { url: u ?? "" });
-                }}
-                placeholder="https://…"
+                onBlur={() => fillPopupFields("untimed", editingUntimed.id)}
+                placeholder="https://… или #popup:embedcode1"
               />
             </div>
           </div>
@@ -995,7 +1056,7 @@ export function EventsEditor({
             <div className="grid events-editor-form-grid">
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Форматируемое описание
+                  Форматируемый анонс
                 </div>
                 <textarea
                   value={editingUntimed.description_md ?? ""}
@@ -1005,9 +1066,42 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Загруженное описание
+                  Анонс (столбец «Анонсы», текст на карточке)
                 </div>
-                <textarea value={editingUntimed.description ?? ""} onChange={(e) => patchUntimed(editingUntimed.id, { description: e.target.value })} />
+                <textarea
+                  value={editingUntimed.announcement ?? ""}
+                  onChange={(e) => patchUntimed(editingUntimed.id, { announcement: e.target.value })}
+                />
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Спикеры (столбец «Спикеры»)
+                </div>
+                <textarea
+                  value={editingUntimed.speakers ?? ""}
+                  onChange={(e) => patchUntimed(editingUntimed.id, { speakers: e.target.value })}
+                  onBlur={() => fillPopupFields("untimed", editingUntimed.id)}
+                />
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Описание (столбец «Описание»)
+                </div>
+                <textarea
+                  value={editingUntimed.description ?? ""}
+                  onChange={(e) => patchUntimed(editingUntimed.id, { description: e.target.value })}
+                  onBlur={() => fillPopupFields("untimed", editingUntimed.id)}
+                />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Попап (столбец «Попап»; если пусто — спикеры и описание с отступом)
+                </div>
+                <textarea
+                  value={editingUntimed.popup ?? ""}
+                  onChange={(e) => patchUntimed(editingUntimed.id, { popup: e.target.value })}
+                  onBlur={() => fillPopupFields("untimed", editingUntimed.id)}
+                />
               </div>
             </div>
             <div style={{ height: 10 }} />
@@ -1146,7 +1240,7 @@ export function EventsEditor({
                         .filter(Boolean)
                         .join(" · ")}
                     </div>
-                    {ev.description ? <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.35 }}>{ev.description}</div> : null}
+                    {ev.announcement ? <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.35 }}>{ev.announcement}</div> : null}
                   </div>
                 ))}
               </div>
@@ -1215,7 +1309,7 @@ export function EventsEditor({
                     .filter(Boolean)
                     .join(" · ")}
                 </div>
-                {ev.description ? <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.35 }}>{ev.description}</div> : null}
+                {ev.announcement ? <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.35 }}>{ev.announcement}</div> : null}
               </div>
             ))}
           </div>

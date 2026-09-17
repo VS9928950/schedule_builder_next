@@ -6,6 +6,9 @@ export type ProjectEventIso = {
   title?: string;
   description?: string;
   description_md?: string;
+  announcement?: string;
+  speakers?: string;
+  popup?: string;
   kind?: "timed" | "untimed";
   day?: string;
   start?: string;

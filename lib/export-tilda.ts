@@ -3,6 +3,7 @@ type IsoEvent = {
   title: string;
   description?: string;
   description_md?: string;
+  announcement?: string;
   style_override?: {
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -78,7 +79,8 @@ import {
   highlightPlaceInLine,
   groupedCardIntro,
   formatPlaceLabel,
-  normalizeHttpUrl
+  normalizeEventLink,
+  resolveEventLinkTarget
 } from "@/lib/schedule";
 import { layoutProgramDays } from "@/lib/program-slots";
 
@@ -607,7 +609,9 @@ function eventDetails(raw: IsoEvent): string[] {
   if (banner) lines.push(`Баннер: ${banner}`);
   const support = normToken(raw.supportMaterials);
   if (support) lines.push(`Сопроводительные материалы: ${support}`);
-  const desc = normToken(raw.description_md ?? raw.description);
+  const announce = normToken(raw.description_md ?? raw.announcement);
+  if (announce) lines.push(`Анонс: ${announce}`);
+  const desc = normToken(raw.description);
   if (desc) lines.push(`Описание: ${desc}`);
   return lines;
 }
@@ -1036,14 +1040,15 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     const desc = publicCardDescription(ev);
     const extras = isTechView ? extraFieldLines(ev) : [];
     const hasBody = !!(desc || extras.length);
-    const evUrl = normalizeHttpUrl(ev.url);
+    const evUrl = normalizeEventLink(ev.url);
     const titleStyle = typeInline(theme.titleFontPx, theme.titleWeight, theme.titleItalic, theme.titleColor);
     let inner = `<div class="sb-head"><div class="sb-time">${esc(formatTimeRange(startD, endD))}</div>`;
     if (place) inner += `<div class="sb-place">${esc(place)}</div>`;
     inner += `</div>\n`;
     if (fmt) inner += `<div class="sb-format">${esc(fmt)}</div>\n`;
     if (evUrl) {
-      const tAttr = linkTarget === "_blank" ? ` target="_blank" rel="noopener noreferrer"` : "";
+      const tTarget = resolveEventLinkTarget(evUrl, linkTarget);
+      const tAttr = tTarget === "_blank" ? ` target="_blank" rel="noopener noreferrer"` : "";
       inner += `<a class="sb-title" href="${esc(evUrl)}"${tAttr} style="${titleStyle}">${esc(ev.title)}</a>\n`;
     } else {
       inner += `<div class="sb-title" style="${titleStyle}">${esc(ev.title)}</div>\n`;

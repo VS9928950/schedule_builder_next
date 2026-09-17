@@ -1,8 +1,15 @@
 export type ScheduleEvent = {
   id: string;
   title: string;
+  /** Popup / long text from column «Описание». Not shown on program cards. */
   description?: string;
-  /** http(s) only; empty / invalid omitted */
+  /** Card body from column «Анонсы». */
+  announcement?: string;
+  /** Column «Спикеры»; folded into popup when that cell is empty. */
+  speakers?: string;
+  /** Combined popup body (column «Попап» or Speakers + Description). */
+  popup?: string;
+  /** http(s) or Tilda `#popup:…`; empty / invalid omitted */
   url?: string;
   building?: string;
   room?: string;
@@ -31,6 +38,9 @@ export type UntimedEvent = {
   id: string;
   title: string;
   description?: string;
+  announcement?: string;
+  speakers?: string;
+  popup?: string;
   url?: string;
   building?: string;
   room?: string;
@@ -99,6 +109,16 @@ function strAny(v: unknown): string | null {
   return null;
 }
 
+/** Keep building labels like «Корп. 2» on one line. */
+export function withNbspSpaces(v: unknown): string | undefined {
+  const s = strAny(v);
+  if (!s) return undefined;
+  return s.replaceAll(" ", "\u00A0");
+}
+
+/** Tilda same-page popup, e.g. `#popup:embedcode1`. */
+const TILDA_POPUP_RE = /^#popup:[A-Za-z0-9_-]+$/;
+
 /** Valid http(s) URL or undefined (empty / invalid rejected). */
 export function normalizeHttpUrl(v: unknown): string | undefined {
   const s = v == null ? "" : String(v).trim();
@@ -112,9 +132,84 @@ export function normalizeHttpUrl(v: unknown): string | undefined {
   }
 }
 
+/** Event title href: http(s) or Tilda `#popup:…`. */
+export function normalizeEventLink(v: unknown): string | undefined {
+  const s = v == null ? "" : String(v).trim();
+  if (!s) return undefined;
+  if (s.startsWith("#")) return TILDA_POPUP_RE.test(s) ? s : undefined;
+  return normalizeHttpUrl(s);
+}
+
+/** Hash popups must stay on this page; otherwise use the saved target. */
+export function resolveEventLinkTarget(href: string, preferred: "_blank" | "_self"): "_blank" | "_self" {
+  return href.startsWith("#") ? "_self" : preferred;
+}
+
 function pickUrlFromRow(row: Record<string, unknown>): string | undefined {
   const v = row["Ссылка"] ?? row["URL"] ?? row["Url"] ?? row["url"] ?? row["Link"] ?? row["link"];
-  return normalizeHttpUrl(v);
+  return normalizeEventLink(v);
+}
+
+function pickAnnouncementFromRow(row: Record<string, unknown>): string | undefined {
+  return strAny(row["Анонсы"]) ?? strAny(row["Анонс"]) ?? undefined;
+}
+
+function pickSpeakersFromRow(row: Record<string, unknown>): string | undefined {
+  return strAny(row["Спикеры"]) ?? strAny(row["Спикер"]) ?? undefined;
+}
+
+function pickPopupFromRow(row: Record<string, unknown>): string | undefined {
+  return strAny(row["Попап"]) ?? strAny(row["Popup"]) ?? undefined;
+}
+
+/** Speakers, blank line, then description. */
+export function composePopupText(speakers?: unknown, description?: unknown): string | undefined {
+  const sp = String(speakers ?? "").trim();
+  const desc = String(description ?? "").trim();
+  if (sp && desc) return `${sp}\n\n${desc}`;
+  return sp || desc || undefined;
+}
+
+export function popupHookFromEventId(id: unknown): string {
+  const token =
+    String(id ?? "event")
+      .trim()
+      .replace(/[^A-Za-z0-9_-]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "event";
+  return `#popup:sb${token}`;
+}
+
+export function fillEmptyPopupAndUrl<T extends {
+  id?: unknown;
+  speakers?: unknown;
+  description?: unknown;
+  popup?: unknown;
+  url?: unknown;
+}>(ev: T): T & { popup?: string; url?: string } {
+  const popup = String(ev.popup ?? "").trim() || composePopupText(ev.speakers, ev.description) || undefined;
+  const url = normalizeEventLink(ev.url) || (popup ? popupHookFromEventId(ev.id) : undefined);
+  return { ...ev, popup, url };
+}
+
+function popupFieldsFromRow(row: Record<string, unknown>, index: number) {
+  const id = String(row["id"] ?? row["ID"] ?? row["Id"] ?? index);
+  const speakers = pickSpeakersFromRow(row);
+  const description = str(row["Описание"]) ?? undefined;
+  const filled = fillEmptyPopupAndUrl({
+    id,
+    speakers,
+    description,
+    popup: pickPopupFromRow(row),
+    url: pickUrlFromRow(row)
+  });
+  return {
+    id,
+    speakers,
+    description,
+    announcement: pickAnnouncementFromRow(row),
+    popup: filled.popup,
+    url: filled.url
+  };
 }
 
 function parseTernary(value: unknown): "Да" | "Нет" | "Не указано" | undefined {
@@ -191,12 +286,16 @@ export function parseScheduleFromExcelRows(rows: unknown[]): ScheduleEvent[] {
     if (end <= start) continue;
 
     const title = str(row["Наименование"]) ?? "Без названия";
+    const texts = popupFieldsFromRow(row, i);
     const ev: ScheduleEvent = {
-      id: String(row["id"] ?? row["ID"] ?? row["Id"] ?? i),
+      id: texts.id,
       title,
-      description: str(row["Описание"]) ?? undefined,
-      url: pickUrlFromRow(row),
-      building: strAny(row["Корпус"]) ?? undefined,
+      description: texts.description,
+      announcement: texts.announcement,
+      speakers: texts.speakers,
+      popup: texts.popup,
+      url: texts.url,
+      building: withNbspSpaces(row["Корпус"]),
       room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
       format: str(row["Формат"]) ?? undefined,
       responsible1: strAny(row["Ответственный сотрудник 1"]) ?? undefined,
@@ -314,13 +413,17 @@ function isBareRoomNumber(s: string): boolean {
 export function formatRoomLabel(room?: unknown): string {
   const raw = blankPlaceToken(room);
   if (!raw) return "";
-  if (/^ауд(?:итор(?:ия)?)?\.?\s*/i.test(raw)) return raw.replace(/\s+/g, " ").trim();
-  if (isBareRoomNumber(raw)) return `ауд. ${raw.replace(/\s+/g, "")}`;
+  if (/^ауд(?:итор(?:ия)?)?\.?\s*/i.test(raw)) return withNbspSpaces(raw.replace(/\s+/g, " ").trim()) ?? "";
+  if (isBareRoomNumber(raw)) return `ауд.\u00A0${raw.replace(/\s+/g, "")}`;
   return raw;
 }
 
 export function formatPlaceLabel(building?: unknown, room?: unknown): string {
-  return [blankPlaceToken(building), formatRoomLabel(room)].filter(Boolean).join(", ");
+  const b = blankPlaceToken(building);
+  const buildingPart = b ? b.replaceAll(" ", "\u00A0") : "";
+  const roomPart = formatRoomLabel(room);
+  if (buildingPart && roomPart) return `${buildingPart}, ${roomPart}`;
+  return buildingPart || roomPart;
 }
 
 function placeSuffix(e: ScheduleEvent) {
@@ -378,7 +481,7 @@ function mergeNirExactSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
     out.push({
       id: parallelGroupCardId("nir", first.start, first.end),
       title: NIR_FORMAT,
-      description: lines.join("\n"),
+      announcement: lines.join("\n"),
       format: undefined,
       building: undefined,
       room: undefined,
@@ -439,7 +542,7 @@ function mergeSectionalContained(events: ScheduleEvent[]): ScheduleEvent[] {
       out.push({
         id: parallelGroupCardId("sectional", host.start, host.end),
         title: SECTIONAL_GROUP_TITLE,
-        description: lines.join("\n"),
+        announcement: lines.join("\n"),
         format: undefined,
         building: undefined,
         room: undefined,
@@ -498,6 +601,7 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
     const simultaneousInterpretation = parseTernary(row["Синхронный перевод"]);
     const supportMaterials = str(row["Сопроводительные материалы"]) ?? undefined;
     const banner = parseBanner(row["Баннер"]);
+    const texts = popupFieldsFromRow(row, i);
 
     const baseDay = startOfDay(excelSerialToDate(dateSerial));
 
@@ -511,11 +615,14 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
       if (end <= start) continue;
 
       timed.push({
-        id: String(row["id"] ?? row["ID"] ?? row["Id"] ?? i),
+        id: texts.id,
         title,
-        description: str(row["Описание"]) ?? undefined,
-        url: pickUrlFromRow(row),
-        building: strAny(row["Корпус"]) ?? undefined,
+        description: texts.description,
+        announcement: texts.announcement,
+        speakers: texts.speakers,
+        popup: texts.popup,
+        url: texts.url,
+        building: withNbspSpaces(row["Корпус"]),
         room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
         format: str(row["Формат"]) ?? undefined,
         responsible1,
@@ -539,11 +646,14 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
       });
     } else {
       untimed.push({
-        id: String(row["id"] ?? row["ID"] ?? row["Id"] ?? i),
+        id: texts.id,
         title,
-        description: str(row["Описание"]) ?? undefined,
-        url: pickUrlFromRow(row),
-        building: strAny(row["Корпус"]) ?? undefined,
+        description: texts.description,
+        announcement: texts.announcement,
+        speakers: texts.speakers,
+        popup: texts.popup,
+        url: texts.url,
+        building: withNbspSpaces(row["Корпус"]),
         room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
         format: str(row["Формат"]) ?? undefined,
         responsible1,
@@ -775,11 +885,11 @@ export function shouldShowDescription(fmt: unknown): boolean {
 export function publicCardDescription(ev: {
   format?: unknown;
   description_md?: unknown;
-  description?: unknown;
+  announcement?: unknown;
 }): string {
   if (String(ev.format ?? "").trim() === INVITATION_MEETING_FORMAT) return INVITATION_MEETING_DESCRIPTION;
   if (!shouldShowDescription(ev.format)) return "";
-  return String(ev.description_md ?? ev.description ?? "");
+  return String(ev.description_md ?? ev.announcement ?? "");
 }
 
 export type ProgramCardTone = "accent" | "service" | "default";

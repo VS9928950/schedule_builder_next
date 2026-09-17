@@ -6,7 +6,8 @@ import {
   dayKeyLocalFromDate,
   formatDayFull,
   formatTime,
-  localDateFromDayKey
+  localDateFromDayKey,
+  publicCardDescription
 } from "@/lib/schedule";
 import { renderMarkdownLite } from "@/lib/markdown-lite";
 
@@ -378,7 +379,7 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
     const bg = ov?.eventBgColor ? rgbaFrom(ov.eventBgColor, ov.eventBgAlpha ?? 1) : null;
     const border = ov?.eventBorderColor ? rgbaFrom(ov.eventBorderColor, ov.eventBorderAlpha ?? 1) : null;
     const descMd = (e as any).description_md ? String((e as any).description_md) : "";
-    const descPlain = e.description ? String(e.description) : "";
+    const descToShow = publicCardDescription(e);
     return (
       <div
         key={`t-${e.id}-${e.start.toISOString()}`}
@@ -397,9 +398,9 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
           <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
             {renderMarkdownLite(descMd)}
           </div>
-        ) : descPlain ? (
+        ) : descToShow ? (
           <div className="muted" style={{ fontSize: 12, marginTop: 6, whiteSpace: "pre-line" }}>
-            {descPlain}
+            {descToShow}
           </div>
         ) : null}
       </div>
@@ -414,7 +415,7 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
     const bg = ov?.eventBgColor ? rgbaFrom(ov.eventBgColor, ov.eventBgAlpha ?? 1) : null;
     const border = ov?.eventBorderColor ? rgbaFrom(ov.eventBorderColor, ov.eventBorderAlpha ?? 1) : null;
     const descMd = (e as any).description_md ? String((e as any).description_md) : "";
-    const descPlain = e.description ? String(e.description) : "";
+    const descToShow = publicCardDescription(e);
     return (
       <div
         key={`u-${e.id}`}
@@ -433,9 +434,9 @@ export function RoomsScheduleViewer({ events }: { events: IsoEvent[] }) {
           <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
             {renderMarkdownLite(descMd)}
           </div>
-        ) : descPlain ? (
+        ) : descToShow ? (
           <div className="muted" style={{ fontSize: 12, marginTop: 6, whiteSpace: "pre-line" }}>
-            {descPlain}
+            {descToShow}
           </div>
         ) : null}
       </div>

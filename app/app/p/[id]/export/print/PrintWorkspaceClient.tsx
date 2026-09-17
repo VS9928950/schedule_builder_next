@@ -13,6 +13,7 @@ type IsoEv = Record<string, unknown> & {
   title?: string;
   description?: string;
   description_md?: string;
+  announcement?: string;
   format?: string;
   kind?: string;
   start?: string;
@@ -236,7 +237,9 @@ function eventDetails(raw: IsoEv): string[] {
   if (banner) lines.push(`Баннер: ${banner}`);
   const support = normToken(raw.supportMaterials);
   if (support) lines.push(`Сопроводительные материалы: ${support}`);
-  const desc = normToken(raw.description_md ?? raw.description);
+  const announce = normToken(raw.description_md ?? raw.announcement);
+  if (announce) lines.push(`Анонс: ${announce}`);
+  const desc = normToken(raw.description);
   if (desc) lines.push(`Описание: ${desc}`);
   return lines;
 }
