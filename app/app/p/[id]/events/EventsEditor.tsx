@@ -11,6 +11,8 @@ export type EditableEvent = {
   announcement?: string;
   speakers?: string;
   popup?: string;
+  popupButtonText?: string;
+  popupButtonUrl?: string;
   style_override?: {
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -53,6 +55,8 @@ export type UntimedEditableEvent = {
   announcement?: string;
   speakers?: string;
   popup?: string;
+  popupButtonText?: string;
+  popupButtonUrl?: string;
   style_override?: {
     eventBgColor?: string;
     eventBgAlpha?: number;
@@ -655,6 +659,26 @@ export function EventsEditor({
                   onBlur={() => fillPopupFields("timed", editing.id)}
                 />
               </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Кнопка попапа (столбец «Кнопка»; «-» или пусто — без кнопки)
+                </div>
+                <input
+                  value={editing.popupButtonText ?? ""}
+                  onChange={(e) => patchEvent(editing.id, { popupButtonText: e.target.value })}
+                  placeholder="Смотреть трансляцию"
+                />
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Ссылка кнопки (столбец «Ссылка кнопки»)
+                </div>
+                <input
+                  value={editing.popupButtonUrl ?? ""}
+                  onChange={(e) => patchEvent(editing.id, { popupButtonUrl: e.target.value })}
+                  placeholder="https://…"
+                />
+              </div>
             </div>
             <div style={{ height: 10 }} />
             <div className="card" style={{ padding: 12 }}>
@@ -1101,6 +1125,26 @@ export function EventsEditor({
                   value={editingUntimed.popup ?? ""}
                   onChange={(e) => patchUntimed(editingUntimed.id, { popup: e.target.value })}
                   onBlur={() => fillPopupFields("untimed", editingUntimed.id)}
+                />
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Кнопка попапа (столбец «Кнопка»; «-» или пусто — без кнопки)
+                </div>
+                <input
+                  value={editingUntimed.popupButtonText ?? ""}
+                  onChange={(e) => patchUntimed(editingUntimed.id, { popupButtonText: e.target.value })}
+                  placeholder="Смотреть трансляцию"
+                />
+              </div>
+              <div>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                  Ссылка кнопки (столбец «Ссылка кнопки»)
+                </div>
+                <input
+                  value={editingUntimed.popupButtonUrl ?? ""}
+                  onChange={(e) => patchUntimed(editingUntimed.id, { popupButtonUrl: e.target.value })}
+                  placeholder="https://…"
                 />
               </div>
             </div>

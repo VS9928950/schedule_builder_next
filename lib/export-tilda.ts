@@ -36,6 +36,8 @@ type IsoEvent = {
   url?: string;
   speakers?: string;
   popup?: string;
+  popupButtonText?: string;
+  popupButtonUrl?: string;
 };
 
 type RoomTimedEvent = { id: string; title: string; start: Date; end: Date; dayKey: string; raw: IsoEvent };
@@ -83,7 +85,9 @@ import {
   formatPlaceLabel,
   normalizeEventLink,
   resolveEventLinkTarget,
-  composePopupText
+  composePopupText,
+  meaningfulText,
+  resolvePopupButton
 } from "@/lib/schedule";
 import { layoutProgramDays } from "@/lib/program-slots";
 
@@ -1050,7 +1054,8 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__title{margin-top:10px;color:${esc(theme.titleColor)};font-size:${theme.titleFontPx + 6}px;font-weight:${theme.titleWeight};line-height:1.3}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body{margin-top:16px;padding-top:16px;border-top:1px solid ${esc(theme.timeColor)};color:${esc(theme.descColor)};font-size:${theme.descFontPx + 1}px;line-height:1.5;white-space:pre-line}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__foot{margin-top:24px;display:flex;justify-content:flex-end}
-.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__btn{appearance:none;border:0;cursor:pointer;background:${esc(theme.titleColor)};color:#fff;font:inherit;font-weight:600;font-size:16px;padding:12px 28px;border-radius:10px}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__foot[hidden]{display:none !important}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__btn{appearance:none;border:0;cursor:pointer;background:${esc(theme.titleColor)};color:#fff;font:inherit;font-weight:600;font-size:16px;padding:12px 28px;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
 @media (max-width:768px){
   .sb-modal[data-sb-scope="${internalScopeId}"]{padding:12px;align-items:flex-end;justify-content:center}
   .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__panel{width:100%;max-width:none;max-height:90vh;border-radius:16px 16px 0 0;padding:24px 20px 16px;margin-left:0}
@@ -1075,10 +1080,11 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     if (evUrl) {
       const tTarget = resolveEventLinkTarget(evUrl, linkTarget);
       const tAttr = tTarget === "_blank" ? ` target="_blank" rel="noopener noreferrer"` : "";
-      const popupBody = String(ev.popup ?? "").trim() || composePopupText(ev.speakers, ev.description) || "";
+      const popupBody = meaningfulText(ev.popup) || composePopupText(ev.speakers, ev.description) || "";
       const ourPopup = evUrl.startsWith("#popup:sb");
+      const cta = resolvePopupButton(ev.popupButtonText, ev.popupButtonUrl);
       const popupAttrs = ourPopup
-        ? ` data-sb-popup="1" data-sb-time="${escAttr(formatTimeRange(startD, endD))}" data-sb-place="${escAttr(place)}" data-sb-format="${escAttr(fmt)}" data-sb-body="${escAttr(popupBody)}"`
+        ? ` data-sb-popup="1" data-sb-time="${escAttr(formatTimeRange(startD, endD))}" data-sb-place="${escAttr(place)}" data-sb-format="${escAttr(fmt)}" data-sb-body="${escAttr(popupBody)}" data-sb-btn="${escAttr(cta?.text ?? "")}" data-sb-btn-href="${escAttr(cta?.href ?? "")}"`
         : "";
       inner += `<a class="sb-title" href="${esc(evUrl)}"${tAttr}${popupAttrs} style="${titleStyle}">${esc(ev.title)}</a>\n`;
     } else {
@@ -1145,7 +1151,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     modal.className="sb-modal";
     modal.setAttribute("data-sb-scope",SCOPE);
     modal.hidden=true;
-    modal.innerHTML='<div class="sb-modal__backdrop" data-sb-close="1"></div><div class="sb-modal__panel" role="dialog" aria-modal="true"><button type="button" class="sb-modal__x" data-sb-close="1" aria-label="Закрыть">×</button><div class="sb-modal__meta"><span class="sb-modal__time"></span><span class="sb-modal__place"></span></div><div class="sb-modal__format"></div><div class="sb-modal__title"></div><div class="sb-modal__body"></div><div class="sb-modal__foot"><button type="button" class="sb-modal__btn" data-sb-close="1">Закрыть</button></div></div>';
+    modal.innerHTML='<div class="sb-modal__backdrop" data-sb-close="1"></div><div class="sb-modal__panel" role="dialog" aria-modal="true"><button type="button" class="sb-modal__x" data-sb-close="1" aria-label="Закрыть">×</button><div class="sb-modal__meta"><span class="sb-modal__time"></span><span class="sb-modal__place"></span></div><div class="sb-modal__format"></div><div class="sb-modal__title"></div><div class="sb-modal__body"></div><div class="sb-modal__foot" hidden><a class="sb-modal__btn" target="_blank" rel="noopener noreferrer"></a></div></div>';
     document.body.appendChild(modal);
     modal.addEventListener("click",function(e){
       var t=el(e.target);
@@ -1192,6 +1198,18 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     fEl.textContent=fmt;
     fEl.style.display=fmt?"":"none";
     m.querySelector(".sb-modal__body").textContent=a.getAttribute("data-sb-body")||"";
+    var btnText=a.getAttribute("data-sb-btn")||"";
+    var btnHref=a.getAttribute("data-sb-btn-href")||"";
+    var foot=m.querySelector(".sb-modal__foot");
+    var btn=m.querySelector(".sb-modal__btn");
+    if(btnText && btnHref && foot && btn){
+      btn.textContent=btnText;
+      btn.setAttribute("href",btnHref);
+      foot.hidden=false;
+    } else if(foot){
+      if(btn) btn.removeAttribute("href");
+      foot.hidden=true;
+    }
     m.hidden=false;
     document.body.style.overflow="hidden";
     alignPanel();

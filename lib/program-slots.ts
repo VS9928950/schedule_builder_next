@@ -120,6 +120,8 @@ function toScheduleEvent(e: any, startD: Date, endD: Date) {
     announcement: e.announcement != null ? String(e.announcement) : undefined,
     speakers: e.speakers != null ? String(e.speakers) : undefined,
     popup: e.popup != null ? String(e.popup) : undefined,
+    popupButtonText: e.popupButtonText != null ? String(e.popupButtonText) : undefined,
+    popupButtonUrl: e.popupButtonUrl != null ? String(e.popupButtonUrl) : undefined,
     building: e.building != null ? String(e.building) : undefined,
     room: e.room != null ? String(e.room) : undefined,
     format: e.format != null ? String(e.format) : undefined,

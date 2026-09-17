@@ -9,6 +9,8 @@ export type ProjectEventIso = {
   announcement?: string;
   speakers?: string;
   popup?: string;
+  popupButtonText?: string;
+  popupButtonUrl?: string;
   kind?: "timed" | "untimed";
   day?: string;
   start?: string;

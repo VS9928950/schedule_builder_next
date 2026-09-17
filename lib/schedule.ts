@@ -9,6 +9,10 @@ export type ScheduleEvent = {
   speakers?: string;
   /** Combined popup body (column «Попап» or Speakers + Description). */
   popup?: string;
+  /** Popup CTA label (column «Кнопка»); omitted when empty or «-». */
+  popupButtonText?: string;
+  /** Popup CTA http(s) URL (column «Ссылка кнопки»). */
+  popupButtonUrl?: string;
   /** http(s) or Tilda `#popup:…`; empty / invalid omitted */
   url?: string;
   building?: string;
@@ -41,6 +45,8 @@ export type UntimedEvent = {
   announcement?: string;
   speakers?: string;
   popup?: string;
+  popupButtonText?: string;
+  popupButtonUrl?: string;
   url?: string;
   building?: string;
   room?: string;
@@ -172,12 +178,47 @@ function pickPopupFromRow(row: Record<string, unknown>): string | undefined {
   return strAny(row["Попап"]) ?? strAny(row["Popup"]) ?? undefined;
 }
 
-/** Speakers, blank line, then description. */
+function pickPopupButtonTextFromRow(row: Record<string, unknown>): string | undefined {
+  return (
+    strAny(row["Кнопка"]) ??
+    strAny(row["Текст кнопки"]) ??
+    strAny(row["Кнопка попапа"]) ??
+    undefined
+  );
+}
+
+function pickPopupButtonUrlFromRow(row: Record<string, unknown>): string | undefined {
+  return (
+    strAny(row["Ссылка кнопки"]) ??
+    strAny(row["URL кнопки"]) ??
+    strAny(row["Ссылка кнопки попапа"]) ??
+    undefined
+  );
+}
+
+/** Empty, whitespace, or a lone dash from Excel — not a real value. */
+export function meaningfulText(v: unknown): string | undefined {
+  const s = String(v ?? "").trim();
+  if (!s || s === "-") return undefined;
+  return s;
+}
+
+/** Speakers and description, skipping «-» cells; not joined with empty parts. */
 export function composePopupText(speakers?: unknown, description?: unknown): string | undefined {
-  const sp = String(speakers ?? "").trim();
-  const desc = String(description ?? "").trim();
+  const sp = meaningfulText(speakers);
+  const desc = meaningfulText(description);
   if (sp && desc) return `${sp}\n\n${desc}`;
   return sp || desc || undefined;
+}
+
+export function resolvePopupButton(
+  text?: unknown,
+  href?: unknown
+): { text: string; href: string } | undefined {
+  const label = meaningfulText(text);
+  const url = normalizeHttpUrl(href);
+  if (!label || !url) return undefined;
+  return { text: label, href: url };
 }
 
 export function popupHookFromEventId(id: unknown): string {
@@ -196,15 +237,15 @@ export function fillEmptyPopupAndUrl<T extends {
   popup?: unknown;
   url?: unknown;
 }>(ev: T): T & { popup?: string; url?: string } {
-  const popup = String(ev.popup ?? "").trim() || composePopupText(ev.speakers, ev.description) || undefined;
+  const popup = meaningfulText(ev.popup) || composePopupText(ev.speakers, ev.description) || undefined;
   const url = normalizeEventLink(ev.url) || (popup ? popupHookFromEventId(ev.id) : undefined);
   return { ...ev, popup, url };
 }
 
 function popupFieldsFromRow(row: Record<string, unknown>, index: number) {
   const id = String(row["id"] ?? row["ID"] ?? row["Id"] ?? index);
-  const speakers = pickSpeakersFromRow(row);
-  const description = str(row["Описание"]) ?? undefined;
+  const speakers = meaningfulText(pickSpeakersFromRow(row));
+  const description = meaningfulText(row["Описание"]);
   const filled = fillEmptyPopupAndUrl({
     id,
     speakers,
@@ -212,13 +253,16 @@ function popupFieldsFromRow(row: Record<string, unknown>, index: number) {
     popup: pickPopupFromRow(row),
     url: pickUrlFromRow(row)
   });
+  const button = resolvePopupButton(pickPopupButtonTextFromRow(row), pickPopupButtonUrlFromRow(row));
   return {
     id,
     speakers,
     description,
     announcement: pickAnnouncementFromRow(row),
     popup: filled.popup,
-    url: filled.url
+    url: filled.url,
+    popupButtonText: button?.text,
+    popupButtonUrl: button?.href
   };
 }
 
@@ -304,6 +348,8 @@ export function parseScheduleFromExcelRows(rows: unknown[]): ScheduleEvent[] {
       announcement: texts.announcement,
       speakers: texts.speakers,
       popup: texts.popup,
+      popupButtonText: texts.popupButtonText,
+      popupButtonUrl: texts.popupButtonUrl,
       url: texts.url,
       building: withNbspSpaces(row["Корпус"]),
       room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
@@ -631,6 +677,8 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
         announcement: texts.announcement,
         speakers: texts.speakers,
         popup: texts.popup,
+        popupButtonText: texts.popupButtonText,
+        popupButtonUrl: texts.popupButtonUrl,
         url: texts.url,
         building: withNbspSpaces(row["Корпус"]),
         room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
@@ -662,6 +710,8 @@ export function parseScheduleAllFromExcelRows(rows: unknown[]): ParsedSchedule {
         announcement: texts.announcement,
         speakers: texts.speakers,
         popup: texts.popup,
+        popupButtonText: texts.popupButtonText,
+        popupButtonUrl: texts.popupButtonUrl,
         url: texts.url,
         building: withNbspSpaces(row["Корпус"]),
         room: row["Аудитория"] != null ? String(row["Аудитория"]).trim() || undefined : undefined,
