@@ -373,8 +373,9 @@ button.secondary { background: rgba(15,23,42,.04); }
 .eventHead {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 10px;
+  min-width: 0;
 }
 .eventTitle {
   font-weight: var(--tl-title-font-weight, 600);
@@ -394,6 +395,7 @@ button.secondary { background: rgba(15,23,42,.04); }
 }
 .eventTime {
   margin-top: 0;
+  flex: 0 0 auto;
   font-size: var(--tl-time-font-px, 16px);
   font-weight: var(--tl-time-font-weight, 600);
   font-style: var(--tl-time-font-style, normal);
@@ -477,12 +479,15 @@ button.secondary { background: rgba(15,23,42,.04); }
 }
 .eventPlace {
   margin-top: 0;
+  flex: 1 1 0;
+  min-width: 0;
   font-size: var(--tl-place-font-px, 16px);
   font-weight: var(--tl-place-font-weight, 600);
   font-style: var(--tl-place-font-style, normal);
   color: var(--tl-place-color, #51226b);
   text-align: right;
   white-space: pre-line;
+  overflow-wrap: break-word;
   opacity: 1;
 }
 .eventBlock.tiny { padding: 10px 12px; }

@@ -109,7 +109,7 @@ function strAny(v: unknown): string | null {
   return null;
 }
 
-/** Keep building labels like «Корп. 2» and «пр-кт Гагарина» from wrapping mid-token. */
+/** Glue short labels like «Корп. 2»; keep «пр-кт» from breaking; let long names wrap. */
 export function withNbspSpaces(v: unknown): string | undefined {
   const s = strAny(v);
   if (!s) return undefined;
@@ -117,7 +117,13 @@ export function withNbspSpaces(v: unknown): string | undefined {
 }
 
 function protectPlaceWrap(s: string): string {
-  return s.replaceAll(" ", "\u00A0").replace(/([A-Za-zА-Яа-яЁё])-([A-Za-zА-Яа-яЁё])/g, "$1\u2011$2");
+  let t = s.replace(/\u00A0/g, " ");
+  t = t.replace(/[ \t]*\n[ \t]*/g, "\n");
+  t = t.replace(/([A-Za-zА-Яа-яЁё])[\-\u2010\u2011]([A-Za-zА-Яа-яЁё])/g, "$1\u2011$2");
+  t = t.replace(/(^|[\s(])((?:корп(?:ус)?|ауд(?:итория)?)\.?)\s+(?=\S)/gi, "$1$2\u00A0");
+  t = t.replace(/(\d)\s+(к\.)/gi, "$1\u00A0$2");
+  t = t.replace(/[ \t]+\(/g, "\n(");
+  return t;
 }
 
 /** Tilda same-page popup, e.g. `#popup:embedcode1`. */
