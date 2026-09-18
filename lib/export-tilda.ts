@@ -662,6 +662,7 @@ export function buildTildaSnippet(args: {
   const tilePadPx = Math.max(8, Math.round(32 * space));
   const ruleMarginPx = Math.max(6, Math.round(14 * space));
   const formatTopPx = Math.max(4, Math.round(10 * space));
+  const formatBottomPx = Math.max(2, Math.round(10 * space));
   const titleTopPx = Math.max(2, Math.round(10 * space));
   const isTechView = String(view ?? "").trim() === "tech-schedule";
   const filteredEvents = applyExportViewFilter(events, view);
@@ -1006,9 +1007,10 @@ ${rootSel} .sb-session + .sb-session{margin-top:${Math.max(8, Math.round(18 * sp
 ${rootSel} .sb-head{display:flex;justify-content:space-between;align-items:flex-start;gap:${Math.max(6, Math.round(12 * space))}px;min-width:0}
 ${rootSel} .sb-time{flex:0 0 auto;font-size:${theme.timeFontPx}px;font-weight:${theme.timeWeight};font-style:${theme.timeItalic ? "italic" : "normal"};color:var(--sb-time);line-height:1.4}
 ${rootSel} .sb-place{flex:1 1 0;min-width:0;font-size:${theme.placeFontPx}px;font-weight:${theme.placeWeight};font-style:${theme.placeItalic ? "italic" : "normal"};color:var(--sb-place);text-align:right;line-height:1.4;white-space:pre-line;overflow-wrap:break-word}
-${rootSel} .sb-format{margin-top:${formatTopPx}px;font-size:${theme.formatFontPx}px;font-weight:${theme.formatWeight};font-style:${theme.formatItalic ? "italic" : "normal"};color:var(--sb-format)}
-${rootSel} .sb-title{margin-top:${titleTopPx}px;font-size:${theme.titleFontPx}px;font-weight:${theme.titleWeight};font-style:${theme.titleItalic ? "italic" : "normal"};color:var(--sb-title);line-height:1.35}
-${rootSel} a.sb-title{color:inherit;text-decoration:none}
+${rootSel} .sb-format{margin-top:${formatTopPx}px;margin-bottom:${formatBottomPx}px;font-size:${theme.formatFontPx}px;font-weight:${theme.formatWeight};font-style:${theme.formatItalic ? "italic" : "normal"};color:var(--sb-format)}
+${rootSel} .sb-title{display:block;margin-top:${titleTopPx}px;font-size:${theme.titleFontPx}px;font-weight:${theme.titleWeight};font-style:${theme.titleItalic ? "italic" : "normal"};color:var(--sb-title);line-height:1.35}
+${rootSel} .sb-format + .sb-title{margin-top:0}
+${rootSel} a.sb-title{display:block;color:inherit;text-decoration:none}
 ${rootSel} a.sb-title:hover{text-decoration:underline}
 ${rootSel} .sb-rule{margin:${ruleMarginPx}px 0;border:0;border-top:1px solid var(--sb-time)}
 ${rootSel} .sb-tile--accent .sb-rule{border-top-color:var(--sb-place)}
@@ -1044,7 +1046,7 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__meta{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-right:40px;min-width:0}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__time{flex:0 0 auto;color:${esc(theme.timeColor)};font-weight:${theme.timeWeight};font-size:${theme.timeFontPx}px}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__place{flex:1 1 0;min-width:0;color:${esc(theme.placeColor)};font-weight:${theme.placeWeight};font-size:${theme.placeFontPx}px;text-align:right;white-space:pre-line;overflow-wrap:break-word}
-.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__format{margin-top:8px;color:${esc(theme.formatColor)};font-size:${theme.formatFontPx}px}
+.sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__format{margin-top:10px;margin-bottom:10px;color:${esc(theme.formatColor)};font-size:${theme.formatFontPx}px}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__title{margin-top:10px;color:${esc(theme.titleColor)};font-size:${theme.titleFontPx + 6}px;font-weight:${theme.titleWeight};line-height:1.3}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body{margin-top:16px;padding-top:16px;border-top:1px solid ${esc(theme.timeColor)};color:${esc(theme.descColor)};font-size:${theme.descFontPx + 1}px;line-height:1.5}
 .sb-modal[data-sb-scope="${internalScopeId}"] .sb-modal__body .sb-desc{margin:0 0 8px;font-size:inherit;color:inherit}
@@ -1192,8 +1194,10 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     m.querySelector(".sb-modal__place").textContent=a.getAttribute("data-sb-place")||"";
     var fmt=a.getAttribute("data-sb-format")||"";
     var fEl=m.querySelector(".sb-modal__format");
+    var tEl=m.querySelector(".sb-modal__title");
     fEl.textContent=fmt;
     fEl.style.display=fmt?"":"none";
+    tEl.style.marginTop=fmt?"0":"";
     m.querySelector(".sb-modal__body").innerHTML=a.getAttribute("data-sb-body")||"";
     var btnText=a.getAttribute("data-sb-btn")||"";
     var btnHref=a.getAttribute("data-sb-btn-href")||"";
