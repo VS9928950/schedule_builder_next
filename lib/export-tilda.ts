@@ -443,7 +443,7 @@ function dateFrom(v: unknown): Date | null {
   return Number.isFinite(d.getTime()) ? d : null;
 }
 
-function renderGroupedItemsHtml(items: GroupedListItem[], linkTarget: string): string {
+function renderGroupedItemsHtml(items: GroupedListItem[], linkTarget: "_blank" | "_self"): string {
   const lis = items
     .map((item) => {
       const title = esc(item.title);
