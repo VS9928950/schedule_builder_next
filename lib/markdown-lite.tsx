@@ -1,40 +1,44 @@
 import React from "react";
 
-export function parseInline(s: string): React.ReactNode[] {
-  // Very small, safe subset:
-  // - **bold**
-  // - *italic* or _italic_
+function parseInlineNodes(s: string, toNode: (tag: "strong" | "em", inner: string, key: string) => React.ReactNode): React.ReactNode[] {
   const out: React.ReactNode[] = [];
   let i = 0;
   while (i < s.length) {
     const rest = s.slice(i);
+    const bothStar = /^\*\*\*(.+?)\*\*\*/.exec(rest);
+    if (bothStar) {
+      out.push(toNode("strong", `*${bothStar[1]}*`, `bi-${i}`));
+      i += bothStar[0].length;
+      continue;
+    }
+    const bothUnd = /^___(.+?)___/.exec(rest);
+    if (bothUnd) {
+      out.push(toNode("strong", `_${bothUnd[1]}_`, `biu-${i}`));
+      i += bothUnd[0].length;
+      continue;
+    }
     const bold = /^\*\*(.+?)\*\*/.exec(rest);
     if (bold) {
-      out.push(<strong key={`b-${i}`}>{bold[1]}</strong>);
+      out.push(toNode("strong", bold[1]!, `b-${i}`));
       i += bold[0].length;
       continue;
     }
     const italicStar = /^\*(.+?)\*/.exec(rest);
     if (italicStar) {
-      out.push(<em key={`i-${i}`}>{italicStar[1]}</em>);
+      out.push(toNode("em", italicStar[1]!, `i-${i}`));
       i += italicStar[0].length;
       continue;
     }
     const italicUnd = /^_(.+?)_/.exec(rest);
     if (italicUnd) {
-      out.push(<em key={`u-${i}`}>{italicUnd[1]}</em>);
+      out.push(toNode("em", italicUnd[1]!, `u-${i}`));
       i += italicUnd[0].length;
       continue;
     }
-    // plain chunk up to next marker
-    const next = (() => {
-      const idxs = [
-        rest.indexOf("**"),
-        rest.indexOf("*"),
-        rest.indexOf("_")
-      ].filter((x) => x >= 0);
-      return idxs.length ? Math.min(...idxs) : -1;
-    })();
+    const idxs = [rest.indexOf("***"), rest.indexOf("**"), rest.indexOf("*"), rest.indexOf("___"), rest.indexOf("_")].filter(
+      (x) => x >= 0
+    );
+    const next = idxs.length ? Math.min(...idxs) : -1;
     const chunk = next === -1 ? rest : rest.slice(0, next);
     out.push(chunk);
     i += chunk.length;
@@ -42,65 +46,100 @@ export function parseInline(s: string): React.ReactNode[] {
   return out;
 }
 
-export function renderMarkdownLite(md: string): React.ReactNode {
-  const lines = String(md ?? "").replace(/\r\n/g, "\n").split("\n");
-  const blocks: React.ReactNode[] = [];
-  let list: string[] = [];
+export function parseInline(s: string): React.ReactNode[] {
+  return parseInlineNodes(s, (tag, inner, key) =>
+    tag === "strong" ? <strong key={key}>{parseInline(inner)}</strong> : <em key={key}>{parseInline(inner)}</em>
+  );
+}
 
-  const flushList = (keyBase: string) => {
+const LIST_ITEM = /^(?:[-•–—]\s*|\*\s+)(.+)$/;
+
+type MdBlock =
+  | { type: "list"; items: string[] }
+  | { type: "gap"; large: boolean }
+  | { type: "h"; text: string; level: number }
+  | { type: "p"; text: string };
+
+function parseMarkdownLiteBlocks(md: string): MdBlock[] {
+  const lines = String(md ?? "").replace(/\r\n/g, "\n").split("\n");
+  const blocks: MdBlock[] = [];
+  let list: string[] = [];
+  let emptyRun = 0;
+
+  const flushList = () => {
     if (!list.length) return;
-    const items = list;
+    blocks.push({ type: "list", items: list });
     list = [];
-    blocks.push(
-      <ul key={`${keyBase}-ul`} style={{ margin: "6px 0 0 18px", padding: 0 }}>
-        {items.map((t, idx) => (
-          <li key={`${keyBase}-li-${idx}`} style={{ margin: "2px 0" }}>
-            {parseInline(t)}
-          </li>
-        ))}
-      </ul>
-    );
+  };
+  const flushEmpty = () => {
+    if (!emptyRun) return;
+    blocks.push({ type: "gap", large: emptyRun >= 2 });
+    emptyRun = 0;
   };
 
-  lines.forEach((raw, idx) => {
+  for (const raw of lines) {
     const line = raw.trimEnd();
-    const mH3 = /^###\s+(.*)$/.exec(line);
-    const mH2 = /^##\s+(.*)$/.exec(line);
-    const mH1 = /^#\s+(.*)$/.exec(line);
-    const mLi = /^[-*]\s+(.*)$/.exec(line);
-
+    const mLi = LIST_ITEM.exec(line.trimStart());
     if (mLi) {
+      flushEmpty();
       list.push(mLi[1] ?? "");
-      return;
+      continue;
     }
-
-    flushList(`l-${idx}`);
-
+    flushList();
     if (!line.trim()) {
-      blocks.push(<div key={`sp-${idx}`} style={{ height: 6 }} />);
-      return;
+      emptyRun += 1;
+      continue;
     }
-
-    if (mH1 || mH2 || mH3) {
-      const text = (mH3?.[1] ?? mH2?.[1] ?? mH1?.[1] ?? "").trim();
-      const fs = mH1 ? 13 : mH2 ? 12 : 11;
-      blocks.push(
-        <div key={`h-${idx}`} style={{ fontWeight: 900, fontSize: fs, marginTop: 6 }}>
-          {parseInline(text)}
-        </div>
-      );
-      return;
+    flushEmpty();
+    const mH = /^(#{1,3})\s+(.*)$/.exec(line.trimStart());
+    if (mH) {
+      blocks.push({ type: "h", level: mH[1]!.length, text: (mH[2] ?? "").trim() });
+      continue;
     }
+    blocks.push({ type: "p", text: line });
+  }
+  flushList();
+  flushEmpty();
+  return blocks;
+}
 
-    blocks.push(
-      <div key={`p-${idx}`} style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>
-        {parseInline(line)}
-      </div>
-    );
-  });
-
-  flushList(`l-end`);
-  return <>{blocks}</>;
+export function renderMarkdownLite(md: string): React.ReactNode {
+  return (
+    <>
+      {parseMarkdownLiteBlocks(md).map((b, idx) => {
+        if (b.type === "list") {
+          return (
+            <ul key={`ul-${idx}`} className="eventDescList">
+              {b.items.map((t, i) => (
+                <li key={`li-${idx}-${i}`}>
+                  <span className="eventDescBullet" aria-hidden="true">
+                    •
+                  </span>
+                  <span>{parseInline(t)}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        if (b.type === "gap") {
+          return <div key={`sp-${idx}`} style={{ height: b.large ? 24 : 8 }} />;
+        }
+        if (b.type === "h") {
+          const fs = b.level <= 1 ? 13 : b.level === 2 ? 12 : 11;
+          return (
+            <div key={`h-${idx}`} style={{ fontWeight: 900, fontSize: fs, marginTop: 6 }}>
+              {parseInline(b.text)}
+            </div>
+          );
+        }
+        return (
+          <div key={`p-${idx}`} style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>
+            {parseInline(b.text)}
+          </div>
+        );
+      })}
+    </>
+  );
 }
 
 function escHtml(s: string) {
@@ -117,6 +156,18 @@ function parseInlineHtml(s: string): string {
   const src = String(s ?? "");
   while (i < src.length) {
     const rest = src.slice(i);
+    const bothStar = /^\*\*\*(.+?)\*\*\*/.exec(rest);
+    if (bothStar) {
+      out += `<strong><em>${parseInlineHtml(bothStar[1]!)}</em></strong>`;
+      i += bothStar[0].length;
+      continue;
+    }
+    const bothUnd = /^___(.+?)___/.exec(rest);
+    if (bothUnd) {
+      out += `<strong><em>${parseInlineHtml(bothUnd[1]!)}</em></strong>`;
+      i += bothUnd[0].length;
+      continue;
+    }
     const bold = /^\*\*(.+?)\*\*/.exec(rest);
     if (bold) {
       out += `<strong>${parseInlineHtml(bold[1]!)}</strong>`;
@@ -135,7 +186,9 @@ function parseInlineHtml(s: string): string {
       i += italicUnd[0].length;
       continue;
     }
-    const idxs = [rest.indexOf("**"), rest.indexOf("*"), rest.indexOf("_")].filter((x) => x >= 0);
+    const idxs = [rest.indexOf("***"), rest.indexOf("**"), rest.indexOf("*"), rest.indexOf("___"), rest.indexOf("_")].filter(
+      (x) => x >= 0
+    );
     const next = idxs.length ? Math.min(...idxs) : -1;
     const chunk = next === -1 ? rest : rest.slice(0, next);
     out += escHtml(chunk);
@@ -146,37 +199,20 @@ function parseInlineHtml(s: string): string {
 
 /** Same subset as renderMarkdownLite, for Tilda snippet HTML. */
 export function renderMarkdownLiteHtml(md: string): string {
-  const lines = String(md ?? "").replace(/\r\n/g, "\n").split("\n");
-  const blocks: string[] = [];
-  let list: string[] = [];
-
-  const flushList = () => {
-    if (!list.length) return;
-    const items = list.map((t) => `<li>${parseInlineHtml(t)}</li>`).join("");
-    list = [];
-    blocks.push(`<ul class="sb-list">${items}</ul>`);
-  };
-
-  for (const raw of lines) {
-    const line = raw.trimEnd();
-    const mLi = /^[-*]\s+(.*)$/.exec(line);
-    if (mLi) {
-      list.push(mLi[1] ?? "");
-      continue;
-    }
-    flushList();
-    if (!line.trim()) {
-      blocks.push("<div class=\"sb-desc-gap\"></div>");
-      continue;
-    }
-    const mH = /^(#{1,3})\s+(.*)$/.exec(line);
-    if (mH) {
-      blocks.push(`<div class="sb-desc" style="font-weight:700">${parseInlineHtml((mH[2] ?? "").trim())}</div>`);
-      continue;
-    }
-    blocks.push(`<div class="sb-desc">${parseInlineHtml(line)}</div>`);
-  }
-  flushList();
-  return blocks.join("");
+  return parseMarkdownLiteBlocks(md)
+    .map((b) => {
+      if (b.type === "list") {
+        const items = b.items.map((t) => `<li><span class="sb-bullet">•</span><span>${parseInlineHtml(t)}</span></li>`).join("");
+        return `<ul class="sb-list">${items}</ul>`;
+      }
+      if (b.type === "gap") {
+        return `<div class="sb-desc-gap${b.large ? " sb-desc-gap--lg" : ""}"></div>`;
+      }
+      if (b.type === "h") {
+        return `<div class="sb-desc" style="font-weight:700">${parseInlineHtml(b.text)}</div>`;
+      }
+      return `<div class="sb-desc">${parseInlineHtml(b.text)}</div>`;
+    })
+    .join("");
 }
 

@@ -958,16 +958,21 @@ function renderHighlightedDescription(text: string) {
     <ul className="eventDescList">
       {lines.map((line, i) => (
         <li key={`desc-${i}`}>
-          {highlightPlaceInLine(line).map((p, j) =>
-            p.kind === "place" ? (
-              <span key={`p-${j}`}>
-                {j > 0 ? " " : null}
-                <span className="eventPlaceMark">{parseInline(p.text)}</span>
-              </span>
-            ) : (
-              <span key={`t-${j}`}>{parseInline(p.text)}</span>
-            )
-          )}
+          <span className="eventDescBullet" aria-hidden="true">
+            •
+          </span>
+          <span>
+            {highlightPlaceInLine(line).map((p, j) =>
+              p.kind === "place" ? (
+                <span key={`p-${j}`}>
+                  {j > 0 ? " " : null}
+                  <span className="eventPlaceMark">{parseInline(p.text)}</span>
+                </span>
+              ) : (
+                <span key={`t-${j}`}>{parseInline(p.text)}</span>
+              )
+            )}
+          </span>
         </li>
       ))}
     </ul>

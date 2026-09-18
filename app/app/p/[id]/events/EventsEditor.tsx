@@ -642,7 +642,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Спикеры (столбец «Спикеры»; «-» не попадает в попап). **жирный**, *курсив*
+                  Спикеры (столбец «Спикеры»; одна строка «-» не попадает в попап). «- имя» → •. ***жирный курсив***, **жирный**, *курсив*. 2–3 пустые строки — больший отступ
                 </div>
                 <textarea
                   value={editing.speakers ?? ""}
@@ -652,7 +652,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Описание (столбец «Описание»). **жирный**, *курсив*
+                  Описание (столбец «Описание»). «- пункт» → •. ***жирный курсив***, **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editing.description ?? ""}
@@ -662,7 +662,7 @@ export function EventsEditor({
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Попап (столбец «Попап»; если пусто — спикеры и описание с отступом). **жирный**, *курсив*
+                  Попап (столбец «Попап»; если пусто — спикеры и описание). «- пункт» → •. ***жирный курсив***, **жирный**, *курсив*. 2–3 пустые строки — больший отступ
                 </div>
                 <textarea
                   value={editing.popup ?? ""}
@@ -1135,7 +1135,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Спикеры (столбец «Спикеры»; «-» не попадает в попап). **жирный**, *курсив*
+                  Спикеры (столбец «Спикеры»; одна строка «-» не попадает в попап). «- имя» → •. ***жирный курсив***, **жирный**, *курсив*. 2–3 пустые строки — больший отступ
                 </div>
                 <textarea
                   value={editingUntimed.speakers ?? ""}
@@ -1145,7 +1145,7 @@ export function EventsEditor({
               </div>
               <div>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Описание (столбец «Описание»). **жирный**, *курсив*
+                  Описание (столбец «Описание»). «- пункт» → •. ***жирный курсив***, **жирный**, *курсив*
                 </div>
                 <textarea
                   value={editingUntimed.description ?? ""}
@@ -1155,7 +1155,7 @@ export function EventsEditor({
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                  Попап (столбец «Попап»; если пусто — спикеры и описание с отступом). **жирный**, *курсив*
+                  Попап (столбец «Попап»; если пусто — спикеры и описание). «- пункт» → •. ***жирный курсив***, **жирный**, *курсив*. 2–3 пустые строки — больший отступ
                 </div>
                 <textarea
                   value={editingUntimed.popup ?? ""}

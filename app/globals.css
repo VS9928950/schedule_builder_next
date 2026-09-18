@@ -429,11 +429,22 @@ button.secondary { background: rgba(15,23,42,.04); }
   line-height: 1.35;
 }
 .eventDescList {
-  margin: 0;
-  padding-left: 1.15em;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
 }
 .eventDescList li {
-  margin: 0 0 0.35em;
+  display: flex;
+  gap: 0.45em;
+  align-items: baseline;
+  margin: 0 0 0.4em;
+  padding: 0;
+  list-style: none;
+}
+.eventDescBullet {
+  flex: 0 0 auto;
+  font-weight: 700;
+  line-height: 1;
 }
 .eventPlaceMark {
   color: var(--tl-place-color, #51226b);
