@@ -927,12 +927,15 @@ export function migrateLegacyStyleNum(v: unknown, legacy: number, next: number):
 
 export const INVITATION_MEETING_FORMAT = "Встреча по приглашениям";
 export const INVITATION_MEETING_DESCRIPTION = "(по приглашениям)";
+export const EXCURSION_FORMAT = "Экскурсии";
+
+const HIDDEN_FORMAT_LABELS = new Set(["Питание", "Регистрация", INVITATION_MEETING_FORMAT, EXCURSION_FORMAT]);
 
 /** Hide format label on public cards for these values. */
 export function shouldShowFormat(fmt: unknown): boolean {
   const s = fmt == null ? "" : String(fmt).trim();
   if (!s) return false;
-  return s !== "Питание" && s !== "Регистрация" && s !== INVITATION_MEETING_FORMAT;
+  return !HIDDEN_FORMAT_LABELS.has(s);
 }
 
 /** Food and registration show time/title/place only. Invitation meetings use a fixed line. */

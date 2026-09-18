@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { dayKeyLocalFromDate, fillEmptyPopupAndUrl, formatTime, withNbspSpaces } from "@/lib/schedule";
+import { dayKeyLocalFromDate, fillEmptyPopupAndUrl, formatTime, shouldShowFormat, withNbspSpaces } from "@/lib/schedule";
 
 export type EditableEvent = {
   id: string;
@@ -140,12 +140,6 @@ export function EventsEditor({
   initialEvents: EditableEvent[];
   untimedEvents: UntimedEditableEvent[];
 }) {
-  function shouldShowFormat(fmt: unknown) {
-    const s = fmt == null ? "" : String(fmt).trim();
-    if (!s) return false;
-    return s !== "Питание";
-  }
-
   const [events, setEvents] = useState<EditableEvent[]>(initialEvents);
   const [untimed, setUntimed] = useState<UntimedEditableEvent[]>(initialUntimed);
   const [dirty, setDirty] = useState(false);
@@ -374,11 +368,28 @@ export function EventsEditor({
             overflowY: "auto"
           }}
         >
-          <div className="row" style={{ justifyContent: "space-between" }}>
+          <div
+            className="row"
+            style={{
+              justifyContent: "space-between",
+              position: "sticky",
+              top: -14,
+              zIndex: 2,
+              margin: "-14px -14px 0",
+              padding: "14px 14px 10px",
+              background: "rgba(255,255,255,.96)",
+              borderBottom: "1px solid var(--line)"
+            }}
+          >
             <div style={{ fontWeight: 800, fontSize: 14 }}>Редактирование</div>
-            <button type="button" className="secondary" onClick={() => setEditingId(null)}>
-              Закрыть
-            </button>
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <button type="button" onClick={() => void saveAll()} disabled={!dirty || saving}>
+                {saving ? "Сохранение..." : "Сохранить"}
+              </button>
+              <button type="button" className="secondary" onClick={() => setEditingId(null)}>
+                Закрыть
+              </button>
+            </div>
           </div>
           <div style={{ height: 10 }} />
           <div className="grid events-editor-form-grid">
@@ -794,6 +805,14 @@ export function EventsEditor({
               </div>
             </div>
           </div>
+          <div className="row" style={{ justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+            <button type="button" onClick={() => void saveAll()} disabled={!dirty || saving}>
+              {saving ? "Сохранение..." : "Сохранить"}
+            </button>
+            <button type="button" className="secondary" onClick={() => setEditingId(null)}>
+              Закрыть
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -818,11 +837,28 @@ export function EventsEditor({
             overflowY: "auto"
           }}
         >
-          <div className="row" style={{ justifyContent: "space-between" }}>
+          <div
+            className="row"
+            style={{
+              justifyContent: "space-between",
+              position: "sticky",
+              top: -14,
+              zIndex: 2,
+              margin: "-14px -14px 0",
+              padding: "14px 14px 10px",
+              background: "rgba(255,255,255,.96)",
+              borderBottom: "1px solid var(--line)"
+            }}
+          >
             <div style={{ fontWeight: 800, fontSize: 14 }}>Редактирование (без времени)</div>
-            <button type="button" className="secondary" onClick={() => setEditingUntimedId(null)}>
-              Закрыть
-            </button>
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <button type="button" onClick={() => void saveAll()} disabled={!dirty || saving}>
+                {saving ? "Сохранение..." : "Сохранить"}
+              </button>
+              <button type="button" className="secondary" onClick={() => setEditingUntimedId(null)}>
+                Закрыть
+              </button>
+            </div>
           </div>
           <div style={{ height: 10 }} />
           <div className="grid events-editor-form-grid">
@@ -1227,6 +1263,14 @@ export function EventsEditor({
                 </button>
               </div>
             </div>
+          </div>
+          <div className="row" style={{ justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+            <button type="button" onClick={() => void saveAll()} disabled={!dirty || saving}>
+              {saving ? "Сохранение..." : "Сохранить"}
+            </button>
+            <button type="button" className="secondary" onClick={() => setEditingUntimedId(null)}>
+              Закрыть
+            </button>
           </div>
         </div>
       ) : null}

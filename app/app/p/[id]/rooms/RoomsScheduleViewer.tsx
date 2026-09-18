@@ -7,7 +7,8 @@ import {
   formatDayFull,
   formatTime,
   localDateFromDayKey,
-  publicCardDescription
+  publicCardDescription,
+  shouldShowFormat
 } from "@/lib/schedule";
 import { renderMarkdownLite } from "@/lib/markdown-lite";
 
@@ -39,12 +40,6 @@ function normToken(s: unknown) {
   const t = String(s).replace(/\s+/g, " ").trim();
   if (t === "-" || t === "—") return "";
   return t;
-}
-
-function shouldShowFormat(fmt: unknown) {
-  const s = fmt == null ? "" : String(fmt).trim();
-  if (!s) return false;
-  return s !== "Питание";
 }
 
 function roomKey(e: IsoEvent) {
