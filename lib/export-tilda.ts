@@ -662,7 +662,7 @@ export function buildTildaSnippet(args: {
   const tilePadPx = Math.max(8, Math.round(32 * space));
   const ruleMarginPx = Math.max(6, Math.round(14 * space));
   const formatTopPx = Math.max(4, Math.round(10 * space));
-  const titleTopPx = Math.max(2, Math.round(6 * space));
+  const titleTopPx = Math.max(2, Math.round(10 * space));
   const isTechView = String(view ?? "").trim() === "tech-schedule";
   const filteredEvents = applyExportViewFilter(events, view);
 
