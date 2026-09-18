@@ -1,5 +1,15 @@
 import React from "react";
 
+function consumePlain(rest: string): string {
+  const idxs = [rest.indexOf("***"), rest.indexOf("**"), rest.indexOf("*"), rest.indexOf("___"), rest.indexOf("_")].filter(
+    (x) => x >= 0
+  );
+  const next = idxs.length ? Math.min(...idxs) : -1;
+  if (next > 0) return rest.slice(0, next);
+  if (next < 0) return rest;
+  return rest.slice(0, 1);
+}
+
 function parseInlineNodes(s: string, toNode: (tag: "strong" | "em", inner: string, key: string) => React.ReactNode): React.ReactNode[] {
   const out: React.ReactNode[] = [];
   let i = 0;
@@ -35,11 +45,7 @@ function parseInlineNodes(s: string, toNode: (tag: "strong" | "em", inner: strin
       i += italicUnd[0].length;
       continue;
     }
-    const idxs = [rest.indexOf("***"), rest.indexOf("**"), rest.indexOf("*"), rest.indexOf("___"), rest.indexOf("_")].filter(
-      (x) => x >= 0
-    );
-    const next = idxs.length ? Math.min(...idxs) : -1;
-    const chunk = next === -1 ? rest : rest.slice(0, next);
+    const chunk = consumePlain(rest);
     out.push(chunk);
     i += chunk.length;
   }
@@ -186,11 +192,7 @@ function parseInlineHtml(s: string): string {
       i += italicUnd[0].length;
       continue;
     }
-    const idxs = [rest.indexOf("***"), rest.indexOf("**"), rest.indexOf("*"), rest.indexOf("___"), rest.indexOf("_")].filter(
-      (x) => x >= 0
-    );
-    const next = idxs.length ? Math.min(...idxs) : -1;
-    const chunk = next === -1 ? rest : rest.slice(0, next);
+    const chunk = consumePlain(rest);
     out += escHtml(chunk);
     i += chunk.length;
   }

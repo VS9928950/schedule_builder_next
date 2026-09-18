@@ -47,11 +47,13 @@ export function TildaSnippetClient({
     const qs = params.toString();
     const dataEndpoints = [`/api/export/tilda/data?${qs}`, `/app/p/${projectId}/export/tilda/data?${qs}`];
     const snippetEndpoints = [`/api/export/tilda/snippet?${qs}`, `/app/p/${projectId}/export/tilda/snippet?${qs}`];
+    const ac = new AbortController();
+    const kill = window.setTimeout(() => ac.abort(), 20000);
     (async () => {
       let lastError: Error | null = null;
       for (const url of dataEndpoints) {
         try {
-          const r = await fetch(url);
+          const r = await fetch(url, { signal: ac.signal });
           const j = await r.json().catch(() => null);
           if (!r.ok) {
             const apiError =
@@ -68,13 +70,16 @@ export function TildaSnippetClient({
           }
           return;
         } catch (e) {
+          if (e instanceof DOMException && e.name === "AbortError") {
+            throw new Error("Генерация не завершилась. Обновите страницу и попробуйте ещё раз.");
+          }
           lastError = e instanceof Error ? e : new Error("Ошибка");
         }
       }
 
       for (const url of snippetEndpoints) {
         try {
-          const r = await fetch(url);
+          const r = await fetch(url, { signal: ac.signal });
           const text = await r.text().catch(() => "");
           if (!r.ok) {
             if (r.status === 404) {
@@ -90,26 +95,29 @@ export function TildaSnippetClient({
           }
           return;
         } catch (e) {
+          if (e instanceof DOMException && e.name === "AbortError") {
+            throw new Error("Генерация не завершилась. Обновите страницу и попробуйте ещё раз.");
+          }
           lastError = e instanceof Error ? e : new Error("Ошибка");
         }
       }
 
       throw lastError ?? new Error("HTTP 404");
     })()
-      .then((j) => {
-        return j;
-      })
       .catch((e) => {
         if (cancelled) return;
         setError(e?.message || "Ошибка");
         setData(null);
       })
       .finally(() => {
+        window.clearTimeout(kill);
         if (cancelled) return;
         setLoading(false);
       });
     return () => {
       cancelled = true;
+      ac.abort();
+      window.clearTimeout(kill);
     };
   }, [projectId, scope, day, tildaSansProbe, view, isRoomsView, roomsMode, isResponsiblesView, responsibleFilter]);
 
