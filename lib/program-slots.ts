@@ -142,7 +142,8 @@ function toScheduleEvent(e: any, startD: Date, endD: Date) {
     vks: e.vks,
     translation: e.translation,
     simultaneousInterpretation: e.simultaneousInterpretation,
-    sourceIds: e.sourceIds
+    sourceIds: e.sourceIds,
+    groupedItems: e.groupedItems
   };
 }
 

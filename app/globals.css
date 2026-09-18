@@ -446,6 +446,14 @@ button.secondary { background: rgba(15,23,42,.04); }
   font-weight: 700;
   line-height: 1;
 }
+.eventDescList a {
+  color: var(--tl-title-color, #041a59);
+  font-weight: 600;
+  text-decoration: none;
+}
+.eventDescList a:hover {
+  text-decoration: underline;
+}
 .eventPlaceMark {
   color: var(--tl-place-color, #51226b);
   font-weight: var(--tl-place-font-weight, 600);

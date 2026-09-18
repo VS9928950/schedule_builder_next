@@ -24,7 +24,8 @@ import {
   migrateLegacyStyleColor,
   migrateLegacyStyleNum,
   normalizeEventLink,
-  resolveEventLinkTarget
+  resolveEventLinkTarget,
+  type GroupedListItem
 } from "@/lib/schedule";
 import { parseInline, renderMarkdownLite } from "@/lib/markdown-lite";
 
@@ -943,6 +944,49 @@ export function TimelineViewer({
   }
 
 const HIDDEN_BASE_MARK_PREFIX = "!";
+
+function renderGroupedTalkList(
+  items: GroupedListItem[],
+  linkTarget: "_self" | "_blank"
+) {
+  return (
+    <ul className="eventDescList">
+      {items.map((item, i) => {
+        const evUrl = normalizeEventLink(item.url);
+        const t = evUrl ? resolveEventLinkTarget(evUrl, linkTarget) : "_self";
+        return (
+          <li key={`g-${item.id || i}`}>
+            <span className="eventDescBullet" aria-hidden="true">
+              •
+            </span>
+            <span>
+              {evUrl ? (
+                <a
+                  href={evUrl}
+                  target={t === "_blank" ? "_blank" : undefined}
+                  rel={t === "_blank" ? "noopener noreferrer" : undefined}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  {parseInline(item.title)}
+                </a>
+              ) : (
+                parseInline(item.title)
+              )}
+              {item.place ? (
+                <>
+                  {" "}
+                  <span className="eventPlaceMark">({item.place})</span>
+                </>
+              ) : null}
+              {item.extraTime ? ` · ${item.extraTime}` : null}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 function renderHighlightedDescription(text: string) {
   const lines = String(text)
@@ -2938,7 +2982,14 @@ function parseDayMarkTokens(tokens: string[]) {
                                 )}
                                 {hasBody ? <hr className="eventRule" /> : null}
                                 {groupIntro && descToShow ? <div className="eventDescLead">{groupIntro}</div> : null}
-                                {descToShow ? (
+                                {Array.isArray((it.event as any).groupedItems) && (it.event as any).groupedItems.length ? (
+                                  <div className="eventDesc">
+                                    {renderGroupedTalkList(
+                                      (it.event as any).groupedItems as GroupedListItem[],
+                                      preferredTarget
+                                    )}
+                                  </div>
+                                ) : descToShow ? (
                                   <div className="eventDesc">
                                     {String(rawFormat).trim() === INVITATION_MEETING_FORMAT
                                       ? descToShow

@@ -1,3 +1,16 @@
+export type GroupedListItem = {
+  id: string;
+  title: string;
+  place: string;
+  extraTime: string;
+  url?: string;
+  popup?: string;
+  popupButtonText?: string;
+  popupButtonUrl?: string;
+  start: Date;
+  end: Date;
+};
+
 export type ScheduleEvent = {
   id: string;
   title: string;
@@ -36,6 +49,8 @@ export type ScheduleEvent = {
   visible?: boolean;
   start: Date;
   end: Date;
+  sourceIds?: string[];
+  groupedItems?: GroupedListItem[];
 };
 
 export type UntimedEvent = {
@@ -482,11 +497,6 @@ export function formatPlaceLabel(building?: unknown, room?: unknown): string {
   return buildingPart || roomPart;
 }
 
-function placeSuffix(e: ScheduleEvent) {
-  const place = formatPlaceLabel(e.building, e.room);
-  return place ? ` (${place})` : "";
-}
-
 export type PlaceHighlightPart = { kind: "text" | "place"; text: string };
 
 /** Split a grouped-card line so the trailing `(place)` can use the place color. */
@@ -513,6 +523,28 @@ function intervalContains(outer: ScheduleEvent, inner: ScheduleEvent) {
   return outer.start.getTime() <= inner.start.getTime() && inner.end.getTime() <= outer.end.getTime();
 }
 
+function listItemFromEvent(e: ScheduleEvent, extraTime: string): GroupedListItem {
+  const filled = fillEmptyPopupAndUrl(e);
+  return {
+    id: String(e.id),
+    title: String(e.title ?? ""),
+    place: formatPlaceLabel(e.building, e.room),
+    extraTime,
+    url: filled.url,
+    popup: filled.popup,
+    popupButtonText: filled.popupButtonText,
+    popupButtonUrl: filled.popupButtonUrl,
+    start: e.start,
+    end: e.end
+  };
+}
+
+function groupedItemLine(item: GroupedListItem): string {
+  const place = item.place ? ` (${item.place})` : "";
+  const time = item.extraTime ? ` · ${item.extraTime}` : "";
+  return `- ${item.title}${place}${time}`;
+}
+
 function mergeNirExactSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
   if (events.length <= 1) return events;
   const groups = new Map<string, ScheduleEvent[]>();
@@ -530,14 +562,14 @@ function mergeNirExactSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
       continue;
     }
     const first = arr[0]!;
-    const lines = arr
+    const groupedItems = arr
       .slice()
       .sort((a, b) => (a.orderNo ?? 1e9) - (b.orderNo ?? 1e9))
-      .map((e) => `- ${e.title}${placeSuffix(e)}`);
+      .map((e) => listItemFromEvent(e, ""));
     out.push({
       id: parallelGroupCardId("nir", first.start, first.end),
       title: NIR_FORMAT,
-      announcement: lines.join("\n"),
+      announcement: groupedItems.map(groupedItemLine).join("\n"),
       format: undefined,
       building: undefined,
       room: undefined,
@@ -545,7 +577,8 @@ function mergeNirExactSameTime(events: ScheduleEvent[]): ScheduleEvent[] {
       visible: true,
       start: first.start,
       end: first.end,
-      sourceIds: arr.map((e) => e.id)
+      sourceIds: arr.map((e) => e.id),
+      groupedItems
     } as ScheduleEvent);
   }
   return out;
@@ -584,7 +617,7 @@ function mergeSectionalContained(events: ScheduleEvent[]): ScheduleEvent[] {
       for (const e of members) used.add(e.id);
       const winS = host.start.getTime();
       const winE = host.end.getTime();
-      const lines = members
+      const groupedItems = members
         .slice()
         .sort(
           (a, b) =>
@@ -592,13 +625,13 @@ function mergeSectionalContained(events: ScheduleEvent[]): ScheduleEvent[] {
         )
         .map((e) => {
           const sameSlot = e.start.getTime() === winS && e.end.getTime() === winE;
-          const time = sameSlot ? "" : ` · ${formatTime(e.start)}–${formatTime(e.end)}`;
-          return `- ${e.title}${placeSuffix(e)}${time}`;
+          const extraTime = sameSlot ? "" : `${formatTime(e.start)}–${formatTime(e.end)}`;
+          return listItemFromEvent(e, extraTime);
         });
       out.push({
         id: parallelGroupCardId("sectional", host.start, host.end),
         title: SECTIONAL_GROUP_TITLE,
-        announcement: lines.join("\n"),
+        announcement: groupedItems.map(groupedItemLine).join("\n"),
         format: undefined,
         building: undefined,
         room: undefined,
@@ -606,7 +639,8 @@ function mergeSectionalContained(events: ScheduleEvent[]): ScheduleEvent[] {
         visible: true,
         start: host.start,
         end: host.end,
-        sourceIds: members.map((e) => e.id)
+        sourceIds: members.map((e) => e.id),
+        groupedItems
       } as ScheduleEvent);
     }
   }

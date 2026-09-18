@@ -87,7 +87,8 @@ import {
   resolveEventLinkTarget,
   composePopupText,
   meaningfulText,
-  resolvePopupButton
+  resolvePopupButton,
+  type GroupedListItem
 } from "@/lib/schedule";
 import { layoutProgramDays } from "@/lib/program-slots";
 import { renderMarkdownLiteHtml } from "@/lib/markdown-lite";
@@ -435,6 +436,39 @@ function renderHighlightedLineHtml(line: string) {
 
 function emphasizePlaceHtml(escaped: string) {
   return escaped.replace(/(Корп\.\s*[^<]+)/g, '<span class="sb-placeMark">$1</span>');
+}
+
+function dateFrom(v: unknown): Date | null {
+  const d = v instanceof Date ? v : new Date(String(v ?? ""));
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+function renderGroupedItemsHtml(items: GroupedListItem[], linkTarget: string): string {
+  const lis = items
+    .map((item) => {
+      const title = esc(item.title);
+      const evUrl = normalizeEventLink(item.url);
+      let titleHtml = title;
+      if (evUrl) {
+        const tTarget = resolveEventLinkTarget(evUrl, linkTarget);
+        const tAttr = tTarget === "_blank" ? ` target="_blank" rel="noopener noreferrer"` : "";
+        const popupBody = meaningfulText(item.popup) || "";
+        const ourPopup = evUrl.startsWith("#popup:sb");
+        const cta = resolvePopupButton(item.popupButtonText, item.popupButtonUrl);
+        const startD = dateFrom(item.start);
+        const endD = dateFrom(item.end);
+        const timeLabel = startD && endD ? formatTimeRange(startD, endD) : "";
+        const popupAttrs = ourPopup
+          ? ` data-sb-popup="1" data-sb-time="${escAttr(timeLabel)}" data-sb-place="${escAttr(item.place)}" data-sb-format="" data-sb-body="${escAttr(renderMarkdownLiteHtml(popupBody))}" data-sb-btn="${escAttr(cta?.text ?? "")}" data-sb-btn-href="${escAttr(cta?.href ?? "")}"`
+          : "";
+        titleHtml = `<a class="sb-item-link" href="${esc(evUrl)}"${tAttr}${popupAttrs}>${title}</a>`;
+      }
+      const place = item.place ? ` <span class="sb-placeMark">(${esc(item.place)})</span>` : "";
+      const time = item.extraTime ? ` · ${esc(item.extraTime)}` : "";
+      return `<li><span class="sb-bullet">•</span><span>${titleHtml}${place}${time}</span></li>`;
+    })
+    .join("");
+  return `<ul class="sb-list">${lis}</ul>`;
 }
 
 function renderCardBodyHtml(desc: string) {
@@ -1023,6 +1057,8 @@ ${rootSel} .sb-desc em,${rootSel} .sb-list em,${rootSel} .sb-lead em{font-style:
 ${rootSel} .sb-list{margin:0 0 8px;padding:0;list-style:none !important;font-size:${theme.descFontPx}px;line-height:1.45;color:var(--sb-desc)}
 ${rootSel} .sb-list li{display:flex;gap:.45em;align-items:baseline;margin:0 0 .4em;padding:0;list-style:none !important}
 ${rootSel} .sb-list .sb-bullet{flex:0 0 auto;font-weight:700;line-height:1}
+${rootSel} .sb-list a.sb-item-link{color:var(--sb-title);font-weight:600;text-decoration:none}
+${rootSel} .sb-list a.sb-item-link:hover{text-decoration:underline}
 ${rootSel} .sb-placeMark{color:var(--sb-place);font-weight:600}
 ${rootSel} .sb-extra{margin-top:4px;line-height:1.3}
 ${rootSel} .sb-extra--teamLead{font-size:${theme.teamLeadFontPx}px;font-weight:${theme.teamLeadWeight};font-style:${theme.teamLeadItalic ? "italic" : "normal"};color:${esc(theme.teamLeadColor)}}
@@ -1076,7 +1112,8 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     const fmt = shouldShowFormat(ev.format) ? String(ev.format).trim() : "";
     const desc = publicCardDescription(ev);
     const extras = isTechView ? extraFieldLines(ev) : [];
-    const hasBody = !!(desc || extras.length);
+    const groupedItems = Array.isArray(ev.groupedItems) ? (ev.groupedItems as GroupedListItem[]) : [];
+    const hasBody = !!(desc || extras.length || groupedItems.length);
     const evUrl = normalizeEventLink(ev.url);
     const titleStyle = typeInline(theme.titleFontPx, theme.titleWeight, theme.titleItalic, theme.titleColor);
     let inner = `<div class="sb-head"><div class="sb-time">${esc(formatTimeRange(startD, endD))}</div>`;
@@ -1098,10 +1135,11 @@ ${rootSel} .sb-extra--volunteers{font-size:${theme.volunteersFontPx}px;font-weig
     }
     if (hasBody) inner += `<hr class="sb-rule"/>\n`;
     const lead = groupedCardIntro(ev.id);
-    if (lead && desc) {
+    if (lead && (desc || groupedItems.length)) {
       inner += `<div class="sb-lead">${esc(lead)}</div>\n`;
     }
-    if (desc) inner += `${renderCardBodyHtml(desc)}\n`;
+    if (groupedItems.length) inner += `${renderGroupedItemsHtml(groupedItems, linkTarget)}\n`;
+    else if (desc) inner += `${renderCardBodyHtml(desc)}\n`;
     if (extras.length) {
       for (const line of extras) {
         inner += `<div class="sb-extra sb-extra--${esc(line.kind)}" style="${extraTypeInline(theme, line.kind)}">${esc(line.text)}</div>\n`;
